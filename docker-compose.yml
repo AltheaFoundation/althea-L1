@@ -5,7 +5,7 @@ services:
     container_name: gaiadnode0
     image: "tendermint/gaiadnode"
     ports:
-      - "26656-26657:26656-26657"
+      - "26656-26658:26656-26658"
     environment:
       - ID=0
       - LOG=${LOG:-gaiad.log}
