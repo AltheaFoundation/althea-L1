@@ -109,7 +109,7 @@ althea tx staking create-validator \
 
 ```
 
-To increase your ualtg (ptional)
+To increase your ualtg (optional)
 
 ```
 althea keys show validator1 --bech val
