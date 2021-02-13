@@ -58,7 +58,7 @@ althea keys add validator
 ### Copy the genesis file
 
 ```
-wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-testnet1-genesis.jsonn
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-testnet1-genesis.json
 cp althea-testnet1-genesis.json $HOME/.althea/config/genesis.json
 ```
 
