@@ -22,6 +22,8 @@ In order to further simplify bootstrapping for this testnet we will be using pre
 
 ### Download Althea chain and the Gravity tools
 
+#### Intel Platforms
+
 ```
 mkdir althea-bin
 cd althea-bin
@@ -36,7 +38,18 @@ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/registe
 wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/relayer
 chmod +x *
 sudo mv * /usr/bin/
+```
 
+#### ARM Platforms
+
+ARM (Raspberry Pi) users should pull the ARM versions of the binaries which end in `-arm` rather than the Intel versions above.
+
+```
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/client-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/orchestrator-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/register-delegate-keys-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/relayer-arm
 ```
 
 At specific points during the testnet you may be told to 'update your orchestrator' or 'update your althea binary'. In order to do that you can simply repeat the above instructions and then restart the affected software.
