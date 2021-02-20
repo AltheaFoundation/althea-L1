@@ -91,9 +91,9 @@ Ask what the current blockheight is in the chat
 althea start
 ```
 
-### Request some funds be sent to your address
+### Request staking funds be sent to your address
 
-Copy and paste your address into Zoom chat so that we can send you some tokens.
+Copy and paste your address into Zoom chat, or into the `#althea-validators` Discord channel, so that we can send you tokens.
 
 ```
 althea keys list
