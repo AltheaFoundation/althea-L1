@@ -24,7 +24,7 @@ In order to further simplify bootstrapping for this testnet we will be using pre
 
 #### Intel Platforms
 
-```console
+```shell
 $ mkdir althea-bin
 $ cd althea-bin
 
@@ -44,7 +44,7 @@ $ sudo mv * /usr/bin/
 
 ARM (Raspberry Pi) users should pull the ARM versions of the binaries which end in `-arm` rather than the Intel versions above.
 
-```console
+```shell
 $ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-arm
 $ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/client-arm
 $ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/orchestrator-arm
