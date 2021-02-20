@@ -24,27 +24,27 @@ In order to further simplify bootstrapping for this testnet we will be using pre
 
 #### Intel Platforms
 
-```shell
-$ mkdir althea-bin
-$ cd althea-bin
+```console
+mkdir althea-bin
+cd althea-bin
 
 # the althea chain binary itself
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea
 
 # Tools for the gravity bridge from the gravity repo
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/client
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/orchestrator
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/register-delegate-keys
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/relayer
-$ chmod +x *
-$ sudo mv * /usr/bin/
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/client
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/orchestrator
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/register-delegate-keys
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/relayer
+chmod +x *
+sudo mv * /usr/bin/
 ```
 
 #### ARM Platforms
 
 ARM (Raspberry Pi) users should pull the ARM versions of the binaries which end in `-arm` rather than the Intel versions above.
 
-```shell
+```console
 wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-arm
 wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/client-arm
 wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/orchestrator-arm
@@ -63,23 +63,22 @@ Note 'myvalidatorkeyname' is just the name of your key here, you can pick anythi
 You'll be prompted to create a password, I suggest you pick something short since you'll be typing it a lot
 
 ```console
-$ cd $HOME
-$ althea init mymoniker --chain-id althea-testnet1v2
-$ althea keys add myvalidatorkeyname
+cd $HOME
+althea init mymoniker --chain-id althea-testnet1v2
+althea keys add myvalidatorkeyname
 ```
 
-### Copy the genesis file
+### Provision the genesis file
 
 ```console
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-testnet1-v2-genesis.json
-$ cp althea-testnet1-v2-genesis.json $HOME/.althea/config/genesis.json
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-testnet1-v2-genesis.json -O $HOME/.althea/config/genesis.json
 ```
 
 ### Add persistent peers
 
 Change the p2p.persistent_peers field in ~/.althea/config/config.toml to contain the following:
 
-```
+```console
 persistent_peers = "05ded2f258ab158c5526eb53aa14d122367115a7@testnet1.althea.net:26656"
 ```
 
