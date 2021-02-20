@@ -45,11 +45,11 @@ $ sudo mv * /usr/bin/
 ARM (Raspberry Pi) users should pull the ARM versions of the binaries which end in `-arm` rather than the Intel versions above.
 
 ```shell
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-arm
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/client-arm
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/orchestrator-arm
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/register-delegate-keys-arm
-$ wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/relayer-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/client-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/orchestrator-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/register-delegate-keys-arm
+wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/relayer-arm
 ```
 
 At specific points during the testnet you may be told to 'update your orchestrator' or 'update your althea binary'. In order to do that you can simply repeat the above instructions and then restart the affected software.
