@@ -18,13 +18,13 @@ I also suggest an open notepad or other document to keep track of the keys you w
 ## Bootstrapping steps and commands
 
 We’re going to have a centralized start testnet. Where Althea will launch a chain, send everyone else tokens, and then each participant will come in and ualtg to become a validator.
-In order to further simplify bootstrapping for this testnet we will be using pre-built binaries I am placing into a github release. These include ARM binaries for those of you on ARM platforms. Note that you will need to be running a 64bit ARM machine with a 64 bit operating system to use these binaries. In order to download ARM binaries change the names in the wget links from ‘client’ to ‘client-arm’. Repeat for all binaries
+In order to further simplify bootstrapping for this testnet we will be using pre-built binaries I am placing into a github release. These include ARM binaries for those of you on ARM platforms. Note that you will need to be running a 64bit ARM machine with a 64 bit operating system to use these binaries. In order to download ARM binaries change the names in the wget links from `client` to `client-arm`. Repeat for all binaries.
 
 ### Download Althea chain and the Gravity tools
 
 #### Intel Platforms
 
-```
+```console
 mkdir althea-bin
 cd althea-bin
 
@@ -44,7 +44,7 @@ sudo mv * /usr/bin/
 
 ARM (Raspberry Pi) users should pull the ARM versions of the binaries which end in `-arm` rather than the Intel versions above.
 
-```
+```console
 wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-arm
 wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/client-arm
 wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/orchestrator-arm
@@ -62,7 +62,7 @@ Note 'myvalidatorkeyname' is just the name of your key here, you can pick anythi
 
 You'll be prompted to create a password, I suggest you pick something short since you'll be typing it a lot
 
-```
+```console
 cd $HOME
 althea init mymoniker --chain-id althea-testnet1v2
 althea keys add myvalidatorkeyname
@@ -70,7 +70,7 @@ althea keys add myvalidatorkeyname
 
 ### Copy the genesis file
 
-```
+```console
 wget https://github.com/althea-net/althea-chain/releases/download/v0.0.1/althea-testnet1-v2-genesis.json
 cp althea-testnet1-v2-genesis.json $HOME/.althea/config/genesis.json
 ```
