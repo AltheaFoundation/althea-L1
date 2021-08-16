@@ -132,7 +132,7 @@ althea tx staking create-validator \
  --amount=50000000000ualtg \
  --pubkey=$(althea tendermint show-validator) \
  --moniker="put your validator name here" \
- --chain-id=althea-testnet2v2 \
+ --chain-id=althea-testnet2v3 \
  --commission-rate="0.10" \
  --commission-max-rate="0.20" \
  --commission-max-change-rate="0.01" \
