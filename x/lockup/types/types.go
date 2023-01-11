@@ -20,4 +20,8 @@ var (
 	// LockedMessageTypesKey Indexes the LockedMessageTypes array, the collection of messages which
 	// will be blocked when the chain is locked up and not sent from a LockExempt address
 	LockedMessageTypesKey = []byte("lockedMessageTypes")
+
+	// LockedTokenDenomsKey Indexes the LockedTokenDenoms array, the collection of tokens which
+	// will be blocked when the chain is locked up and not sent from a LockExempt address
+	LockedTokenDenomsKey = []byte("lockedTokenDenoms")
 )
