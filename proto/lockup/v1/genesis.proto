@@ -8,10 +8,12 @@ message Params {
   // The lockup module is engaged if locked is true (chain is "locked up")
   bool                               locked = 1;
   // Addresses not affected by the lockup module
-  repeated string                          lock_exempt = 2;
+  repeated string                    lock_exempt = 2;
   // Messages with one of these types are blocked when the chain is locked up
   // and not sent from a lock_exempt address
   repeated string                    locked_message_types = 3;
+  // These tokens will be the only ones blocked while the chain is locked
+  repeated string                    locked_token_denoms = 4;
 }
 
 message GenesisState {

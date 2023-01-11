@@ -12,6 +12,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 	k.SetChainLocked(ctx, params.GetLocked())
 	k.SetLockExemptAddresses(ctx, params.GetLockExempt())
 	k.SetLockedMessageTypes(ctx, params.GetLockedMessageTypes())
+	k.SetLockedTokenDenoms(ctx, params.LockedTokenDenoms)
 }
 
 // ExportGenesis exports all the state needed to restart the chain
@@ -22,6 +23,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 			Locked:             k.GetChainLocked(ctx),
 			LockExempt:         k.GetLockExemptAddresses(ctx),
 			LockedMessageTypes: k.GetLockedMessageTypes(ctx),
+			LockedTokenDenoms:  k.GetLockedTokenDenoms(ctx),
 		},
 	}
 }

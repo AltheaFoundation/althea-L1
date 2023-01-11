@@ -2,12 +2,12 @@ use std::time::SystemTime;
 
 use crate::type_urls::{
     GENERIC_AUTHORIZATION_TYPE_URL, MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MULTI_SEND_TYPE_URL,
-    MSG_SEND_TYPE_URL,
+    MSG_SEND_TYPE_URL, MSG_XFER_TYPE_URL,
 };
 use crate::utils::{
-    create_parameter_change_proposal, encode_any, get_user_key, one_atom, send_funds_bulk,
-    vote_yes_on_proposals, wait_for_proposals_to_execute, CosmosUser, ValidatorKeys,
-    ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
+    create_parameter_change_proposal, encode_any, footoken_metadata, get_user_key, one_atom,
+    send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute, CosmosUser,
+    ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::authz::v1beta1::{
     GenericAuthorization, Grant, MsgExec, MsgGrant,
@@ -15,14 +15,16 @@ use althea_proto::cosmos_sdk_proto::cosmos::authz::v1beta1::{
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{Input, MsgMultiSend, MsgSend, Output};
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParamChange;
+use althea_proto::microtx::v1::MsgXfer;
 use clarity::Uint256;
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
 
 /// These *_PARAM_KEY constants are defined in x/lockup/types/types.go and must match those values exactly
 pub const LOCKED_PARAM_KEY: &str = "locked";
-pub const LOCKED_MSG_TYPES_PARAM_KEY: &str = "lockedMessageTypes";
 pub const LOCK_EXEMPT_PARAM_KEY: &str = "lockExempt";
+pub const LOCKED_MSG_TYPES_PARAM_KEY: &str = "lockedMessageTypes";
+pub const LOCKED_TOKEN_DENOMS_PARAM_KEY: &str = "lockedTokenDenoms";
 
 /// Simulates the launch lockup process by setting the lockup module params via governance,
 /// attempting to transfer tokens a variety of ways, and finally clearing the lockup module params
@@ -31,6 +33,7 @@ pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) 
     let lock_exempt = get_user_key(None);
     let msg_send_authorized = get_user_key(None);
     let msg_multi_send_authorized = get_user_key(None);
+    let msg_xfer_authorized = get_user_key(None);
     fund_lock_exempt_user(contact, &validator_keys, lock_exempt).await;
     fund_authorized_users(
         contact,
@@ -41,13 +44,19 @@ pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) 
     .await;
     lockup_the_chain(contact, &validator_keys, &lock_exempt).await;
 
+    // TODO: Add ibc transfer and check that transfers are blocked outbound for ualtg
     fail_to_send(
         contact,
         &validator_keys,
-        (msg_send_authorized, msg_multi_send_authorized),
+        [
+            msg_send_authorized,
+            msg_multi_send_authorized,
+            msg_xfer_authorized,
+        ],
     )
     .await;
     send_from_lock_exempt(contact, lock_exempt).await;
+    send_unlocked_token(contact, &validator_keys).await;
 
     unlock_the_chain(contact, &validator_keys).await;
     successfully_send(contact, &validator_keys, lock_exempt).await;
@@ -148,17 +157,22 @@ pub fn create_lockup_param_changes(exempt_user: Address) -> Vec<ParamChange> {
         MSG_SEND_TYPE_URL.to_string(),
         MSG_MULTI_SEND_TYPE_URL.to_string(),
     ];
-    let mut locked_msg_types = lockup_param;
+    let mut locked_msg_types = lockup_param.clone();
     locked_msg_types.key = LOCKED_MSG_TYPES_PARAM_KEY.to_string();
     locked_msg_types.value = serde_json::to_string(&locked_msgs).unwrap();
 
-    vec![locked, lock_exempt, locked_msg_types]
+    let tokens = vec![STAKING_TOKEN.clone()];
+    let mut locked_tokens = lockup_param;
+    locked_tokens.key = LOCKED_TOKEN_DENOMS_PARAM_KEY.to_string();
+    locked_tokens.value = serde_json::to_string(&tokens).unwrap();
+
+    vec![locked, lock_exempt, locked_msg_types, locked_tokens]
 }
 
 pub async fn fail_to_send(
     contact: &Contact,
     validator_keys: &[ValidatorKeys],
-    authorized_users: (CosmosUser, CosmosUser),
+    authorized_users: [CosmosUser; 3],
 ) {
     let sender = validator_keys.get(0).unwrap().validator_key;
     let receiver = get_user_key(None);
@@ -184,8 +198,12 @@ pub async fn fail_to_send(
         )
         .await;
     res.expect_err("Successfully sent via bank MsgMultiSend? Should not be possible!");
-
-    let msg_send_authorized = authorized_users.0;
+    let msg_xfer = create_microtx_msg_xfer(sender, receiver.cosmos_address, amount.clone());
+    let res = contact
+        .send_message(&[msg_xfer], None, &[], Some(OPERATION_TIMEOUT), sender)
+        .await;
+    res.expect_err("Successfully sent via bank MsgXfer? Should not be possible!");
+    let msg_send_authorized = authorized_users[0];
     let authz_send = create_authz_bank_msg_send(
         contact,
         sender,
@@ -205,7 +223,7 @@ pub async fn fail_to_send(
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgSend)? Should not be possible!");
-    let msg_multi_send_authorized = authorized_users.1;
+    let msg_multi_send_authorized = authorized_users[1];
     let authz_multi_send = create_authz_bank_msg_multi_send(
         contact,
         sender,
@@ -222,6 +240,26 @@ pub async fn fail_to_send(
             &[],
             Some(OPERATION_TIMEOUT),
             msg_multi_send_authorized.cosmos_key,
+        )
+        .await;
+    res.expect_err("Successfully sent via authz Exec(MsgMultiSend)? Should not be possible!");
+    let msg_xfer_authorized = authorized_users[1];
+    let authz_msg_xfer = create_authz_microtx_msg_xfer(
+        contact,
+        sender,
+        msg_xfer_authorized,
+        receiver.cosmos_address,
+        amount.clone(),
+    )
+    .await
+    .unwrap();
+    let res = contact
+        .send_message(
+            &[authz_msg_xfer.clone()],
+            None,
+            &[],
+            Some(OPERATION_TIMEOUT),
+            msg_xfer_authorized.cosmos_key,
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgMultiSend)? Should not be possible!");
@@ -257,6 +295,20 @@ pub fn create_bank_msg_multi_send(
     };
 
     Msg::new(MSG_MULTI_SEND_TYPE_URL, multi_send)
+}
+
+/// Creates a x/microtx MsgXfer to transfer `amount` from `sender` to `receiver`
+pub fn create_microtx_msg_xfer(
+    sender: impl PrivateKey,
+    receiver: Address,
+    amount: ProtoCoin,
+) -> Msg {
+    let send = MsgXfer {
+        sender: sender.to_address(&ADDRESS_PREFIX).unwrap().to_string(),
+        receiver: receiver.to_string(),
+        amounts: vec![amount],
+    };
+    Msg::new(MSG_XFER_TYPE_URL, send)
 }
 
 /// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
@@ -335,6 +387,44 @@ pub async fn create_authz_bank_msg_multi_send(
     Ok(exec_msg)
 }
 
+/// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
+/// an authz MsgExec-wrapped microtx MsgXfer and returns that as well
+pub async fn create_authz_microtx_msg_xfer(
+    contact: &Contact,
+    sender: impl PrivateKey,
+    authorizee: CosmosUser,
+    receiver: Address,
+    amount: ProtoCoin,
+) -> Result<Msg, CosmosGrpcError> {
+    let grant_msg_xfer = create_authorization(
+        sender.clone(),
+        authorizee.cosmos_address,
+        MSG_XFER_TYPE_URL.to_string(),
+    );
+
+    let res = contact
+        .send_message(
+            &[grant_msg_xfer],
+            None,
+            &[],
+            Some(OPERATION_TIMEOUT),
+            sender.clone(),
+        )
+        .await;
+    info!("Granted MsgXfer authorization with response {:?}", res);
+    res?;
+
+    let xfer = create_microtx_msg_xfer(sender.clone(), receiver, amount);
+    let xfer_any: prost_types::Any = xfer.into();
+    let exec = MsgExec {
+        grantee: authorizee.cosmos_address.to_string(),
+        msgs: vec![xfer_any],
+    };
+    let exec_msg = Msg::new(MSG_EXEC_TYPE_URL, exec);
+
+    Ok(exec_msg)
+}
+
 /// Creates a MsgGrant to give a GenericAuthorization for `authorizee` to submit any Msg with the given `msg_type_url`
 /// on behalf of `authorizer`
 pub fn create_authorization(
@@ -388,7 +478,7 @@ pub async fn send_from_and_assert_balance_changes(
 ) {
     let receiver = get_user_key(None);
     let pre_balance = contact
-        .get_balance(receiver.cosmos_address, STAKING_TOKEN.clone())
+        .get_balance(receiver.cosmos_address, amount.denom.clone())
         .await
         .unwrap();
     send_funds_bulk(
@@ -401,7 +491,7 @@ pub async fn send_from_and_assert_balance_changes(
     .await
     .unwrap();
     let post_balance = contact
-        .get_balance(receiver.cosmos_address, STAKING_TOKEN.clone())
+        .get_balance(receiver.cosmos_address, amount.denom.clone())
         .await
         .unwrap();
     assert_balance_changes(pre_balance, post_balance, amount.amount);
@@ -458,4 +548,13 @@ async fn successfully_send(
     };
     send_from_and_assert_balance_changes(contact, val0, amount.clone()).await;
     send_from_and_assert_balance_changes(contact, lock_exempt.cosmos_key, amount.clone()).await;
+}
+
+async fn send_unlocked_token(contact: &Contact, validator_keys: &[ValidatorKeys]) {
+    let val0 = validator_keys.get(0).unwrap().validator_key;
+    let amount = Coin {
+        denom: footoken_metadata(contact).await.base,
+        amount: one_atom(),
+    };
+    send_from_and_assert_balance_changes(contact, val0, amount.clone()).await;
 }
