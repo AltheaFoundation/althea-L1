@@ -11,11 +11,10 @@ import (
 
 // NewHandler returns a handler for "Gravity" type messages.
 func NewHandler(k keeper.Keeper) sdk.Handler {
-	msgServer := keeper.NewMsgServerImpl(k)
-	msgServer = msgServer // Avoid unused error
+	// msgServer := keeper.NewMsgServerImpl(k)
 
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
-		ctx = ctx.WithEventManager(sdk.NewEventManager())
+		// ctx = ctx.WithEventManager(sdk.NewEventManager())
 		switch msg := msg.(type) {
 		// case *types.MsgName:
 		// res, err := msgServer.MsgNameHanlder(sdk.WrapSDKContext(ctx), msg)
