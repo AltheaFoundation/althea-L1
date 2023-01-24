@@ -21,7 +21,9 @@ func DefaultParams() *Params {
 		Locked:     false,
 		LockExempt: []string{},
 		LockedMessageTypes: []string{
+			// nolint: exhaustruct
 			sdk.MsgTypeURL(&banktypes.MsgSend{}),
+			// nolint: exhaustruct
 			sdk.MsgTypeURL(&banktypes.MsgMultiSend{}),
 		},
 	}
@@ -66,7 +68,11 @@ func ValidateLockedMessageTypes(i interface{}) error {
 
 // ParamKeyTable for auth module
 func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+	return paramtypes.NewKeyTable().RegisterParamSet(&Params{
+		Locked:             false,
+		LockExempt:         []string{},
+		LockedMessageTypes: []string{},
+	})
 }
 
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {

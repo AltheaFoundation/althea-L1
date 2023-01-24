@@ -6,7 +6,7 @@ package althea
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -40,6 +40,7 @@ const (
 
 // MigrateGenesisCmd returns a command to execute genesis state migration.
 func MigrateGenesisCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "migrate [genesis-file]",
 		Short: "Migrate genesis to a specified target version",
@@ -57,7 +58,7 @@ $ %s migrate /path/to/genesis.json --chain-id=cosmoshub-4 --genesis-time=2019-04
 			firstMigration := "v0.38"
 			importGenesis := args[0]
 
-			jsonBlob, err := ioutil.ReadFile(importGenesis)
+			jsonBlob, err := os.ReadFile(importGenesis)
 
 			if err != nil {
 				return errors.Wrap(err, "failed to read provided genesis file")
@@ -107,32 +108,33 @@ $ %s migrate /path/to/genesis.json --chain-id=cosmoshub-4 --genesis-time=2019-04
 			// TODO: handler error from migrationFunc call
 			newGenState = migrationFunc(newGenState, clientCtx)
 
+			// nolint: errcheck
 			noProp29, _ := cmd.Flags().GetBool(flagNoProp29)
 
 			if !noProp29 {
 
 				var bankGenesis bank.GenesisState
 
-				clientCtx.JSONCodec.MustUnmarshalJSON(newGenState[bank.ModuleName], &bankGenesis)
+				clientCtx.Codec.MustUnmarshalJSON(newGenState[bank.ModuleName], &bankGenesis)
 
 				var distrGenesis distr.GenesisState
 
-				clientCtx.JSONCodec.MustUnmarshalJSON(newGenState[distr.ModuleName], &distrGenesis)
+				clientCtx.Codec.MustUnmarshalJSON(newGenState[distr.ModuleName], &distrGenesis)
 
 				var authGenesis auth.GenesisState
-				clientCtx.JSONCodec.MustUnmarshalJSON(newGenState[auth.ModuleName], &authGenesis)
+				clientCtx.Codec.MustUnmarshalJSON(newGenState[auth.ModuleName], &authGenesis)
 
 				authGenesis, bankGenesis, distrGenesis = Prop29Migration(&authGenesis, &bankGenesis, &distrGenesis)
 
-				newGenState[bank.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&bankGenesis)
-				newGenState[distr.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&distrGenesis)
-				newGenState[auth.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&authGenesis)
+				newGenState[bank.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenesis)
+				newGenState[distr.ModuleName] = clientCtx.Codec.MustMarshalJSON(&distrGenesis)
+				newGenState[auth.ModuleName] = clientCtx.Codec.MustMarshalJSON(&authGenesis)
 
 			}
 
 			var bankGenesis bank.GenesisState
 
-			clientCtx.JSONCodec.MustUnmarshalJSON(newGenState[bank.ModuleName], &bankGenesis)
+			clientCtx.Codec.MustUnmarshalJSON(newGenState[bank.ModuleName], &bankGenesis)
 
 			bankGenesis.DenomMetadata = []bank.Metadata{
 				{
@@ -146,11 +148,11 @@ $ %s migrate /path/to/genesis.json --chain-id=cosmoshub-4 --genesis-time=2019-04
 					Display: "atom",
 				},
 			}
-			newGenState[bank.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&bankGenesis)
+			newGenState[bank.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenesis)
 
 			var stakingGenesis staking.GenesisState
 
-			clientCtx.JSONCodec.MustUnmarshalJSON(newGenState[staking.ModuleName], &stakingGenesis)
+			clientCtx.Codec.MustUnmarshalJSON(newGenState[staking.ModuleName], &stakingGenesis)
 
 			ibcTransferGenesis := ibcxfertypes.DefaultGenesisState()
 			ibcCoreGenesis := ibccoretypes.DefaultGenesisState()
@@ -163,17 +165,18 @@ $ %s migrate /path/to/genesis.json --chain-id=cosmoshub-4 --genesis-time=2019-04
 			ibcCoreGenesis.ClientGenesis.Params.AllowedClients = []string{exported.Tendermint}
 			stakingGenesis.Params.HistoricalEntries = 10000
 
-			newGenState[ibcxfertypes.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(ibcTransferGenesis)
-			newGenState[host.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(ibcCoreGenesis)
-			newGenState[captypes.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(capGenesis)
-			newGenState[evtypes.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(evGenesis)
-			newGenState[staking.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&stakingGenesis)
+			newGenState[ibcxfertypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(ibcTransferGenesis)
+			newGenState[host.ModuleName] = clientCtx.Codec.MustMarshalJSON(ibcCoreGenesis)
+			newGenState[captypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(capGenesis)
+			newGenState[evtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(evGenesis)
+			newGenState[staking.ModuleName] = clientCtx.Codec.MustMarshalJSON(&stakingGenesis)
 
 			genDoc.AppState, err = json.Marshal(newGenState)
 			if err != nil {
 				return errors.Wrap(err, "failed to JSON marshal migrated genesis state")
 			}
 
+			// nolint: errcheck
 			genesisTime, _ := cmd.Flags().GetString(flagGenesisTime)
 			if genesisTime != "" {
 				var t time.Time
@@ -186,15 +189,18 @@ $ %s migrate /path/to/genesis.json --chain-id=cosmoshub-4 --genesis-time=2019-04
 				genDoc.GenesisTime = t
 			}
 
+			// nolint: errcheck
 			chainID, _ := cmd.Flags().GetString(flags.FlagChainID)
 			if chainID != "" {
 				genDoc.ChainID = chainID
 			}
 
+			// nolint: errcheck
 			initialHeight, _ := cmd.Flags().GetInt(flagInitialHeight)
 
 			genDoc.InitialHeight = int64(initialHeight)
 
+			// nolint: errcheck
 			replacementKeys, _ := cmd.Flags().GetString(flagReplacementKeys)
 
 			if replacementKeys != "" {

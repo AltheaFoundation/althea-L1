@@ -43,6 +43,7 @@ func TestLockAnteHandler(t *testing.T) {
 	AnteHandlerUnlockedHappy(t, handler, keeper, ctx, txCfg, txFct)
 }
 
+// nolint: dupl
 // Test successful messages on a locked chain
 func AnteHandlerLockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keeper.Keeper, ctx sdk.Context, txCfg client.TxConfig, txFct tx.Factory) {
 	allowedMsgSendTx := GetAllowedMsgSendTx(keeper, ctx, txFct, txCfg)
@@ -94,6 +95,7 @@ func AnteHandlerLockedUnhappy(t *testing.T, handler sdk.AnteHandler, keeper keep
 	t.Log("Successful large bad Tx")
 }
 
+// nolint: dupl
 func AnteHandlerUnlockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keeper.Keeper, ctx sdk.Context, txCfg client.TxConfig, txFct tx.Factory) {
 	unallowedMsgSendTx := GetUnallowedMsgSendTx(keeper, ctx, txFct, txCfg)
 	// blocks a transaction coming from 0x11...
@@ -133,12 +135,14 @@ func GetAllowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory
 }
 
 func GetAllowedMsgSend(keeper keeper.Keeper, ctx sdk.Context) banktypes.MsgSend {
+	// nolint: goconst
 	fromAddr := "0x0000000000000000000000000000000000000000"
 	// The following check has been removed pending ExemptSet decisions
 	// exemptSet := keeper.GetLockExemptAddressesSet(ctx)
 	// if _, ok := exemptSet[fromAddr]; !ok {
 	// 	panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
 	// }
+	// nolint: goconst
 	toAddr := "0x1111111111111111111111111111111111111111"
 	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
 	return banktypes.MsgSend{FromAddress: fromAddr, ToAddress: toAddr, Amount: amount}
@@ -191,7 +195,9 @@ func GetUnimportantTx(txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 }
 
 func GetUnimportantMsg() stakingtypes.MsgCreateValidator {
+	// nolint: exhaustruct
 	return stakingtypes.MsgCreateValidator{
+		// nolint: exhaustruct
 		Description:      stakingtypes.Description{},
 		DelegatorAddress: "0x0000000000000000000000000000000000000000",
 		ValidatorAddress: "0x0000000000000000000000000000000000000000",

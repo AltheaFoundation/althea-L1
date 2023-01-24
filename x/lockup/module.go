@@ -24,7 +24,9 @@ import (
 
 // type check to ensure the interface is properly implemented
 var (
-	_ module.AppModule      = AppModule{}
+	// nolint: exhaustruct
+	_ module.AppModule = AppModule{}
+	// nolint: exhaustruct
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
@@ -61,11 +63,13 @@ func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {
 
 // GetQueryCmd implements app module basic
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	// nolint: exhaustruct
 	return &cobra.Command{}
 }
 
 // GetTxCmd implements app module basic
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
+	// nolint: exhaustruct
 	return &cobra.Command{}
 }
 

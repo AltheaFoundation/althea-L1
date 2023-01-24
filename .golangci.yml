@@ -6,7 +6,6 @@ linters:
       - dogsled
       - dupl
       - goconst
-      - gocritic
       - gocyclo
       - gofmt
       - gosimple
@@ -41,13 +40,16 @@ linters-settings:
 
 issues:
   exclude-rules:
-    - path: x/gravity/abci.go
+    - path: cmd/
       linters:
-        - dupl
-    - path: config/
-      linters:
-        - exhaustruct
         - errcheck
+        - gocyclo
+        - exhaustruct
+        - staticcheck
+    - path: x/microtx
+      linters:
+        - govet
+        - gocritic
     - path: contrib/
       linters:
         - exhaustruct
@@ -57,10 +59,6 @@ issues:
         - exhaustruct
         - errcheck
     - path: third_party/
-      linters:
-        - exhaustruct
-        - errcheck
-    - path: x/
       linters:
         - exhaustruct
         - errcheck

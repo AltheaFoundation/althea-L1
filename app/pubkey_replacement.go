@@ -3,13 +3,14 @@ package althea
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/genutil/types"
 	slashing "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -28,6 +29,7 @@ func (r *replacementConfigs) isReplacedValidator(validatorAddress string) (int, 
 		}
 	}
 
+	// nolint: exhaustruct
 	return -1, replacementConfig{}
 }
 
@@ -38,7 +40,7 @@ type replacementConfig struct {
 }
 
 func loadKeydataFromFile(clientCtx client.Context, replacementrJSON string, genDoc *tmtypes.GenesisDoc) *tmtypes.GenesisDoc {
-	jsonReplacementBlob, err := ioutil.ReadFile(replacementrJSON)
+	jsonReplacementBlob, err := os.ReadFile(replacementrJSON)
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "failed to read replacement keys from file %s", replacementrJSON))
 	}
@@ -59,15 +61,18 @@ func loadKeydataFromFile(clientCtx client.Context, replacementrJSON string, genD
 	var stakingGenesis staking.GenesisState
 	var slashingGenesis slashing.GenesisState
 
-	clientCtx.JSONCodec.MustUnmarshalJSON(state[staking.ModuleName], &stakingGenesis)
-	clientCtx.JSONCodec.MustUnmarshalJSON(state[slashing.ModuleName], &slashingGenesis)
+	clientCtx.Codec.MustUnmarshalJSON(state[staking.ModuleName], &stakingGenesis)
+	clientCtx.Codec.MustUnmarshalJSON(state[slashing.ModuleName], &slashingGenesis)
 
 	for i, val := range stakingGenesis.Validators {
 		idx, replacement := replacementKeys.isReplacedValidator(val.OperatorAddress)
 
 		if idx != -1 {
 
-			toReplaceValConsAddress, _ := val.GetConsAddr()
+			toReplaceValConsAddress, err := val.GetConsAddr()
+			if err != nil {
+				panic(sdkerrors.Wrapf(err, "unable to get validator cons addr for validator %v", val.Description))
+			}
 
 			consPubKeyBz, err := sdk.GetFromBech32(replacement.ConsensusPubkey, sdk.GetConfig().GetBech32ConsensusPubPrefix())
 			if err != nil {
@@ -84,9 +89,21 @@ func loadKeydataFromFile(clientCtx client.Context, replacementrJSON string, genD
 				log.Fatal(fmt.Errorf("failed to decode key:%s %w", consPubKey, err))
 			}
 
-			replaceValConsAddress, _ := val.GetConsAddr()
-			protoReplaceValConsPubKey, _ := val.TmConsPublicKey()
-			replaceValConsPubKey, _ := cryptocodec.PubKeyFromProto(protoReplaceValConsPubKey)
+			replaceValConsAddress, err := val.GetConsAddr()
+			if err != nil {
+				panic(sdkerrors.Wrapf(err, "unable to get new validator cons addr for pubkey %v", consPubKey.String()))
+			}
+
+			// nolint: errcheck
+			protoReplaceValConsPubKey, err := val.TmConsPublicKey()
+			if err != nil {
+				panic(sdkerrors.Wrapf(err, "unable to get validator tm cons public key for  validator %v", val.Description))
+			}
+			// nolint: errcheck
+			replaceValConsPubKey, err := cryptocodec.PubKeyFromProto(protoReplaceValConsPubKey)
+			if err != nil {
+				panic(sdkerrors.Wrapf(err, "unable to decode pubkey %v", protoReplaceValConsPubKey.String()))
+			}
 
 			for i, signingInfo := range slashingGenesis.SigningInfos {
 				if signingInfo.Address == toReplaceValConsAddress.String() {
@@ -113,8 +130,8 @@ func loadKeydataFromFile(clientCtx client.Context, replacementrJSON string, genD
 		}
 
 	}
-	state[staking.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&stakingGenesis)
-	state[slashing.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&slashingGenesis)
+	state[staking.ModuleName] = clientCtx.Codec.MustMarshalJSON(&stakingGenesis)
+	state[slashing.ModuleName] = clientCtx.Codec.MustMarshalJSON(&slashingGenesis)
 
 	genDoc.AppState, err = json.Marshal(state)
 

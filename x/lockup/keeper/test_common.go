@@ -115,6 +115,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 	require.Nil(t, err)
 
 	// Create sdk.Context
+	// nolint: exhaustruct
 	ctx := sdk.NewContext(ms, tmproto.Header{
 		Height: 1234567,
 		Time:   time.Date(2020, time.April, 22, 12, 0, 0, 0, time.UTC),
@@ -162,6 +163,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 		blockedAddr,
 	)
 
+	// nolint: exhaustruct
 	bankKeeper.SetParams(ctx, banktypes.Params{DefaultSendEnabled: true})
 
 	stakingKeeper := stakingkeeper.NewKeeper(protoCodec, keyStaking, accountKeeper, bankKeeper, getSubspace(paramsKeeper, stakingtypes.ModuleName))
@@ -200,8 +202,11 @@ func CreateTestEnv(t *testing.T) TestInput {
 	require.NotNil(t, moduleAcct)
 
 	router := baseapp.NewRouter()
+	// nolint: exhaustruct
 	router.AddRoute(bank.AppModule{}.Route())
+	// nolint: exhaustruct
 	router.AddRoute(staking.AppModule{}.Route())
+	// nolint: exhaustruct
 	router.AddRoute(distribution.AppModule{}.Route())
 
 	// Load default wasm config

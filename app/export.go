@@ -19,6 +19,7 @@ func (app *AltheaApp) ExportAppStateAndValidators(
 	forZeroHeight bool, jailAllowedAddrs []string,
 ) (servertypes.ExportedApp, error) {
 	// as if they could withdraw from the start of the next block
+	// nolint: exhaustruct
 	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
 
 	// We export at last height + 1, because that's the height at which
@@ -73,6 +74,7 @@ func (app *AltheaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs
 
 	// withdraw all validator commission
 	app.stakingKeeper.IterateValidators(ctx, func(_ int64, val stakingtypes.ValidatorI) (stop bool) {
+		// nolint: errcheck
 		_, _ = app.distrKeeper.WithdrawValidatorCommission(ctx, val.GetOperator())
 		return false
 	})
@@ -89,6 +91,7 @@ func (app *AltheaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs
 		if err != nil {
 			panic(err)
 		}
+		// nolint: errcheck
 		_, _ = app.distrKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
 	}
 
