@@ -6,9 +6,12 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
+// nolint: exhaustruct
 var _ types.QueryServer = Keeper{
-	storeKey:   nil,
+	storeKey: nil,
+	// nolint: exhaustruct
 	paramSpace: paramstypes.Subspace{},
 	cdc:        nil,
+	// nolint: exhaustruct
 	bankKeeper: &bankkeeper.BaseKeeper{},
 }

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -68,14 +69,16 @@ func (k Keeper) Xfer(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAdd
 	}
 
 	// Emit an event for the block's event log
-	ctx.EventManager().EmitTypedEvent(
+	if err = ctx.EventManager().EmitTypedEvent(
 		&types.EventXfer{
 			Sender:   sender.String(),
 			Receiver: receiver.String(),
 			Amounts:  amounts,
 			Fee:      feesCollected,
 		},
-	)
+	); err != nil {
+		panic(fmt.Sprintf("Unable to emit event with error %v", err))
+	}
 
 	return nil
 }
