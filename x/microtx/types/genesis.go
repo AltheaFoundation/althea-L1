@@ -16,6 +16,7 @@ const (
 
 var (
 	// Ensure that params implements the proper interface
+	// nolint: exhaustruct
 	_ paramtypes.ParamSet = &Params{}
 
 	ParamsStoreKeyXferFeeBasisPoints = "XferFeeBasisPoints"
@@ -54,7 +55,9 @@ func (p Params) ValidateBasic() error {
 
 // ParamKeyTable for auth module
 func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+	return paramtypes.NewKeyTable().RegisterParamSet(&Params{
+		XferFeeBasisPoints: 1000,
+	})
 }
 
 // ParamSetPairs implements the ParamSet interface and returns all the key/value pairs
