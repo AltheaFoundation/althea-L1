@@ -17,6 +17,7 @@ func TestValidation(t *testing.T) {
 	err = ValidateLockedMessageTypes(defaultGenesis.Params.LockedMessageTypes)
 	assert.Nil(t, err, "error produced from default lockedMessageTypes validation")
 
+	// nolint: exhaustruct
 	badGenesis := GenesisState{Params: &Params{Locked: false}}
 	err = badGenesis.ValidateBasic()
 	assert.NotNil(t, err, "badGenesis did not produce an error after ValidateBasic")

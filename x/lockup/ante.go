@@ -119,6 +119,7 @@ func NewLockupAnteDecorator(lockupKeeper keeper.Keeper, cdc codec.Codec) LockAnt
 // returns true if `msg` is either permissible or not a type of message this module blocks
 func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}) (bool, error) {
 	switch sdk.MsgTypeURL(msg) {
+	// nolint: exhaustruct
 	case sdk.MsgTypeURL(&banktypes.MsgSend{}):
 		msgSend := msg.(*banktypes.MsgSend)
 		if _, present := exemptSet[msgSend.FromAddress]; !present {
@@ -127,6 +128,7 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}) (bool, error) {
 				"The chain is locked, only exempt addresses may be the FromAddress in a Send message")
 		}
 		return true, nil
+	// nolint: exhaustruct
 	case sdk.MsgTypeURL(&banktypes.MsgMultiSend{}):
 		msgMultiSend := msg.(*banktypes.MsgMultiSend)
 		for _, input := range msgMultiSend.Inputs {

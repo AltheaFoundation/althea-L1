@@ -342,6 +342,7 @@ func NewAltheaApp(
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
+	// nolint: exhaustruct
 	app := &AltheaApp{
 		BaseApp:           &bApp,
 		legacyAmino:       legacyAmino,
