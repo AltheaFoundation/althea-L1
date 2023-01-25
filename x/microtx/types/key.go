@@ -17,17 +17,17 @@ const (
 )
 
 var (
-	// PrefixKey is an example prefix for store keys, items under this key would have keys like
-	// Prefix00001, PrefixAxE10034ADF0018547, serialized to bytes. This is great for implicit
-	// ordering or nesting like "Prefix[Sub-prefix][Item-identifier]"
-	PrefixKey = HashString("Prefix")
+// PrefixKey is an example prefix for store keys, items under this key would have keys like
+// Prefix00001, PrefixAxE10034ADF0018547, serialized to bytes. This is great for implicit
+// ordering or nesting like "Prefix[Sub-prefix][Item-identifier]"
+// PrefixKey = HashString("Prefix")
 )
 
 // GetPrefixKey is an example function to return items under the key PrefixKey
 // e.g. it would return Prefix00001 like in the comment above
-func GetPrefixKey(subPrefix string) []byte {
-	return AppendBytes(PrefixKey, []byte(subPrefix))
-}
+// func GetPrefixKey(subPrefix string) []byte {
+// 	return AppendBytes(PrefixKey, []byte(subPrefix))
+// }
 
 // Hashing string using cryptographic MD5 function
 // returns 128bit(16byte) value

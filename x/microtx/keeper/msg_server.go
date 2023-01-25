@@ -86,18 +86,13 @@ func (k Keeper) Xfer(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAdd
 // checkAndDeductSendToEthFees asserts that the minimum chainFee has been met for the given sendAmount
 func (k Keeper) DeductXferFee(ctx sdk.Context, sender sdk.AccAddress, sendAmounts sdk.Coins) (feeCollected sdk.Coins, err error) {
 	// Compute the minimum fees which must be paid
-	xferFeeBasisPoints := int64(0)
-	params, err := k.GetParamsIfSet(ctx)
-	if err == nil {
-		// The params have been set, get the min send to eth fee
-		xferFeeBasisPoints = int64(params.XferFeeBasisPoints)
+	xferFeeBasisPoints, err := k.GetXferFeeBasisPoints(ctx)
+	if err != nil {
+		xferFeeBasisPoints = 0
 	}
 	var xferFees sdk.Coins
 	for _, sendAmount := range sendAmounts {
-		xferFee := sdk.NewDecFromInt(sendAmount.Amount).
-			QuoInt64(int64(BasisPointDivisor)).
-			MulInt64(xferFeeBasisPoints).
-			TruncateInt()
+		xferFee := k.getXferFeeForAmount(sendAmount.Amount, xferFeeBasisPoints)
 		xferFeeCoin := sdk.NewCoin(sendAmount.Denom, xferFee)
 		xferFees = xferFees.Add(xferFeeCoin)
 	}
@@ -126,4 +121,12 @@ func (k Keeper) DeductXferFee(ctx sdk.Context, sender sdk.AccAddress, sendAmount
 	}
 
 	return xferFees, nil
+}
+
+// getXferFeeForAmount Computes the fee a user must pay for any input `amount`, given the current `basisPoints`
+func (k Keeper) getXferFeeForAmount(amount sdk.Int, basisPoints uint64) sdk.Int {
+	return sdk.NewDecFromInt(amount).
+		QuoInt64(int64(BasisPointDivisor)).
+		MulInt64(int64(basisPoints)).
+		TruncateInt()
 }

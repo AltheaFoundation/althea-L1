@@ -1,5 +1,5 @@
 /// Params struct
-#[derive(Clone, PartialEq, Eq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Params {
     /// The lockup module is engaged if locked is true (chain is "locked up")
     #[prost(bool, tag="1")]
@@ -12,7 +12,7 @@ pub struct Params {
     #[prost(string, repeated, tag="3")]
     pub locked_message_types: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
-#[derive(Clone, PartialEq, Eq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
     #[prost(message, optional, tag="1")]
     pub params: ::core::option::Option<Params>,
