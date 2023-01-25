@@ -1,18 +1,14 @@
 package cli
 
 import (
+	"strconv"
+
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/althea-net/althea-chain/x/microtx/types"
-)
-
-const (
-	FlagOrder     = "order"
-	FlagClaimType = "claim-type"
-	FlagNonce     = "nonce"
-	FlagEthHeight = "eth-height"
-	FlagUseV1Key  = "use-v1-key"
 )
 
 // GetQueryCmd bundles all the query subcmds together so they appear under `gravity query` or `gravity q`
@@ -26,36 +22,72 @@ func GetQueryCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 	microtxQueryCmd.AddCommand([]*cobra.Command{
-		// CmdQueryData(),
+		CmdQueryParams(),
+		CmdQueryXferFee(),
 	}...)
 
 	return microtxQueryCmd
 }
 
-// // CmdQueryData is an example CLI interface for users to query the data endpoint
-// func CmdQueryData() *cobra.Command {
-// 	// nolint: exhaustruct
-// 	cmd := &cobra.Command{
-// 		Use:   "data [arg0]",
-// 		Short: "Query data",
-// 		Args:  cobra.ExactArgs(1),
-// 		RunE: func(cmd *cobra.Command, args []string) error {
-// 			clientCtx, err := client.GetClientQueryContext(cmd)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			queryClient := types.NewQueryClient(clientCtx)
+// CmdQueryParams fetches the current microtx params
+func CmdQueryParams() *cobra.Command {
+	// nolint: exhaustruct
+	cmd := &cobra.Command{
+		Use:   "params",
+		Args:  cobra.NoArgs,
+		Short: "Query microtx params",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
 
-// 			req := &types.QueryData{Field: args[0]}
+			res, err := queryClient.Params(cmd.Context(), &types.QueryParamsRequest{})
+			if err != nil {
+				return err
+			}
 
-// 			res, err := queryClient.Data(cmd.Context(), req)
-// 			if err != nil {
-// 				return err
-// 			}
+			return clientCtx.PrintProto(&res.Params)
+		},
+	}
 
-// 			return clientCtx.PrintProto(res)
-// 		},
-// 	}
-// 	flags.AddQueryFlagsToCmd(cmd)
-// 	return cmd
-// }
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+// CmdQueryXferFee fetches the fee needed to Xfer a certain amount
+func CmdQueryXferFee() *cobra.Command {
+	// nolint: exhaustruct
+	cmd := &cobra.Command{
+		Use:   "xfer-fee amount",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query the fee needed to Xfer amount to another wallet",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			amount, err := strconv.ParseUint(args[0], 10, 64)
+			if err != nil {
+				return sdkerrors.Wrap(err, "invalid amount, expecting a nonnegative integer")
+			}
+
+			req := types.QueryXferFeeRequest{
+				Amount: amount,
+			}
+
+			res, err := queryClient.XferFee(cmd.Context(), &req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
