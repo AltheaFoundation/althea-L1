@@ -60,11 +60,18 @@ func NewKeeper(
 	return k
 }
 
+// GetParams will return the current Params
+// Note that if this function is called before the chain has been initalized, a
+// panic will occur. Use GetParamsIfSet instead e.g. in an AnteHandler which
+// may run for creating genesis transactions
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 	k.paramSpace.GetParamSet(ctx, &params)
 	return
 }
 
+// GetParamsIfSet will return the current params, but will return an error if the
+// chain is still initializing. By error checking this function is safe to use in
+// handling genesis transactions.
 func (k Keeper) GetParamsIfSet(ctx sdk.Context) (params types.Params, err error) {
 	for _, pair := range params.ParamSetPairs() {
 		if !k.paramSpace.Has(ctx, pair.Key) {
@@ -76,10 +83,21 @@ func (k Keeper) GetParamsIfSet(ctx sdk.Context) (params types.Params, err error)
 	return
 }
 
+// SetParams will store the given params after validating them
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if err := params.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "unable to store params with failing ValidateBasic()")
 	}
 	k.paramSpace.SetParamSet(ctx, &params)
 	return nil
+}
+
+// GetXferFeeBasisPoints will get the XferFeeBasisPoints, if the params have been set
+func (k Keeper) GetXferFeeBasisPoints(ctx sdk.Context) (uint64, error) {
+	params, err := k.GetParamsIfSet(ctx)
+	if err != nil {
+		// The params have been set, get the min send to eth fee
+		return 0, err
+	}
+	return params.XferFeeBasisPoints, nil
 }
