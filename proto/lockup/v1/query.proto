@@ -1,0 +1,20 @@
+syntax = "proto3";
+package lockup.v1;
+import "lockup/v1/genesis.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+option go_package = "github.com/althea-net/althea-chain/x/lockup/types";
+
+// Query defines the possible queries to make of the microtx module
+service Query {
+  // Query the current lockup params
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lockup/v1/params";
+  }
+}
+
+// Query the current microtx params
+message QueryParamsRequest {}
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false];
+}
