@@ -7,6 +7,9 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+
+	microtxtypes "github.com/althea-net/althea-chain/x/microtx/types"
 )
 
 // DefaultGenesisState creates a simple GenesisState suitible for testing
@@ -25,6 +28,17 @@ func DefaultParams() *Params {
 			sdk.MsgTypeURL(&banktypes.MsgSend{}),
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&banktypes.MsgMultiSend{}),
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&ibctransfertypes.MsgTransfer{}),
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&microtxtypes.MsgXfer{}),
+		},
+		// TODO: The authoritative way to get the native token of the chain is by calling
+		//   mintKeeper.GetParams(ctx).MintDenom, but the context is not available yet
+		//   Therefore it's critical to have a constant stored somewhere and assert its correctness
+		//	 in the first BeginBlock
+		LockedTokenDenoms: []string{
+			"ualtg",
 		},
 	}
 }
@@ -35,6 +49,9 @@ func (s GenesisState) ValidateBasic() error {
 	}
 	if err := ValidateLockedMessageTypes(s.Params.LockedMessageTypes); err != nil {
 		return sdkerrors.Wrap(err, "Invalid LockedMessageTypes GenesisState")
+	}
+	if err := ValidateLockedTokenDenoms(s.Params.LockedTokenDenoms); err != nil {
+		return sdkerrors.Wrap(err, "Invalid LockedTokenDenoms GenesisState")
 	}
 	return nil
 }
@@ -48,9 +65,12 @@ func ValidateLocked(i interface{}) error {
 }
 
 func ValidateLockExempt(i interface{}) error {
-	_, ok := i.([]string)
+	v, ok := i.([]string)
 	if !ok {
 		return fmt.Errorf("invalid lock exempt type: %T", i)
+	}
+	if len(v) == 0 {
+		return fmt.Errorf("no lock exempt addresses %v", v)
 	}
 	return nil
 }
@@ -62,6 +82,17 @@ func ValidateLockedMessageTypes(i interface{}) error {
 	}
 	if len(v) == 0 {
 		return fmt.Errorf("no locked message types %v", v)
+	}
+	return nil
+}
+
+func ValidateLockedTokenDenoms(i interface{}) error {
+	v, ok := i.([]string)
+	if !ok {
+		return fmt.Errorf("invalid locked token denoms type: %T", i)
+	}
+	if len(v) == 0 {
+		return fmt.Errorf("no locked token denoms %v", v)
 	}
 	return nil
 }
@@ -80,5 +111,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(LockedKey, &p.Locked, ValidateLocked),
 		paramtypes.NewParamSetPair(LockExemptKey, &p.LockExempt, ValidateLockExempt),
 		paramtypes.NewParamSetPair(LockedMessageTypesKey, &p.LockedMessageTypes, ValidateLockedMessageTypes),
+		paramtypes.NewParamSetPair(LockedTokenDenomsKey, &p.LockedTokenDenoms, ValidateLockedTokenDenoms),
 	}
 }

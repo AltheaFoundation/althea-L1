@@ -16,6 +16,8 @@ func TestValidation(t *testing.T) {
 	assert.Nil(t, err, "error produced from default lockExempt validation")
 	err = ValidateLockedMessageTypes(defaultGenesis.Params.LockedMessageTypes)
 	assert.Nil(t, err, "error produced from default lockedMessageTypes validation")
+	err = ValidateLockedTokenDenoms(defaultGenesis.Params.LockedTokenDenoms)
+	assert.Nil(t, err, "error produced from default lockedTokenDenoms validation")
 
 	// nolint: exhaustruct
 	badGenesis := GenesisState{Params: &Params{Locked: false}}
@@ -25,4 +27,6 @@ func TestValidation(t *testing.T) {
 	assert.NotNil(t, err, "nil locked did not produce an error in validation fn")
 	err = ValidateLockedMessageTypes(nil)
 	assert.NotNil(t, err, "badGenesis lockedMessageTypes did not produce an error in validation fn")
+	err = ValidateLockedTokenDenoms(nil)
+	assert.NotNil(t, err, "badGenesis lockedTokenDenoms did not produce an error in validation fn")
 }

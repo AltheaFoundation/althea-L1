@@ -21,8 +21,9 @@ use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
 
 /// These *_PARAM_KEY constants are defined in x/lockup/types/types.go and must match those values exactly
 pub const LOCKED_PARAM_KEY: &str = "locked";
-pub const LOCKED_MSG_TYPES_PARAM_KEY: &str = "lockedMessageTypes";
 pub const LOCK_EXEMPT_PARAM_KEY: &str = "lockExempt";
+pub const LOCKED_MSG_TYPES_PARAM_KEY: &str = "lockedMessageTypes";
+pub const LOCKED_TOKEN_DENOMS_PARAM_KEY: &str = "lockedTokenDenoms";
 
 /// Simulates the launch lockup process by setting the lockup module params via governance,
 /// attempting to transfer tokens a variety of ways, and finally clearing the lockup module params
@@ -148,11 +149,15 @@ pub fn create_lockup_param_changes(exempt_user: Address) -> Vec<ParamChange> {
         MSG_SEND_TYPE_URL.to_string(),
         MSG_MULTI_SEND_TYPE_URL.to_string(),
     ];
-    let mut locked_msg_types = lockup_param;
+    let mut locked_msg_types = lockup_param.clone();
     locked_msg_types.key = LOCKED_MSG_TYPES_PARAM_KEY.to_string();
     locked_msg_types.value = serde_json::to_string(&locked_msgs).unwrap();
 
-    vec![locked, lock_exempt, locked_msg_types]
+    let tokens = vec![STAKING_TOKEN.clone()];
+    let mut locked_tokens = lockup_param;
+    locked_tokens.key = LOCKED_TOKEN_DENOMS_PARAM_KEY.to_string();
+    locked_tokens.value = serde_json::to_string(&tokens).unwrap();
+    vec![locked, lock_exempt, locked_msg_types, locked_tokens]
 }
 
 pub async fn fail_to_send(

@@ -10,10 +10,13 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/althea-net/althea-chain/x/lockup/keeper"
 	"github.com/althea-net/althea-chain/x/lockup/types"
+	microtxtypes "github.com/althea-net/althea-chain/x/microtx/types"
 )
 
 func TestLockAnteHandler(t *testing.T) {
@@ -33,6 +36,7 @@ func TestLockAnteHandler(t *testing.T) {
 	// Lock the chain
 	keeper.SetChainLocked(ctx, true)
 	keeper.SetLockExemptAddresses(ctx, []string{"0x0000000000000000000000000000000000000000"})
+	keeper.SetLockedTokenDenoms(ctx, []string{"ualtg"})
 
 	AnteHandlerLockedHappy(t, handler, keeper, ctx, txCfg, txFct)
 	AnteHandlerLockedUnhappy(t, handler, keeper, ctx, txCfg, txFct)
@@ -69,7 +73,19 @@ func AnteHandlerLockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keeper
 	largeCtx, largeErr := handler(ctx, largeTx, false)
 	assert.Equal(t, ctx, largeCtx)
 	assert.Nil(t, largeErr)
-	t.Log("Successful large transaction")
+	t.Log("Successful good large transaction")
+
+	allowedMsgXferTx := GetAllowedMsgXferTx(keeper, ctx, txFct, txCfg)
+	allXferCtx, allXferErr := handler(ctx, allowedMsgXferTx, false)
+	assert.Equal(t, ctx, allXferCtx)
+	assert.Nil(t, allXferErr)
+	t.Log("Successful good MsgXfer")
+
+	allowedMsgTransferTx := GetAllowedMsgTransferTx(keeper, ctx, txFct, txCfg)
+	allTransCtx, allTransErr := handler(ctx, allowedMsgTransferTx, false)
+	assert.Equal(t, ctx, allTransCtx)
+	assert.Nil(t, allTransErr)
+	t.Log("Successful good MsgTransfer")
 }
 
 // Test failing messages on a locked chain
@@ -92,7 +108,19 @@ func AnteHandlerLockedUnhappy(t *testing.T, handler sdk.AnteHandler, keeper keep
 	unallLargeCtx, unallLargeErr := handler(ctx, unallowedLargeTx, false)
 	assert.Equal(t, ctx, unallLargeCtx)
 	assert.NotNil(t, unallLargeErr)
-	t.Log("Successful large bad Tx")
+	t.Log("Successful bad large Tx")
+
+	unallowedMsgXferTx := GetUnallowedMsgXferTx(keeper, ctx, txFct, txCfg)
+	unallXferCtx, unallXferErr := handler(ctx, unallowedMsgXferTx, false)
+	assert.Equal(t, ctx, unallXferCtx)
+	assert.NotNil(t, unallXferErr)
+	t.Log("Successful bad MsgXfer")
+
+	unallowedMsgTransferTx := GetUnallowedMsgTransferTx(keeper, ctx, txFct, txCfg)
+	unallTransCtx, unallTransErr := handler(ctx, unallowedMsgTransferTx, false)
+	assert.Equal(t, ctx, unallTransCtx)
+	assert.NotNil(t, unallTransErr)
+	t.Log("Successful bad MsgTransfer")
 }
 
 // nolint: dupl
@@ -122,6 +150,18 @@ func AnteHandlerUnlockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keep
 	assert.Equal(t, ctx, largeCtx)
 	assert.Nil(t, largeErr)
 	t.Log("Successful large bad Tx")
+
+	unallowedMsgXferTx := GetUnallowedMsgXferTx(keeper, ctx, txFct, txCfg)
+	unallXferCtx, unallXferErr := handler(ctx, unallowedMsgXferTx, false)
+	assert.Equal(t, ctx, unallXferCtx)
+	assert.Nil(t, unallXferErr)
+	t.Log("Successful bad MsgXfer")
+
+	unallowedMsgTransferTx := GetUnallowedMsgTransferTx(keeper, ctx, txFct, txCfg)
+	unallTransCtx, unallTransErr := handler(ctx, unallowedMsgTransferTx, false)
+	assert.Equal(t, ctx, unallTransCtx)
+	assert.Nil(t, unallTransErr)
+	t.Log("Successful bad MsgTransfer")
 }
 
 func GetAllowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
@@ -137,11 +177,10 @@ func GetAllowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory
 func GetAllowedMsgSend(keeper keeper.Keeper, ctx sdk.Context) banktypes.MsgSend {
 	// nolint: goconst
 	fromAddr := "0x0000000000000000000000000000000000000000"
-	// The following check has been removed pending ExemptSet decisions
-	// exemptSet := keeper.GetLockExemptAddressesSet(ctx)
-	// if _, ok := exemptSet[fromAddr]; !ok {
-	// 	panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
-	// }
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; !ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
+	}
 	// nolint: goconst
 	toAddr := "0x1111111111111111111111111111111111111111"
 	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
@@ -172,11 +211,10 @@ func GetAllowedMultiSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Facto
 
 func GetAllowedMultiSendMsg(keeper keeper.Keeper, ctx sdk.Context) banktypes.MsgMultiSend {
 	fromAddr := "0x0000000000000000000000000000000000000000"
-	// The following check has been removed pending ExemptSet decisions
-	// exemptSet := keeper.GetLockExemptAddressesSet(ctx)
-	// if _, ok := exemptSet[fromAddr]; !ok {
-	// 	panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
-	// }
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; !ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
+	}
 	toAddr := "0x1111111111111111111111111111111111111111"
 	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
 	inputs := []banktypes.Input{{Address: fromAddr, Coins: amount}}
@@ -204,13 +242,68 @@ func GetUnimportantMsg() stakingtypes.MsgCreateValidator {
 	}
 }
 
+func GetAllowedMsgTransferTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
+	msgTransfer := GetAllowedMsgTransfer(keeper, ctx)
+	txBld, err := tx.BuildUnsignedTx(txFct, &msgTransfer)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgTransfer, err))
+	}
+
+	return txBld.GetTx()
+}
+
+func GetAllowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfertypes.MsgTransfer {
+	fromAddr := "0x0000000000000000000000000000000000000000"
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; !ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
+	}
+	// nolint: goconst
+	toAddr := "0x1111111111111111111111111111111111111111"
+	amount := sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000))
+	return ibctransfertypes.MsgTransfer{
+		SourcePort:       "transfer",
+		SourceChannel:    "channel-5",
+		Token:            amount,
+		Sender:           fromAddr,
+		Receiver:         toAddr,
+		TimeoutHeight:    ibcclienttypes.Height{},
+		TimeoutTimestamp: 0, // We don't care about timestamp as it's generally avoided
+	}
+}
+
+func GetAllowedMsgXferTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
+	msgXfer := GetAllowedMsgXfer(keeper, ctx)
+	txBld, err := tx.BuildUnsignedTx(txFct, &msgXfer)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgXfer, err))
+	}
+
+	return txBld.GetTx()
+}
+
+func GetAllowedMsgXfer(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.MsgXfer {
+	fromAddr := "0x0000000000000000000000000000000000000000"
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; !ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
+	}
+	// nolint: goconst
+	toAddr := "0x1111111111111111111111111111111111111111"
+	amounts := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
+	return microtxtypes.MsgXfer{
+		Sender:   fromAddr,
+		Receiver: toAddr,
+		Amounts:  amounts,
+	}
+}
+
 func GetUnallowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	fromAddr := "0x1111111111111111111111111111111111111111"
-	// The following check has been removed pending ExemptSet decisions
-	// exemptSet := keeper.GetLockExemptAddressesSet(ctx)
-	// if _, ok := exemptSet[fromAddr]; ok {
-	// 	panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
-	// }
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
+	}
 	toAddr := "0x0000000000000000000000000000000000000000"
 	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
 	msgSend := banktypes.MsgSend{FromAddress: fromAddr, ToAddress: toAddr, Amount: amount}
@@ -234,11 +327,10 @@ func GetUnallowedMultiSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Fac
 
 func GetUnallowedMultiSendMsg(keeper keeper.Keeper, ctx sdk.Context) banktypes.MsgMultiSend {
 	fromAddr := "0x1111111111111111111111111111111111111111"
-	// The following check has been removed pending ExemptSet decisions
-	// exemptSet := keeper.GetLockExemptAddressesSet(ctx)
-	// if _, ok := exemptSet[fromAddr]; ok {
-	// 	panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
-	// }
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
+	}
 	toAddr := "0x0000000000000000000000000000000000000000"
 	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
 	inputs := []banktypes.Input{{Address: fromAddr, Coins: amount}}
@@ -257,4 +349,60 @@ func GetUnallowedLargeTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory
 	}
 
 	return txBld.GetTx()
+}
+
+func GetUnallowedMsgTransferTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
+	msgTransfer := GetUnallowedMsgTransfer(keeper, ctx)
+	txBld, err := tx.BuildUnsignedTx(txFct, &msgTransfer)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgTransfer, err))
+	}
+
+	return txBld.GetTx()
+}
+
+func GetUnallowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfertypes.MsgTransfer {
+	fromAddr := "0x1111111111111111111111111111111111111111"
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
+	}
+	// nolint: goconst
+	toAddr := "0x0000000000000000000000000000000000000000"
+	amount := sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000))
+	return ibctransfertypes.MsgTransfer{
+		SourcePort:       "transfer",
+		SourceChannel:    "channel-5",
+		Token:            amount,
+		Sender:           fromAddr,
+		Receiver:         toAddr,
+		TimeoutHeight:    ibcclienttypes.Height{},
+		TimeoutTimestamp: 0, // We don't care about timestamp as it's generally avoided
+	}
+}
+
+func GetUnallowedMsgXferTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
+	msgXfer := GetUnallowedMsgXfer(keeper, ctx)
+	txBld, err := tx.BuildUnsignedTx(txFct, &msgXfer)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgXfer, err))
+	}
+
+	return txBld.GetTx()
+}
+
+func GetUnallowedMsgXfer(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.MsgXfer {
+	fromAddr := "0x1111111111111111111111111111111111111111"
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
+	}
+	// nolint: goconst
+	toAddr := "0x0000000000000000000000000000000000000000"
+	amounts := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
+	return microtxtypes.MsgXfer{
+		Sender:   fromAddr,
+		Receiver: toAddr,
+		Amounts:  amounts,
+	}
 }

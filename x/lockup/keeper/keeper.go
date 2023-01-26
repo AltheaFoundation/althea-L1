@@ -3,6 +3,7 @@ package keeper
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/althea-net/althea-chain/x/lockup/types"
@@ -29,6 +30,20 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey sdk.StoreKey, paramSpace paramsty
 	return k
 }
 
+// GetParamsIfSet will return the current params, but will return an error if the
+// chain is still initializing. By error checking this function is safe to use in
+// handling genesis transactions.
+func (k Keeper) GetParamsIfSet(ctx sdk.Context) (params types.Params, err error) {
+	for _, pair := range params.ParamSetPairs() {
+		if !k.paramSpace.Has(ctx, pair.Key) {
+			return types.Params{}, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "the param key %s has not been set", string(pair.Key))
+		}
+		k.paramSpace.Get(ctx, pair.Key, pair.Value)
+	}
+
+	return
+}
+
 // TODO: Doc all these methods
 func (k Keeper) GetChainLocked(ctx sdk.Context) bool {
 	locked := types.DefaultParams().Locked
@@ -48,6 +63,16 @@ func (k Keeper) GetLockExemptAddresses(ctx sdk.Context) []string {
 
 func (k Keeper) GetLockExemptAddressesSet(ctx sdk.Context) map[string]struct{} {
 	return createSet(k.GetLockExemptAddresses(ctx))
+}
+
+func (k Keeper) GetLockedTokenDenoms(ctx sdk.Context) []string {
+	lockedTokenDenoms := types.DefaultParams().LockedTokenDenoms
+	k.paramSpace.GetIfExists(ctx, types.LockedTokenDenomsKey, &lockedTokenDenoms)
+	return lockedTokenDenoms
+}
+
+func (k Keeper) GetLockedTokenDenomsSet(ctx sdk.Context) map[string]struct{} {
+	return createSet(k.GetLockedTokenDenoms(ctx))
 }
 
 // TODO: It would be nice to just store the pseudo-set instead of the string array
@@ -70,6 +95,10 @@ func (k Keeper) GetLockedMessageTypesSet(ctx sdk.Context) map[string]struct{} {
 
 func (k Keeper) SetLockedMessageTypes(ctx sdk.Context, lockedMessageTypes []string) {
 	k.paramSpace.Set(ctx, types.LockedMessageTypesKey, &lockedMessageTypes)
+}
+
+func (k Keeper) SetLockedTokenDenoms(ctx sdk.Context, lockedTokenDenoms []string) {
+	k.paramSpace.Set(ctx, types.LockedTokenDenomsKey, &lockedTokenDenoms)
 }
 
 func createSet(strings []string) map[string]struct{} {
