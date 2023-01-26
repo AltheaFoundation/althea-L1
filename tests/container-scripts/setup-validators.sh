@@ -55,17 +55,17 @@ done
 
 for i in $(seq 1 $NODES);
 do
-cp /genesis.json /validator$i/config/genesis.json
-GAIA_HOME="--home /validator$i"
-ARGS="$GAIA_HOME --keyring-backend test"
-# the /8 containing 7.7.7.7 is assigned to the DOD and never routable on the public internet
-# we're using it in private to prevent gaia from blacklisting it as unroutable
-# and allow local pex
-$BIN gentx $ARGS $GAIA_HOME --moniker validator$i --chain-id=$CHAIN_ID --ip 7.7.7.$i validator$i 500000000ualtg
-# obviously we don't need to copy validator1's gentx to itself
-if [ $i -gt 1 ]; then
-cp /validator$i/config/gentx/* /validator1/config/gentx/
-fi
+    cp /genesis.json /validator$i/config/genesis.json
+    GAIA_HOME="--home /validator$i"
+    ARGS="$GAIA_HOME --keyring-backend test"
+    # the /8 containing 7.7.7.7 is assigned to the DOD and never routable on the public internet
+    # we're using it in private to prevent gaia from blacklisting it as unroutable
+    # and allow local pex
+    $BIN gentx $ARGS $GAIA_HOME --moniker validator$i --chain-id=$CHAIN_ID --ip 7.7.7.$i validator$i 500000000ualtg
+    # obviously we don't need to copy validator1's gentx to itself
+    if [ $i -gt 1 ]; then
+        cp /validator$i/config/gentx/* /validator1/config/gentx/
+    fi
 done
 
 
@@ -77,5 +77,5 @@ echo "Collected $GENTXS gentx"
 # put the now final genesis.json into the correct folders
 for i in $(seq 1 $NODES);
 do
-cp /genesis.json /validator$i/config/genesis.json
+    cp /genesis.json /validator$i/config/genesis.json
 done
