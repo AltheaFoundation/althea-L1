@@ -1,5 +1,5 @@
 //! Protobuf source files are in the althea-chain repo, this binary copyies the result to the althea_proto crate
-//! for import and use. While this builder generates about a dozen files only one contains all the gravity
+//! for import and use. While this builder generates about a dozen files only one contains all the module
 //! proto info and the rest are discarded in favor of upstream cosmos-sdk-proto
 
 // Building new Althea rust proto definitions

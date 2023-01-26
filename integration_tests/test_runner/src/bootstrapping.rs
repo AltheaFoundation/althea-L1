@@ -38,7 +38,7 @@ fn parse_phrases(filename: &str) -> (Vec<CosmosPrivateKey>, Vec<String>) {
     (ret_keys, ret_phrases)
 }
 
-/// Validator private keys are generated via the gravity key add
+/// Validator private keys are generated via the althea keys add
 /// command, from there they are used to create gentx's and start the
 /// chain, these keys change every time the container is restarted.
 /// The mnemonic phrases are dumped into a text file /validator-phrases
@@ -72,24 +72,24 @@ pub fn get_keys() -> Vec<ValidatorKeys> {
 }
 
 // Creates a key in the relayer's test keyring, which the relayer should use
-// Hermes stores its keys in hermes_home/ gravity_phrase is for the main chain
+// Hermes stores its keys in hermes_home/ althea_phrase is for the main chain
 /// ibc phrase is for the test chain
 pub fn setup_relayer_keys(
-    gravity_phrase: &str,
+    althea_phrase: &str,
     ibc_phrase: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(
         Store::Test,
-        "gravity",
+        "althea",
         &ChainId::from_string(&get_chain_id()),
     )?;
 
     let key = keyring.key_from_mnemonic(
-        gravity_phrase,
+        althea_phrase,
         &HDPath::from_str(DEFAULT_COSMOS_HD_PATH).unwrap(),
         &AddressType::Cosmos,
     )?;
-    keyring.add_key("gravitykey", key)?;
+    keyring.add_key("altheakey", key)?;
 
     keyring = KeyRing::new(
         Store::Test,
@@ -106,10 +106,10 @@ pub fn setup_relayer_keys(
     Ok(())
 }
 
-// Create a channel between gravity chain and the ibc test chain over the "transfer" port
+// Create a channel between althea chain and the ibc test chain over the "transfer" port
 // Writes the output to /ibc-relayer-logs/channel-creation
 pub fn create_ibc_channel(hermes_base: &mut Command) {
-    // hermes -c config.toml create channel gravity-test-1 ibc-test-1 --port-a transfer --port-b transfer
+    // hermes -c config.toml create channel althea-test-1 ibc-test-1 --port-a transfer --port-b transfer
     let create_channel = hermes_base.args([
         "create",
         "channel",

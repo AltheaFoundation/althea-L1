@@ -11,7 +11,7 @@ import (
 // Enforce via type assertion that the Keeper functions as a query server
 var _ types.QueryServer = Keeper{}
 
-// Params queries the params of the gravity module
+// Params queries the params of the microtx module
 func (k Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	p, err := k.GetParamsIfSet(sdk.UnwrapSDKContext(c))
 	if err != nil {

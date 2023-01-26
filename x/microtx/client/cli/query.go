@@ -11,12 +11,12 @@ import (
 	"github.com/althea-net/althea-chain/x/microtx/types"
 )
 
-// GetQueryCmd bundles all the query subcmds together so they appear under `gravity query` or `gravity q`
+// GetQueryCmd bundles all the query subcmds together so they appear under the `query` or `q` subcommand
 func GetQueryCmd() *cobra.Command {
 	// nolint: exhaustruct
 	microtxQueryCmd := &cobra.Command{
 		Use:                        types.ModuleName,
-		Short:                      "Querying commands for the gravity module",
+		Short:                      "Querying commands for the microtx module",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,

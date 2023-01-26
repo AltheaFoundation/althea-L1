@@ -458,7 +458,7 @@ func NewAltheaApp(
 	)
 	app.ibcTransferKeeper = &ibcTransferKeeper
 
-	// Add the staking hooks from distribution, slashing, and gravity to staking
+	// Connect the inter-module hooks together
 	stakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
 			distrKeeper.Hooks(),
@@ -855,14 +855,14 @@ func (app *AltheaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.API
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	ModuleBasics.RegisterRESTRoutes(clientCtx, apiSvr.Router)
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
-	// TODO: build the custom gravity swagger files and add here?
+	// TODO: build the custom swagger files and add here?
 	if apiConfig.Swagger {
 		RegisterSwaggerAPI(clientCtx, apiSvr.Router)
 	}
 }
 
 // RegisterSwaggerAPI registers swagger route with API Server
-// TODO: build the custom gravity swagger files and add here?
+// TODO: build the custom swagger files and add here?
 func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router) {
 	statikFS, err := fs.New()
 	if err != nil {

@@ -33,7 +33,7 @@ func (k Keeper) ValidateMembers() {
 	}
 }
 
-// NewKeeper returns a new instance of the gravity keeper
+// NewKeeper returns a new instance of the microtx keeper
 func NewKeeper(
 	storeKey sdk.StoreKey,
 	paramSpace paramtypes.Subspace,

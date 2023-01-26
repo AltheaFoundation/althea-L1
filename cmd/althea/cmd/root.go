@@ -67,7 +67,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	return rootCmd, encodingConfig
 }
 
-// initAppConfig defines the default configuration for a gravity instance. These defaults can be overridden via an
+// initAppConfig defines the default configuration. These defaults can be overridden via an
 // app.toml file or with flags provided on the command line
 func initAppConfig() (string, interface{}) {
 	type AltheaAppConfig struct {
