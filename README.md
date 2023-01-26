@@ -38,25 +38,3 @@ Join us on [Discord](https://discord.com/invite/vw8twzR) or [Matrix](https://rio
 make
 make test
 ```
-
-## Updating the Gravity dependency
-
-Note that you must use a git tag for releases to downstream chains, as this will produce the required binaries for the Gravity test suite
-
-because go get does not have vendoring you will have to use the git hash not the tag
-
-```
-go get github.com/althea-net/cosmos-gravity-bridge/module@<git commit hash of tag>
-go mod tidy
-```
-
-then open `tests/dockerfile/Dockerfile` and update the git tag of the dependencies
-
-## Running the all up test suite
-
-This suite runs the full gravity set of tests against this chain
-
-```
-bash tests/build-container.sh
-bash tests/all-up-test.sh
-```

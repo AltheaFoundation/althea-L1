@@ -10,7 +10,7 @@ import (
 	"github.com/althea-net/althea-chain/x/microtx/types"
 )
 
-// NewHandler returns a handler for "Gravity" type messages.
+// NewHandler returns a handler for "microtx" type messages.
 func NewHandler(k keeper.Keeper) sdk.Handler {
 	msgServer := keeper.NewMsgServerImpl(k)
 

@@ -1,8 +1,6 @@
-//! this crate, namely runs all up integration tests of the Gravity code against
-//! several scenarios, happy path and non happy path. This is essentially meant
-//! to be executed in our specific CI docker container and nowhere else. If you
-//! find some function useful pull it up into the more general gravity_utils or the like
-
+//! This crate runs the tests defined in the src/tests library crate. The bin and lib are separate
+//! so that upgrades can be tested via a git dependency, using the old tag
+//! as the commit and the current code as the new version.
 #[macro_use]
 extern crate log;
 

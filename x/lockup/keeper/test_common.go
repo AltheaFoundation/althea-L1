@@ -87,7 +87,7 @@ var (
 	}
 )
 
-// CreateTestEnv creates the keeper testing environment for gravity
+// CreateTestEnv creates the keeper testing environment for lockup
 func CreateTestEnv(t *testing.T) TestInput {
 	t.Helper()
 
@@ -208,8 +208,6 @@ func CreateTestEnv(t *testing.T) TestInput {
 	router.AddRoute(staking.AppModule{}.Route())
 	// nolint: exhaustruct
 	router.AddRoute(distribution.AppModule{}.Route())
-
-	// Load default wasm config
 
 	govRouter := govtypes.NewRouter().
 		AddRoute(paramsproposal.RouterKey, params.NewParamChangeProposalHandler(paramsKeeper)).

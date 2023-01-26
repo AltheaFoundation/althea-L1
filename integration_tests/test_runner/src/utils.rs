@@ -40,8 +40,8 @@ pub const STAKE_SUPPLY_PER_VALIDATOR: u128 = 1000000000;
 pub const STARTING_STAKE_PER_VALIDATOR: u128 = STAKE_SUPPLY_PER_VALIDATOR / 2;
 // Retrieve values from runtime ENV vars
 lazy_static! {
-    // GRAVITY CHAIN CONSTANTS
-    // These constants all apply to the gravity instance running (gravity-test-1)
+    // ALTHEA CHAIN CONSTANTS
+    // These constants all apply to the althea instance running (althea-test-1)
     pub static ref ADDRESS_PREFIX: String =
         env::var("ADDRESS_PREFIX").unwrap_or_else(|_| "althea".to_string());
     pub static ref STAKING_TOKEN: String =
@@ -97,7 +97,7 @@ pub fn get_test_token_name() -> String {
     "footoken".to_string()
 }
 
-/// Returns the chain-id of the gravity instance running, see GRAVITY CHAIN CONSTANTS above
+/// Returns the chain-id of the althea instance running, see ALTHEA CHAIN CONSTANTS above
 pub fn get_chain_id() -> String {
     "althea-test-1".to_string()
 }
@@ -162,7 +162,7 @@ pub fn get_coins(denom: &str, balances: &[Coin]) -> Option<Coin> {
 pub const HIGH_GAS_PRICE: u64 = 1_000_000_000u64;
 
 // Generates a new BridgeUserKey through randomly generated secrets
-// cosmos_prefix allows for generation of a cosmos_address with a different prefix than "gravity"
+// cosmos_prefix allows for generation of a cosmos_address with a different prefix than "althea"
 pub fn get_user_key(cosmos_prefix: Option<&str>) -> CosmosUser {
     *bulk_get_user_keys(cosmos_prefix, 1).get(0).unwrap()
 }
@@ -195,7 +195,7 @@ pub struct CosmosUser {
 }
 
 // Generates a new EthermintUserKey through a randomly generated secret
-// cosmos_prefix allows for generation of a cosmos_address with a different prefix than "gravity"
+// cosmos_prefix allows for generation of a cosmos_address with a different prefix than "althea"
 pub fn get_ethermint_key(cosmos_prefix: Option<&str>) -> EthermintUserKey {
     let cosmos_prefix = cosmos_prefix.unwrap_or(ADDRESS_PREFIX.as_str());
 

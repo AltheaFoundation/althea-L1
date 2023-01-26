@@ -12,5 +12,5 @@ var (
 	ErrLocked = sdkerrors.Register(RootCodespace, 1, "chain locked")
 	// ErrUnhandled the message type to be locked does not yet have logic
 	// specified for how to check it should be blocked
-	ErrUnhandled = sdkerrors.Register(RootCodespace, 2, "chain locked")
+	ErrUnhandled = sdkerrors.Register(RootCodespace, 2, "unhandled")
 )
