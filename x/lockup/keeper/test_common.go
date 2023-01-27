@@ -54,7 +54,7 @@ type TestInput struct {
 	ParamsKeeper paramskeeper.Keeper
 	LockupKeeper Keeper
 	Context      sdk.Context
-	Marshaler    codec.Marshaler
+	Codec        codec.Codec
 	LegacyAmino  *codec.LegacyAmino
 }
 
@@ -115,15 +115,16 @@ func CreateTestEnv(t *testing.T) TestInput {
 	require.Nil(t, err)
 
 	// Create sdk.Context
+	// nolint: exhaustruct
 	ctx := sdk.NewContext(ms, tmproto.Header{
 		Height: 1234567,
 		Time:   time.Date(2020, time.April, 22, 12, 0, 0, 0, time.UTC),
 	}, false, log.TestingLogger())
 
-	cdc := MakeTestCodec()
-	marshaler := MakeTestMarshaler()
+	legacyAmino := MakeTestCodec()
+	protoCodec := MakeTestMarshaler()
 
-	paramsKeeper := paramskeeper.NewKeeper(marshaler, cdc, keyParams, tkeyParams)
+	paramsKeeper := paramskeeper.NewKeeper(protoCodec, legacyAmino, keyParams, tkeyParams)
 	paramsKeeper.Subspace(authtypes.ModuleName)
 	paramsKeeper.Subspace(banktypes.ModuleName)
 	paramsKeeper.Subspace(stakingtypes.ModuleName)
@@ -143,7 +144,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 	}
 
 	accountKeeper := authkeeper.NewAccountKeeper(
-		marshaler,
+		protoCodec,
 		keyAcc, // target store
 		getSubspace(paramsKeeper, authtypes.ModuleName),
 		authtypes.ProtoBaseAccount, // prototype
@@ -155,37 +156,42 @@ func CreateTestEnv(t *testing.T) TestInput {
 		blockedAddr[authtypes.NewModuleAddress(acc).String()] = true
 	}
 	bankKeeper := bankkeeper.NewBaseKeeper(
-		marshaler,
+		protoCodec,
 		keyBank,
 		accountKeeper,
 		getSubspace(paramsKeeper, banktypes.ModuleName),
 		blockedAddr,
 	)
 
+	// nolint: exhaustruct
 	bankKeeper.SetParams(ctx, banktypes.Params{DefaultSendEnabled: true})
 
-	stakingKeeper := stakingkeeper.NewKeeper(marshaler, keyStaking, accountKeeper, bankKeeper, getSubspace(paramsKeeper, stakingtypes.ModuleName))
+	stakingKeeper := stakingkeeper.NewKeeper(protoCodec, keyStaking, accountKeeper, bankKeeper, getSubspace(paramsKeeper, stakingtypes.ModuleName))
 	stakingKeeper.SetParams(ctx, TestingStakeParams)
 
-	distKeeper := distrkeeper.NewKeeper(marshaler, keyDistro, getSubspace(paramsKeeper, distrtypes.ModuleName), accountKeeper, bankKeeper, stakingKeeper, authtypes.FeeCollectorName, nil)
+	distKeeper := distrkeeper.NewKeeper(protoCodec, keyDistro, getSubspace(paramsKeeper, distrtypes.ModuleName), accountKeeper, bankKeeper, stakingKeeper, authtypes.FeeCollectorName, nil)
 	distKeeper.SetParams(ctx, distrtypes.DefaultParams())
 
 	// set genesis items required for distribution
 	distKeeper.SetFeePool(ctx, distrtypes.InitialFeePool())
 
-	// total supply to track this
-	totalSupply := sdk.NewCoins(sdk.NewInt64Coin("ualtg", 100000000))
-	bankKeeper.SetSupply(ctx, banktypes.NewSupply(totalSupply))
-
 	// set up initial accounts
 	for name, perms := range maccPerms {
 		mod := authtypes.NewEmptyModuleAccount(name, perms...)
-		if name == stakingtypes.NotBondedPoolName {
-			err = bankKeeper.SetBalances(ctx, mod.GetAddress(), totalSupply)
-			require.NoError(t, err)
-		} else if name == distrtypes.ModuleName {
+		if name == distrtypes.ModuleName {
 			// some big pot to pay out
-			err = bankKeeper.SetBalances(ctx, mod.GetAddress(), sdk.NewCoins(sdk.NewInt64Coin("stake", 500000)))
+			amt := sdk.NewCoins(sdk.NewInt64Coin("ualtg", 500000))
+			err = bankKeeper.MintCoins(ctx, types.ModuleName, amt)
+			require.NoError(t, err)
+			err = bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, mod.Name, amt)
+
+			// distribution module balance must be outstanding rewards + community pool in order to pass
+			// invariants checks, therefore we must add any amount we add to the module balance to the fee pool
+			feePool := distKeeper.GetFeePool(ctx)
+			newCoins := feePool.CommunityPool.Add(sdk.NewDecCoinsFromCoins(amt...)...)
+			feePool.CommunityPool = newCoins
+			distKeeper.SetFeePool(ctx, feePool)
+
 			require.NoError(t, err)
 		}
 		accountKeeper.SetModuleAccount(ctx, mod)
@@ -196,8 +202,11 @@ func CreateTestEnv(t *testing.T) TestInput {
 	require.NotNil(t, moduleAcct)
 
 	router := baseapp.NewRouter()
+	// nolint: exhaustruct
 	router.AddRoute(bank.AppModule{}.Route())
+	// nolint: exhaustruct
 	router.AddRoute(staking.AppModule{}.Route())
+	// nolint: exhaustruct
 	router.AddRoute(distribution.AppModule{}.Route())
 
 	// Load default wasm config
@@ -207,14 +216,14 @@ func CreateTestEnv(t *testing.T) TestInput {
 		AddRoute(govtypes.RouterKey, govtypes.ProposalHandler)
 
 	govKeeper := govkeeper.NewKeeper(
-		marshaler, keyGov, getSubspace(paramsKeeper, govtypes.ModuleName).WithKeyTable(govtypes.ParamKeyTable()), accountKeeper, bankKeeper, stakingKeeper, govRouter,
+		protoCodec, keyGov, getSubspace(paramsKeeper, govtypes.ModuleName).WithKeyTable(govtypes.ParamKeyTable()), accountKeeper, bankKeeper, stakingKeeper, govRouter,
 	)
 
 	govKeeper.SetProposalID(ctx, govtypes.DefaultStartingProposalID)
 	govKeeper.SetDepositParams(ctx, govtypes.DefaultDepositParams())
 	govKeeper.SetVotingParams(ctx, govtypes.DefaultVotingParams())
 	govKeeper.SetTallyParams(ctx, govtypes.DefaultTallyParams())
-	k := NewKeeper(marshaler, lockupKey, getSubspace(paramsKeeper, types.ModuleName))
+	k := NewKeeper(protoCodec, lockupKey, getSubspace(paramsKeeper, types.ModuleName))
 
 	InitGenesis(ctx, k, *types.DefaultGenesisState())
 
@@ -222,8 +231,8 @@ func CreateTestEnv(t *testing.T) TestInput {
 		ParamsKeeper: paramsKeeper,
 		LockupKeeper: k,
 		Context:      ctx,
-		Marshaler:    marshaler,
-		LegacyAmino:  cdc,
+		Codec:        protoCodec,
+		LegacyAmino:  legacyAmino,
 	}
 }
 

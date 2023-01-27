@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -17,13 +18,13 @@ func DefaultGenesisState() *GenesisState {
 
 func DefaultParams() *Params {
 	return &Params{
-		Locked: false,
-		LockExempt: []string{
-			"0x0000000000000000000000000000000000000000",
-		},
+		Locked:     false,
+		LockExempt: []string{},
 		LockedMessageTypes: []string{
-			banktypes.TypeMsgSend,
-			banktypes.TypeMsgMultiSend,
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&banktypes.MsgSend{}),
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&banktypes.MsgMultiSend{}),
 		},
 	}
 }
@@ -47,12 +48,9 @@ func ValidateLocked(i interface{}) error {
 }
 
 func ValidateLockExempt(i interface{}) error {
-	v, ok := i.([]string)
+	_, ok := i.([]string)
 	if !ok {
 		return fmt.Errorf("invalid lock exempt type: %T", i)
-	}
-	if len(v) == 0 {
-		return fmt.Errorf("no lock exempt addresses")
 	}
 	return nil
 }
@@ -70,7 +68,11 @@ func ValidateLockedMessageTypes(i interface{}) error {
 
 // ParamKeyTable for auth module
 func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
+	return paramtypes.NewKeyTable().RegisterParamSet(&Params{
+		Locked:             false,
+		LockExempt:         []string{},
+		LockedMessageTypes: []string{},
+	})
 }
 
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {

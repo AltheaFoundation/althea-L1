@@ -16,10 +16,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	cfg "github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/crypto"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	gravitytypes "github.com/althea-net/cosmos-gravity-bridge/module/x/gravity/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -43,17 +43,17 @@ func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalI
 	fsCreateValidator, defaultsDesc := cli.CreateValidatorMsgFlagSet(ipDefault)
 
 	cmd := &cobra.Command{
-		Use:   "gentx [key_name] [amount] [eth-address] [orchestrator-address]",
-		Short: "Generate a genesis tx carrying a self delegation, oracle key delegation and orchestrator key delegation",
-		Args:  cobra.ExactArgs(4),
-		Long: fmt.Sprintf(`Generate a genesis transaction that creates a validator with a self-delegation, oracle key 
-delegation and orchestrator key delegation that is signed by the key in the Keyring referenced by a given name. A node 
+		Use:   "gentx [key_name] [amount]",
+		Short: "Generate a genesis tx carrying a self delegation for the given amount",
+		Args:  cobra.ExactArgs(2),
+		Long: fmt.Sprintf(`Generate a genesis transaction that creates a validator with a self-delegation
+that is signed by the key in the Keyring referenced by a given name. A node
 ID and Bech32 consensus pubkey may optionally be provided. If they are omitted, they will be retrieved from the 
 priv_validator.json file. The following default parameters are included:
     %s
 
 Example:
-$ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 cosmos1ahx7f8wyertuus9r20284ej0asrs085case3kn --home=/path/to/home/dir --keyring-backend=os --chain-id=test-chain-1 \
+$ %s gentx my-key-name 1000000ualtg --home=/path/to/home/dir --keyring-backend=os --chain-id=althea-1 \
     --moniker="myvalidator" \
     --commission-max-change-rate=0.01 \
     --commission-max-rate=1.0 \
@@ -69,24 +69,39 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 			if err != nil {
 				return err
 			}
-			cdc := clientCtx.JSONMarshaler
+			cdc := clientCtx.Codec
 
 			config := serverCtx.Config
-			config.SetRoot(clientCtx.HomeDir)
+			homeFlag, errHomeFlag := cmd.Flags().GetString(flags.FlagHome)
+			if errHomeFlag != nil {
+				fmt.Printf("errHomeFlag %v", errHomeFlag)
+			}
 
+			if len(homeFlag) > 0 {
+				config = config.SetRoot(homeFlag)
+			} else {
+				config = config.SetRoot(clientCtx.HomeDir)
+			}
 			nodeID, valPubKey, err := genutil.InitializeNodeValidatorFiles(serverCtx.Config)
 			if err != nil {
 				return errors.Wrap(err, "failed to initialize node validator files")
 			}
 
 			// read --nodeID, if empty take it from priv_validator.json
-			if nodeIDString, _ := cmd.Flags().GetString(cli.FlagNodeID); nodeIDString != "" {
+			if nodeIDString, errNodeIDString := cmd.Flags().GetString(cli.FlagNodeID); nodeIDString != "" {
+				if errNodeIDString != nil {
+					fmt.Printf("errNodeIDString %v", errNodeIDString)
+				}
 				nodeID = nodeIDString
 			}
 
 			// read --pubkey, if empty take it from priv_validator.json
-			if valPubKeyString, _ := cmd.Flags().GetString(cli.FlagPubKey); valPubKeyString != "" {
-				valPubKey, err = sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeConsPub, valPubKeyString)
+			if valPubKeyString, errValPubKeyString := cmd.Flags().GetString(cli.FlagPubKey); valPubKeyString != "" {
+				if errValPubKeyString != nil {
+					fmt.Printf("errValPubKeyString %v", errValPubKeyString)
+				}
+				var valPubKey crypto.PubKey
+				err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(valPubKeyString), &valPubKey)
 				if err != nil {
 					return errors.Wrap(err, "failed to get consensus node public key")
 				}
@@ -114,19 +129,11 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 				return errors.Wrapf(err, "failed to fetch '%s' from the keyring", name)
 			}
 
-			ethAddress := args[2]
-
-			if err := gravitytypes.ValidateEthAddress(ethAddress); err != nil {
-				return errors.Wrapf(err, "invalid ethereum address")
-			}
-
-			orchAddress, err := sdk.AccAddressFromBech32(args[3])
-			if err != nil {
-				return errors.Wrapf(err, "failed to parse orchAddress(%s)", args[3])
-			}
-
 			moniker := config.Moniker
-			if m, _ := cmd.Flags().GetString(cli.FlagMoniker); m != "" {
+			if m, errFlagGetString := cmd.Flags().GetString(cli.FlagMoniker); m != "" {
+				if errFlagGetString != nil {
+					fmt.Printf("FlagGetString has an error")
+				}
 				moniker = m
 			}
 
@@ -173,13 +180,7 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 				return errors.Wrap(err, "failed to build create-validator message")
 			}
 
-			delegatePeggyMsg := &gravitytypes.MsgSetOrchestratorAddress{
-				Validator:    sdk.ValAddress(key.GetAddress()).String(),
-				Orchestrator: orchAddress.String(),
-				EthAddress:   ethAddress,
-			}
-
-			msgs := []sdk.Msg{msg, delegatePeggyMsg}
+			msgs := []sdk.Msg{msg}
 
 			if key.GetType() == keyring.TypeOffline || key.GetType() == keyring.TypeMulti {
 				cmd.PrintErrln("Offline key passed in. Use `tx sign` command to sign.")
@@ -211,7 +212,10 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 				return errors.Wrap(err, "failed to sign std tx")
 			}
 
-			outputDocument, _ := cmd.Flags().GetString(flags.FlagOutputDocument)
+			outputDocument, errOutputDocument := cmd.Flags().GetString(flags.FlagOutputDocument)
+			if errOutputDocument != nil {
+				fmt.Printf("OutputDocument has an error")
+			}
 			if outputDocument == "" {
 				outputDocument, err = makeOutputFilepath(config.RootDir, nodeID)
 				if err != nil {
@@ -289,9 +293,17 @@ func CollectGenTxsCmd(genBalIterator types.GenesisBalancesIterator, defaultNodeH
 			config := serverCtx.Config
 
 			clientCtx := client.GetClientContextFromCmd(cmd)
-			cdc := clientCtx.JSONMarshaler
+			cdc := clientCtx.Codec
 
-			config.SetRoot(clientCtx.HomeDir)
+			homeFlag, errHomeFlag := cmd.Flags().GetString(flags.FlagHome)
+			if errHomeFlag != nil {
+				fmt.Printf("Homeflag has an error")
+			}
+			if len(homeFlag) > 0 {
+				config = config.SetRoot(homeFlag)
+			} else {
+				config = config.SetRoot(clientCtx.HomeDir)
+			}
 
 			nodeID, valPubKey, err := genutil.InitializeNodeValidatorFiles(config)
 			if err != nil {
@@ -303,7 +315,10 @@ func CollectGenTxsCmd(genBalIterator types.GenesisBalancesIterator, defaultNodeH
 				return errors.Wrap(err, "failed to read genesis doc from file")
 			}
 
-			genTxDir, _ := cmd.Flags().GetString(flagGenTxDir)
+			genTxDir, errGenTxDir := cmd.Flags().GetString(flagGenTxDir)
+			if errGenTxDir != nil {
+				fmt.Printf("genTxDir has an error with string")
+			}
 			genTxsDir := genTxDir
 			if genTxsDir == "" {
 				genTxsDir = filepath.Join(config.RootDir, "config", "gentx")
@@ -361,7 +376,7 @@ func newPrintInfo(moniker, chainID, nodeID, genTxsDir string, appMessage json.Ra
 }
 
 // GenAppStateFromConfig gets the genesis app state from the config
-func GenAppStateFromConfig(cdc codec.JSONMarshaler, txEncodingConfig client.TxEncodingConfig,
+func GenAppStateFromConfig(cdc codec.JSONCodec, txEncodingConfig client.TxEncodingConfig,
 	config *cfg.Config, initCfg types.InitConfig, genDoc tmtypes.GenesisDoc, genBalIterator types.GenesisBalancesIterator,
 ) (appState json.RawMessage, err error) {
 
@@ -405,7 +420,7 @@ func GenAppStateFromConfig(cdc codec.JSONMarshaler, txEncodingConfig client.TxEn
 
 // CollectTxs processes and validates application's genesis Txs and returns
 // the list of appGenTxs, and persistent peers required to generate genesis.json.
-func CollectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, genTxsDir string,
+func CollectTxs(cdc codec.JSONCodec, txJSONDecoder sdk.TxDecoder, moniker, genTxsDir string,
 	genDoc tmtypes.GenesisDoc, genBalIterator types.GenesisBalancesIterator,
 ) (appGenTxs []sdk.Tx, persistentPeers string, err error) {
 	// prepare a map of all balances in genesis state to then validate
@@ -415,8 +430,8 @@ func CollectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, g
 		return appGenTxs, persistentPeers, err
 	}
 
-	var fos []os.FileInfo
-	fos, err = ioutil.ReadDir(genTxsDir)
+	var fos []os.DirEntry
+	fos, err = os.ReadDir(genTxsDir)
 	if err != nil {
 		return appGenTxs, persistentPeers, err
 	}
