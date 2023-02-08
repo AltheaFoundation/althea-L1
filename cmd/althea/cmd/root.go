@@ -23,7 +23,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -153,9 +152,9 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 // initAppConfig defines the default configuration. These defaults can be overridden via an
 // app.toml file or with flags provided on the command line
 func initAppConfig() (string, interface{}) {
-	type AltheaAppConfig struct {
-		serverconfig.Config
-	}
+	// type AltheaAppConfig struct {
+	// 	serverconfig.Config
+	// }
 
 	// DEFAULT SERVER CONFIGURATIONS
 	appTempl, appCfg := ethermintserverconfig.AppConfig(altheacfg.NativeToken)
