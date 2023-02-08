@@ -21,3 +21,17 @@ jobs:
         run: docker builder prune -af && docker system prune -af
       - name: Run the lockup integration test
         run: tests/all-up-test.sh LOCKUP
+  microtx_fees:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        continue-on-error: true
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Prune cache to keep the size down
+        run: docker builder prune -af && docker system prune -af
+      - name: Run the microtx fees integration test
+        run: tests/all-up-test.sh MICROTX_FEES
