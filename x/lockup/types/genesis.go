@@ -9,6 +9,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 
+	"github.com/althea-net/althea-chain/config"
 	microtxtypes "github.com/althea-net/althea-chain/x/microtx/types"
 )
 
@@ -33,12 +34,13 @@ func DefaultParams() *Params {
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&microtxtypes.MsgXfer{}),
 		},
-		// TODO: The authoritative way to get the native token of the chain is by calling
-		//   mintKeeper.GetParams(ctx).MintDenom, but the context is not available yet
-		//   Therefore it's critical to have a constant stored somewhere and assert its correctness
-		//	 in the first BeginBlock
+		/* Note: The authoritative way to get the native token of the chain is by calling
+		   mintKeeper.GetParams(ctx).MintDenom, but the context is not available yet
+		   Therefore it's critical to know that this denom is correct in the
+		   first BeginBlock. If you change any of these values, change app/config
+		   where necessary */
 		LockedTokenDenoms: []string{
-			"ualtg",
+			config.NativeToken,
 		},
 	}
 }

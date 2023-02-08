@@ -3,7 +3,7 @@ set -eux
 # your gaiad binary name
 BIN=althea
 
-CHAIN_ID="althea-test-1"
+CHAIN_ID="althea_417834-1"
 
 NODES=$1
 
@@ -40,8 +40,9 @@ do
     GAIA_HOME="--home /validator$i"
     GENTX_HOME="--home-client /validator$i"
     ARGS="$GAIA_HOME --keyring-backend test"
+    KEY_ARGS="--algo secp256k1 --coin-type 118"
 
-    $BIN keys add $ARGS validator$i 2>> /validator-phrases
+    $BIN keys add $ARGS $KEY_ARGS validator$i 2>> /validator-phrases
 
     VALIDATOR_KEY=$($BIN keys show validator$i -a $ARGS)
     # move the genesis in
@@ -57,11 +58,12 @@ for i in $(seq 1 $NODES);
 do
     cp /genesis.json /validator$i/config/genesis.json
     GAIA_HOME="--home /validator$i"
-    ARGS="$GAIA_HOME --keyring-backend test"
+    ARGS="$GAIA_HOME --keyring-backend test --chain-id=$CHAIN_ID --ip 7.7.7.$i"
+    GENTX_FLAGS="--moniker validator$i --commission-rate 0.05 --commission-max-rate 0.05"
     # the /8 containing 7.7.7.7 is assigned to the DOD and never routable on the public internet
     # we're using it in private to prevent gaia from blacklisting it as unroutable
     # and allow local pex
-    $BIN gentx $ARGS $GAIA_HOME --moniker validator$i --chain-id=$CHAIN_ID --ip 7.7.7.$i validator$i 500000000ualtg
+    $BIN gentx $ARGS $GENTX_FLAGS validator$i 500000000ualtg
     # obviously we don't need to copy validator1's gentx to itself
     if [ $i -gt 1 ]; then
         cp /validator$i/config/gentx/* /validator1/config/gentx/
