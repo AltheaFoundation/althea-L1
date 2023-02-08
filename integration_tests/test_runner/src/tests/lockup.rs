@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use crate::type_urls::{
     GENERIC_AUTHORIZATION_TYPE_URL, MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MULTI_SEND_TYPE_URL,
-    MSG_SEND_TYPE_URL, MSG_XFER_TYPE_URL,
+    MSG_SEND_TYPE_URL, MSG_TRANSFER_TYPE_URL, MSG_XFER_TYPE_URL,
 };
 use crate::utils::{
     create_parameter_change_proposal, encode_any, footoken_metadata, get_user_key, one_atom,
@@ -156,6 +156,8 @@ pub fn create_lockup_param_changes(exempt_user: Address) -> Vec<ParamChange> {
     let locked_msgs = vec![
         MSG_SEND_TYPE_URL.to_string(),
         MSG_MULTI_SEND_TYPE_URL.to_string(),
+        MSG_XFER_TYPE_URL.to_string(),
+        MSG_TRANSFER_TYPE_URL.to_string(),
     ];
     let mut locked_msg_types = lockup_param.clone();
     locked_msg_types.key = LOCKED_MSG_TYPES_PARAM_KEY.to_string();
@@ -202,7 +204,7 @@ pub async fn fail_to_send(
     let res = contact
         .send_message(&[msg_xfer], None, &[], Some(OPERATION_TIMEOUT), sender)
         .await;
-    res.expect_err("Successfully sent via bank MsgXfer? Should not be possible!");
+    res.expect_err("Successfully sent via microtx MsgXfer? Should not be possible!");
     let msg_send_authorized = authorized_users[0];
     let authz_send = create_authz_bank_msg_send(
         contact,
@@ -262,7 +264,7 @@ pub async fn fail_to_send(
             msg_xfer_authorized.cosmos_key,
         )
         .await;
-    res.expect_err("Successfully sent via authz Exec(MsgMultiSend)? Should not be possible!");
+    res.expect_err("Successfully sent via authz Exec(MsgXfer)? Should not be possible!");
 }
 
 /// Creates a x/bank MsgSend to transfer `amount` from `sender` to `receiver`
