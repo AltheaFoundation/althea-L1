@@ -270,6 +270,7 @@ func GetAllowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfertyp
 		// nolint: exhaustruct
 		TimeoutHeight:    ibcclienttypes.Height{},
 		TimeoutTimestamp: 0, // We don't care about timestamp as it's generally avoided
+		Memo:             "",
 	}
 }
 
@@ -380,6 +381,7 @@ func GetUnallowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfert
 		// nolint: exhaustruct
 		TimeoutHeight:    ibcclienttypes.Height{},
 		TimeoutTimestamp: 0, // We don't care about timestamp as it's generally avoided
+		Memo:             "",
 	}
 }
 
