@@ -32,9 +32,9 @@ func (wad WrappedAnteHandler) AnteHandle(
 	ctx sdk.Context,
 	tx sdk.Tx, simulate bool,
 	next sdk.AnteHandler,
-) (newCtx sdk.Context, err error) {
-	modCtx, ok := wad.anteHandler(ctx, tx, simulate)
-	if ok != nil {
+) (sdk.Context, error) {
+	modCtx, err := wad.anteHandler(ctx, tx, simulate)
+	if err != nil {
 		return modCtx, err
 	}
 	return next(modCtx, tx, simulate)

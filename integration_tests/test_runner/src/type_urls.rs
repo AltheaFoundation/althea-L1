@@ -16,3 +16,6 @@ pub const PARAMETER_CHANGE_PROPOSAL_TYPE_URL: &str =
     "/cosmos.params.v1beta1.ParameterChangeProposal";
 pub const SOFTWARE_UPGRADE_PROPOSAL_TYPE_URL: &str =
     "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal";
+
+// ibc-go msgs
+pub const MSG_TRANSFER_TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
