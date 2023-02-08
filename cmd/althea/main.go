@@ -1,3 +1,5 @@
+// Simply calls the NewRootCmd() command setup func and executes the returned
+// command. See ./cmd/root.go for the important details.
 package main
 
 import (

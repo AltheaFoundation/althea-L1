@@ -1,10 +1,12 @@
 package althea
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -23,7 +25,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
-	ccodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -32,8 +33,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -93,11 +92,21 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 
-	// Osmosis-Labs Bech32-IBC
-	"github.com/osmosis-labs/bech32-ibc/x/bech32ibc"
+	// EVM + ERC20
 
-	// unnamed import of statik for swagger UI support
-	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+	cantoante "github.com/Canto-Network/Canto/v5/app/ante"
+	"github.com/Canto-Network/Canto/v5/x/erc20"
+	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
+	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
+	ethermintsrvflags "github.com/evmos/ethermint/server/flags"
+	ethermint "github.com/evmos/ethermint/types"
+	"github.com/evmos/ethermint/x/evm"
+	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
+	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/evmos/ethermint/x/feemarket"
+	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
+	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -111,12 +120,30 @@ import (
 	microtxtypes "github.com/althea-net/althea-chain/x/microtx/types"
 )
 
-const appName = "app"
+const appName = "althea"
+
+// DefaultNodeHome default home directories for the application daemon
+var DefaultNodeHome string
+
+func init() {
+	// Set DefaultNodeHome before the chain starts
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	DefaultNodeHome = filepath.Join(userHomeDir, ".althea")
+
+	// TODO: Determine a sensible MinGasPrice for the EVM
+	feemarkettypes.DefaultMinGasPrice = sdk.NewDec(0)
+	feemarkettypes.DefaultMinGasMultiplier = sdk.NewDecWithPrec(1, 1)
+
+	// DefaultPowerReduction is used to translate full 6/8/18 decimal token value -> whole token representation for
+	// computing validator power. By importing Canto's app package the DefaultPowerReduction is set for an 18 decimal
+	// staking token, we reset back to 6 decimals for ualtg here or else all validators will be considered to have 0 power.
+	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000)
+}
 
 var (
-	// DefaultNodeHome default home directories for the application daemon
-	DefaultNodeHome string
-
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
@@ -144,9 +171,11 @@ var (
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
-		bech32ibc.AppModuleBasic{},
 		lockup.AppModuleBasic{},
 		microtx.AppModuleBasic{},
+		evm.AppModuleBasic{},
+		erc20.AppModuleBasic{},
+		feemarket.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -160,12 +189,18 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		lockuptypes.ModuleName:         nil,
 		microtxtypes.ModuleName:        nil,
+		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
+		evmtypes.ModuleName:            nil,
+		feemarkettypes.ModuleName:      nil,
 	}
 
 	// module accounts that are allowed to receive tokens
 	allowedReceivingModAcc = map[string]bool{
 		distrtypes.ModuleName: true,
 	}
+
+	// enable checks that run on the first BeginBlocker execution after an upgrade/genesis init/node restart
+	firstBlock sync.Once
 )
 
 var (
@@ -173,20 +208,7 @@ var (
 	_ servertypes.Application = (*AltheaApp)(nil)
 )
 
-// MakeCodec creates the application codec. The codec is sealed before it is
-// returned.
-func MakeCodec() *codec.LegacyAmino {
-	var cdc = codec.NewLegacyAmino()
-	ModuleBasics.RegisterLegacyAminoCodec(cdc)
-	sdk.RegisterLegacyAminoCodec(cdc)
-	ccodec.RegisterCrypto(cdc)
-	cdc.Seal()
-	return cdc
-}
-
-// AltheaApp extends an ABCI application, but with most of its parameters exported.
-// They are exported for convenience in creating helper functions, as object
-// capabilities aren't needed for testing.
+// AltheaApp extends an ABCI application
 type AltheaApp struct { // nolint: golint
 	*baseapp.BaseApp
 	legacyAmino       *codec.LegacyAmino
@@ -219,6 +241,9 @@ type AltheaApp struct { // nolint: golint
 	ibcTransferKeeper *ibctransferkeeper.Keeper
 	lockupKeeper      *lockupkeeper.Keeper
 	microtxKeeper     *microtxkeeper.Keeper
+	evmKeeper         *evmkeeper.Keeper
+	erc20Keeper       *erc20keeper.Keeper
+	feemarketKeeper   *feemarketkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      *capabilitykeeper.ScopedKeeper
@@ -234,6 +259,7 @@ type AltheaApp struct { // nolint: golint
 	configurator *module.Configurator
 }
 
+// ValidateMembers checks for unexpected values, typically nil values needed for the chain to operate
 func (app AltheaApp) ValidateMembers() {
 	if app.legacyAmino == nil {
 		panic("Nil legacyAmino!")
@@ -291,6 +317,15 @@ func (app AltheaApp) ValidateMembers() {
 	if app.microtxKeeper == nil {
 		panic("Nil microtxKeeper!")
 	}
+	if app.evmKeeper == nil {
+		panic("Nil evmKeeper!")
+	}
+	if app.erc20Keeper == nil {
+		panic("Nil erc20Keeper!")
+	}
+	if app.feemarketKeeper == nil {
+		panic("Nil feemarketKeeper!")
+	}
 
 	// scoped keepers
 	if app.ScopedIBCKeeper == nil {
@@ -309,37 +344,43 @@ func (app AltheaApp) ValidateMembers() {
 	}
 }
 
-func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-
-	DefaultNodeHome = filepath.Join(userHomeDir, ".althea")
-}
-
-// NewAltheaApp returns a reference to an initialized Althea.
+// NewAltheaApp returns a reference to an initialized Althea chain
+// To avoid implicit duplication of critical values (thanks, Go) and buggy behavior, we declare nearly every used value
+// locally and provide references to/duplicates of those local vars to every related constructor after initialization
 func NewAltheaApp(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
 	homePath string, invCheckPeriod uint, encodingConfig altheaappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *AltheaApp {
-	appCodec := encodingConfig.Marshaler
+	// --------------------------------------------------------------------------
+	// -------------------------- Base Intitialization --------------------------
+	// --------------------------------------------------------------------------
+
+	// Core de/serialization types for Amino (legacy, needed for ledger) and Protobuf (new, recommended) formats
+	appCodec := encodingConfig.Codec
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
+	// Baseapp initialization, provides correct implementation of ABCI layer, I/O services, state storage, and more
 	bApp := *baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
+	// Store keys for the typical persisted key-value store, one must be provided per module, all must be unique
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, authzkeeper.StoreKey, banktypes.StoreKey,
 		stakingtypes.StoreKey, minttypes.StoreKey, distrtypes.StoreKey,
 		slashingtypes.StoreKey, govtypes.StoreKey, paramstypes.StoreKey,
 		ibchost.StoreKey, upgradetypes.StoreKey, evidencetypes.StoreKey,
 		ibctransfertypes.StoreKey, capabilitytypes.StoreKey, lockuptypes.StoreKey,
+		erc20types.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey,
 	)
-	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
+	// Transient keys which only last for a block before being wiped
+	// Params uses thsi to track whether some parameter changed this block or not
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
+	// In-Memory keys which provide efficient lookup and caching, avoid store bloat, but need to be populated on startup,
+	// including node restarts, new nodes, chain panics. Capability uses this to hide the actual capabilities and to store
+	// bidirectional capability references for efficient lookup, but the KV store only contains a one-way mapping
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	// nolint: exhaustruct
@@ -354,11 +395,19 @@ func NewAltheaApp(
 		memKeys:           memKeys,
 	}
 
+	// --------------------------------------------------------------------------
+	// ------------------------- Keeper Intitialization -------------------------
+	// --------------------------------------------------------------------------
+
+	// Create all keepers and register inter-module relationships
+
 	paramsKeeper := initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 	app.paramsKeeper = &paramsKeeper
 
 	bApp.SetParamStore(paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
 
+	// Capability keeper has the function to create "Scoped Keepers" which partition the capabilities a module is aware of
+	// for security. Create all Scoped Keepers between here and the capabilityKeeper.Seal() call below.
 	capabilityKeeper := *capabilitykeeper.NewKeeper(
 		appCodec,
 		keys[capabilitytypes.StoreKey],
@@ -372,17 +421,14 @@ func NewAltheaApp(
 	scopedTransferKeeper := capabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	app.ScopedTransferKeeper = &scopedTransferKeeper
 
-	// Applications that wish to enforce statically created ScopedKeepers should call `Seal` after creating
-	// their scoped modules in `NewApp` with `ScopeToModule`
+	// No more scoped keepers from here on!
 	capabilityKeeper.Seal()
-
-	// add keepers
 
 	accountKeeper := authkeeper.NewAccountKeeper(
 		appCodec,
 		keys[authtypes.StoreKey],
 		app.GetSubspace(authtypes.ModuleName),
-		authtypes.ProtoBaseAccount,
+		ethermint.ProtoAccount,
 		maccPerms,
 	)
 	app.accountKeeper = &accountKeeper
@@ -458,7 +504,9 @@ func NewAltheaApp(
 	)
 	app.ibcTransferKeeper = &ibcTransferKeeper
 
-	// Connect the inter-module hooks together
+	// Connect the inter-module staking hooks together, these are the only modules allowed to interact with how staking
+	// works, including inflationary staking rewards and punishing bad actors (excluding genutil which works at genesis to
+	// seed the set of validators from the genesis txs set)
 	stakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
 			distrKeeper.Hooks(),
@@ -485,12 +533,53 @@ func NewAltheaApp(
 	)
 	app.crisisKeeper = &crisisKeeper
 
+	// EVM keepers
+	tracer := cast.ToString(appOpts.Get(ethermintsrvflags.EVMTracer))
+
+	// Feemarket implements EIP-1559 (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1559.md) on Cosmos
+	feemarketKeeper := feemarketkeeper.NewKeeper(
+		appCodec, app.GetSubspace(feemarkettypes.ModuleName),
+		keys[feemarkettypes.StoreKey], tkeys[feemarkettypes.TransientKey],
+	)
+	app.feemarketKeeper = &feemarketKeeper
+
+	// EVM calls the go-ethereum source code within ABCI to implement an EVM within Althea Chain
+	evmKeeper := evmkeeper.NewKeeper(
+		appCodec,
+		keys[evmtypes.StoreKey],
+		tkeys[evmtypes.TransientKey],
+		app.GetSubspace(evmtypes.ModuleName),
+		accountKeeper,
+		bankKeeper,
+		stakingKeeper,
+		feemarketKeeper,
+		tracer,
+	)
+
+	// ERC20 provides translation between Cosmos-style tokens and Ethereum ERC20 contracts so that things like IBC work
+	erc20Keeper := erc20keeper.NewKeeper(
+		keys[erc20types.StoreKey],
+		appCodec,
+		app.GetSubspace(erc20types.ModuleName),
+		accountKeeper,
+		bankKeeper,
+		evmKeeper,
+	)
+	app.erc20Keeper = &erc20Keeper
+
+	// Connect the inter-module EVM hooks together, these are the only modules allowed to interact with how contracts are
+	// executed, including ERC20's  Cosmos Coin <-> EVM ERC20 Token translation functions via magic contract address
+	evmKeeper = evmKeeper.SetHooks(evmkeeper.NewMultiEvmHooks(erc20Keeper.Hooks()))
+	app.evmKeeper = evmKeeper
+
+	// Register custom governance proposal logic via router keys and handler functions
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramsproposal.RouterKey, params.NewParamChangeProposalHandler(paramsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(distrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(upgradeKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(ibcKeeper.ClientKeeper))
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(ibcKeeper.ClientKeeper)).
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&erc20Keeper))
 
 	govKeeper := govkeeper.NewKeeper(
 		appCodec,
@@ -503,6 +592,10 @@ func NewAltheaApp(
 	)
 	app.govKeeper = &govKeeper
 
+	// Construct the IBC "stack", a chain of IBC modules which enable arbitrary loosely-coupled Msg processing per module
+	// This is the simplest sort of stack, with just the core and a single IBC app for token transfers
+	// e.g. advanced Interchain Accounts implementations need a point of execution for this chain to modify state once
+	// updates on a foreign chain have been observed
 	ibcTransferAppModule := transfer.NewAppModule(ibcTransferKeeper)
 	ibcTransferIBCModule := transfer.NewIBCModule(ibcTransferKeeper)
 
@@ -518,17 +611,23 @@ func NewAltheaApp(
 	)
 	app.evidenceKeeper = &evidenceKeeper
 
+	// Althea custom modules
+
+	// Lockup locks the chain at genesis to prevent native token transfers before the chain is sufficiently decentralized
 	lockupKeeper := lockupkeeper.NewKeeper(
 		appCodec, keys[lockuptypes.StoreKey], app.GetSubspace(lockuptypes.ModuleName),
 	)
 	app.lockupKeeper = &lockupKeeper
 
+	// Microtx enables peer-to-peer automated microtransactions to form the payment layer for Althea-based networks
 	microtxKeeper := microtxkeeper.NewKeeper(
 		keys[microtxtypes.StoreKey], app.GetSubspace(microtxtypes.ModuleName), appCodec, &bankKeeper, &accountKeeper,
 	)
 	app.microtxKeeper = &microtxKeeper
 
-	/****  Module Options ****/
+	// --------------------------------------------------------------------------
+	// ----------------------- AppModule Intitialization ------------------------
+	// --------------------------------------------------------------------------
 
 	var skipGenesisInvariants = cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
@@ -603,13 +702,24 @@ func NewAltheaApp(
 		ibcTransferAppModule,
 		lockup.NewAppModule(lockupKeeper, bankKeeper),
 		microtx.NewAppModule(microtxKeeper, bankKeeper),
+		evm.NewAppModule(evmKeeper, accountKeeper),
+		erc20.NewAppModule(erc20Keeper, accountKeeper),
+		feemarket.NewAppModule(feemarketKeeper),
 	)
 	app.mm = &mm
+
+	// --------------------------------------------------------------------------
+	// ---------------------------- ABCI Ordering -------------------------------
+	// --------------------------------------------------------------------------
+
+	// Determine the order in which modules' BeginBlock() functions are called each block
 
 	// NOTE: capability module's BeginBlocker must come before any modules using capabilities (e.g. IBC)
 	mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
+		feemarkettypes.ModuleName,
+		evmtypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -626,11 +736,17 @@ func NewAltheaApp(
 		paramstypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
+		erc20types.ModuleName,
 	)
+
+	// Determine the order in which modules' EndBlock() functions are called each block
+
 	mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
@@ -646,7 +762,11 @@ func NewAltheaApp(
 		paramstypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
+		erc20types.ModuleName,
 	)
+
+	// Determine the order in which modules' InitGenesis() functions are called at chain genesis
+
 	mm.SetOrderInitGenesis(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
@@ -658,15 +778,22 @@ func NewAltheaApp(
 		minttypes.ModuleName,
 		upgradetypes.ModuleName,
 		ibchost.ModuleName,
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		authz.ModuleName,
-		crisistypes.ModuleName,
 		paramstypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
+		erc20types.ModuleName,
+		crisistypes.ModuleName,
 	)
+
+	// --------------------------------------------------------------------------
+	// ---------------------------- Miscellaneous -------------------------------
+	// --------------------------------------------------------------------------
 
 	mm.RegisterInvariants(&crisisKeeper)
 	mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -674,6 +801,7 @@ func NewAltheaApp(
 	app.configurator = &configurator
 	mm.RegisterServices(*app.configurator)
 
+	// Simapp provides fuzz testing capabilities
 	sm := *module.NewSimulationManager(
 		auth.NewAppModule(appCodec, accountKeeper, authsims.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, bankKeeper, accountKeeper),
@@ -687,6 +815,8 @@ func NewAltheaApp(
 		evidence.NewAppModule(evidenceKeeper),
 		ibc.NewAppModule(&ibcKeeper),
 		ibcTransferAppModule,
+		evm.NewAppModule(evmKeeper, accountKeeper),
+		feemarket.NewAppModule(feemarketKeeper),
 	)
 	app.sm = &sm
 
@@ -700,25 +830,33 @@ func NewAltheaApp(
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
+	app.SetEndBlocker(app.EndBlocker)
 
-	options := ante.HandlerOptions{
+	// Create the chain of mempool Tx filter functions, aka the AnteHandler
+	maxGasWanted := cast.ToUint64(appOpts.Get(ethermintsrvflags.EVMMaxTxGasWanted))
+	options := cantoante.HandlerOptions{
 		AccountKeeper:   accountKeeper,
 		BankKeeper:      bankKeeper,
+		IBCKeeper:       &ibcKeeper,
+		FeeMarketKeeper: feemarketKeeper,
+		StakingKeeper:   stakingKeeper,
+		EvmKeeper:       evmKeeper,
 		FeegrantKeeper:  nil,
 		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-		SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+		SigGasConsumer:  SigVerificationGasConsumer,
+		Cdc:             appCodec,
+		MaxTxGasWanted:  maxGasWanted,
 	}
+	if err := options.Validate(); err != nil {
+		panic(fmt.Errorf("invalid antehandler options: %v", err))
+	}
+	ah := cantoante.NewAnteHandler(options)
 
 	// Create the lockup AnteHandler, to ensure sufficient decentralization before funds may be transferred
-	ah, err := ante.NewAnteHandler(options)
-	if err != nil {
-		panic("invalid antehandler created")
-	}
 	lockupAnteHandler := lockup.NewWrappedLockupAnteHandler(ah, lockupKeeper, appCodec)
 	app.SetAnteHandler(lockupAnteHandler)
 
-	app.SetEndBlocker(app.EndBlocker)
-
+	// Register the configured upgrades for the upgrade module
 	app.registerUpgradeHandlers()
 
 	if loadLatest {
@@ -727,33 +865,38 @@ func NewAltheaApp(
 		}
 	}
 
-	// We don't allow anything to be nil
+	// Check for any obvious errors in initialization
 	app.ValidateMembers()
-	return app
-}
 
-// MakeCodecs constructs the *std.Codec and *codec.LegacyAmino instances used by
-// simapp. It is useful for tests and clients who do not want to construct the
-// full simapp
-func MakeCodecs() (codec.Codec, *codec.LegacyAmino) {
-	config := MakeEncodingConfig()
-	return config.Marshaler, config.Amino
+	// Hand execution back to whichever cmd created this app
+	return app
 }
 
 // Name returns the name of the App
 func (app *AltheaApp) Name() string { return app.BaseApp.Name() }
 
-// BeginBlocker application updates every begin block
+// BeginBlocker delegates the ABCI BeginBlock execution to the ModuleManager
 func (app *AltheaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	return app.mm.BeginBlock(ctx, req)
+	out := app.mm.BeginBlock(ctx, req)
+	firstBlock.Do(func() { // Run the startup firstBeginBlocker assertions only once
+		app.firstBeginBlocker(ctx, req)
+	})
+
+	return out
 }
 
-// EndBlocker application updates every end block
+// firstBeginBlocker runs once at the end of the first BeginBlocker to check static assertions as a validator starts up
+func (app *AltheaApp) firstBeginBlocker(ctx sdk.Context, _ abci.RequestBeginBlock) {
+	app.assertNativeTokenMatchesConfig(ctx)
+}
+
+// EndBlocker delegates the ABCI EndBlock execution to the ModuleManager
 func (app *AltheaApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
 	return app.mm.EndBlock(ctx, req)
 }
 
-// InitChainer application update at chain initialization
+// InitChainer deserializes the given chain genesis state, registers in-place upgrade migrations, and delegates
+// the ABCI InitGenesis execution to the ModuleManager
 func (app *AltheaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
@@ -765,7 +908,7 @@ func (app *AltheaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) ab
 	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
-// LoadHeight loads a particular height
+// LoadHeight loads the blockchain a particular height
 func (app *AltheaApp) LoadHeight(height int64) error {
 	return app.LoadVersion(height)
 }
@@ -799,7 +942,7 @@ func (app *AltheaApp) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
 }
 
-// AppCodec returns Gaia's app codec.
+// AppCodec returns Althea Chain's codec.
 //
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
@@ -807,7 +950,8 @@ func (app *AltheaApp) AppCodec() codec.Codec {
 	return app.appCodec
 }
 
-// InterfaceRegistry returns Gaia's InterfaceRegistry
+// InterfaceRegistry returns Althea Chain's InterfaceRegistry which knows all of the Protobuf-defined interfaces
+// and implementing types the chain is aware of
 func (app *AltheaApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
 }
@@ -834,8 +978,7 @@ func (app *AltheaApp) GetMemKey(storeKey string) *sdk.MemoryStoreKey {
 }
 
 // GetSubspace returns a param subspace for a given module name.
-//
-// NOTE: This is solely to be used for testing purposes.
+// Reading params is fine, but they should be updated by governace proposal
 func (app *AltheaApp) GetSubspace(moduleName string) paramstypes.Subspace {
 	subspace, _ := app.paramsKeeper.GetSubspace(moduleName)
 	return subspace
@@ -850,11 +993,28 @@ func (app *AltheaApp) SimulationManager() *module.SimulationManager {
 // API server.
 func (app *AltheaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
+	// SDK /node_info, /syncing, /blocks, and /validatorsets REST endpoints
 	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
-	authrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
+
+	// Note: Delegates requests to the EVM if given a hash variable with a leading "0x"
+	evmrest.RegisterTxRoutes(clientCtx, apiSvr.Router) // Cosmos and EVM /txs REST endpoints
+
+	// Note: The Cosmos REST registration has been replaced by evmrest's
+	// authrest.RegisterTxRoutes(clientCtx, apiSvr.Router) // Cosmos /txs REST endpoints
+
+	// GRPC endpoints under /cosmos.base.tendermint.v1beta1.Service
+	// including GetNodeInfo, GetSyncing, GetLatestBlock, GetBlockByHeight, GetLatestValidatorSet, GetValidatorSetByHeight
+	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+
+	// GRPC endpoints under /cosmos.tx.v1beta1.Service
+	// including Simulate, GetTx, BroadcastTx, GetTxsEvent, GetBlockWithTxs
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+
+	// Register all REST routes declared by modules in the ModuleBasics
 	ModuleBasics.RegisterRESTRoutes(clientCtx, apiSvr.Router)
+	// Register all GRPC routes declared by modules in the ModuleBasics
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+
 	// TODO: build the custom swagger files and add here?
 	if apiConfig.Swagger {
 		RegisterSwaggerAPI(clientCtx, apiSvr.Router)
@@ -873,12 +1033,14 @@ func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router) {
 	rtr.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", staticServer))
 }
 
-// RegisterTxService implements the Application.RegisterTxService method.
+// RegisterTxService registers all Protobuf-based Tx receiving gRPC services based on what is registered in the
+// interface registry. These are stapled on to the baseapp's gRPC Query router
 func (app *AltheaApp) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 
-// RegisterTendermintService implements the Application.RegisterTendermintService method.
+// RegisterTendermintService registers the /cosmos.base.tendermint.v1beta1.Service query endpoints on the baseapp's
+// gRPC query router
 func (app *AltheaApp) RegisterTendermintService(clientCtx client.Context) {
 	tmservice.RegisterTendermintService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.interfaceRegistry)
 }
@@ -892,7 +1054,7 @@ func GetMaccPerms() map[string][]string {
 	return dupMaccPerms
 }
 
-// initParamsKeeper init params keeper and its subspaces
+// initParamsKeeper constructs params' keeper and all module param subspaces
 func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey sdk.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, tkey)
 
@@ -908,11 +1070,14 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(lockuptypes.ModuleName)
 	paramsKeeper.Subspace(microtxtypes.ModuleName)
+	paramsKeeper.Subspace(evmtypes.ModuleName)
+	paramsKeeper.Subspace(erc20types.ModuleName)
+	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 
 	return paramsKeeper
 }
 
-// Registers handlers for all our upgrades
+// registerUpgradeHandlers registers in-place upgrades, which are faster and easier than genesis-based upgrades
 func (app *AltheaApp) registerUpgradeHandlers() {
 	// No op
 }
