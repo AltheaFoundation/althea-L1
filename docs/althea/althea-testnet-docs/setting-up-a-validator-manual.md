@@ -129,7 +129,7 @@ This will provide you 10 ALTG from the faucet storage.
 ```
 
 althea tx staking create-validator \
- --amount=50000000000ualtg \
+ --amount=50000000000aalthea \
  --pubkey=$(althea tendermint show-validator) \
  --moniker="put your validator name here" \
  --chain-id=althea-testnet2v3 \
@@ -139,7 +139,7 @@ althea tx staking create-validator \
  --min-self-delegation="1" \
  --gas="auto" \
  --gas-adjustment=1.5 \
- --gas-prices="1ualtg" \
+ --gas-prices="1aalthea" \
  --from=myvalidatorkeyname
 
 ```
@@ -170,7 +170,7 @@ Delegate keys allow the for the validator private keys to be kept in secure stor
 
 gbt init
 
-gbt -a althea keys register-orchestrator-address --validator-phrase "the phrase you saved earlier" --fees=125000ualtg
+gbt -a althea keys register-orchestrator-address --validator-phrase "the phrase you saved earlier" --fees=125000aalthea
 
 ```
 

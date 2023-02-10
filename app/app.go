@@ -138,9 +138,9 @@ func init() {
 	feemarkettypes.DefaultMinGasMultiplier = sdk.NewDecWithPrec(1, 1)
 
 	// DefaultPowerReduction is used to translate full 6/8/18 decimal token value -> whole token representation for
-	// computing validator power. By importing Canto's app package the DefaultPowerReduction is set for an 18 decimal
-	// staking token, we reset back to 6 decimals for ualtg here or else all validators will be considered to have 0 power.
-	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000)
+	// computing validator power. By importing Canto's app package the DefaultPowerReduction is set for their
+	// staking token, we manually adjust here to 18 decimals for aalthea here for peace of mind.
+	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000000000000000)
 }
 
 var (

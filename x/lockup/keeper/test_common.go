@@ -180,7 +180,7 @@ func CreateTestEnv(t *testing.T) TestInput {
 		mod := authtypes.NewEmptyModuleAccount(name, perms...)
 		if name == distrtypes.ModuleName {
 			// some big pot to pay out
-			amt := sdk.NewCoins(sdk.NewInt64Coin("ualtg", 500000))
+			amt := sdk.NewCoins(sdk.NewInt64Coin("aalthea", 500000))
 			err = bankKeeper.MintCoins(ctx, types.ModuleName, amt)
 			require.NoError(t, err)
 			err = bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, mod.Name, amt)
