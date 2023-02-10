@@ -11,8 +11,12 @@ import (
 	"os"
 	"path/filepath"
 
+	cfg "github.com/tendermint/tendermint/config"
+	tmcli "github.com/tendermint/tendermint/libs/cli"
+	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmtypes "github.com/tendermint/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -39,11 +43,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
-	cfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/cli"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 
 	// EVM
 	ethermintclient "github.com/evmos/ethermint/client"
@@ -204,7 +203,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, althea.DefaultNodeHome),
 		althea.MigrateGenesisCmd(),
 		genutilcli.GenTxCmd(althea.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, althea.DefaultNodeHome),
-		genutilcli.ValidateGenesisCmd(althea.ModuleBasics),
+		ValidateGenesisCmd(althea.ModuleBasics),
 		AddGenesisAccountCmd(althea.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		testnetCmd(althea.ModuleBasics, banktypes.GenesisBalancesIterator{}),
@@ -317,7 +316,7 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(cli.HomeFlag, defaultNodeHome, "node's home directory")
+	cmd.Flags().String(tmcli.HomeFlag, defaultNodeHome, "node's home directory")
 	cmd.Flags().BoolP(genutilcli.FlagOverwrite, "o", false, "overwrite the genesis.json file")
 	cmd.Flags().Bool(genutilcli.FlagRecover, false, "provide seed phrase to recover existing key instead of creating")
 	cmd.Flags().String(flags.FlagChainID, altheacfg.DefaultChainID(), "genesis file chain-id, if left blank will be randomly created")
