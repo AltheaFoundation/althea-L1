@@ -45,7 +45,7 @@ lazy_static! {
     pub static ref ADDRESS_PREFIX: String =
         env::var("ADDRESS_PREFIX").unwrap_or_else(|_| "althea".to_string());
     pub static ref STAKING_TOKEN: String =
-        env::var("STAKING_TOKEN").unwrap_or_else(|_| "ualtg".to_owned());
+        env::var("STAKING_TOKEN").unwrap_or_else(|_| "aalthea".to_owned());
     pub static ref COSMOS_NODE_GRPC: String =
         env::var("COSMOS_NODE_GRPC").unwrap_or_else(|_| "http://localhost:9090".to_owned());
     pub static ref COSMOS_NODE_ABCI: String =
@@ -132,7 +132,7 @@ pub fn one_hundred_eth() -> Uint256 {
 pub async fn footoken_metadata(contact: &Contact) -> Metadata {
     let metadata = contact.get_all_denoms_metadata().await.unwrap();
     for m in metadata {
-        if m.base == "footoken" {
+        if m.base == "ufootoken" || m.display == "footoken" {
             return m;
         }
     }

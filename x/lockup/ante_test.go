@@ -36,7 +36,7 @@ func TestLockAnteHandler(t *testing.T) {
 	// Lock the chain
 	keeper.SetChainLocked(ctx, true)
 	keeper.SetLockExemptAddresses(ctx, []string{"0x0000000000000000000000000000000000000000"})
-	keeper.SetLockedTokenDenoms(ctx, []string{"ualtg"})
+	keeper.SetLockedTokenDenoms(ctx, []string{"aalthea"})
 
 	AnteHandlerLockedHappy(t, handler, keeper, ctx, txCfg, txFct)
 	AnteHandlerLockedUnhappy(t, handler, keeper, ctx, txCfg, txFct)
@@ -183,7 +183,7 @@ func GetAllowedMsgSend(keeper keeper.Keeper, ctx sdk.Context) banktypes.MsgSend 
 	}
 	// nolint: goconst
 	toAddr := "0x1111111111111111111111111111111111111111"
-	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
+	amount := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
 	return banktypes.MsgSend{FromAddress: fromAddr, ToAddress: toAddr, Amount: amount}
 }
 
@@ -216,7 +216,7 @@ func GetAllowedMultiSendMsg(keeper keeper.Keeper, ctx sdk.Context) banktypes.Msg
 		panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
 	}
 	toAddr := "0x1111111111111111111111111111111111111111"
-	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
+	amount := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
 	inputs := []banktypes.Input{{Address: fromAddr, Coins: amount}}
 	outputs := []banktypes.Output{{Address: toAddr, Coins: amount}}
 	return banktypes.MsgMultiSend{Inputs: inputs, Outputs: outputs}
@@ -260,7 +260,7 @@ func GetAllowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfertyp
 	}
 	// nolint: goconst
 	toAddr := "0x1111111111111111111111111111111111111111"
-	amount := sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000))
+	amount := sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000))
 	return ibctransfertypes.MsgTransfer{
 		SourcePort:    "transfer",
 		SourceChannel: "channel-5",
@@ -292,7 +292,7 @@ func GetAllowedMsgXfer(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.MsgXf
 	}
 	// nolint: goconst
 	toAddr := "0x1111111111111111111111111111111111111111"
-	amounts := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
+	amounts := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
 	return microtxtypes.MsgXfer{
 		Sender:   fromAddr,
 		Receiver: toAddr,
@@ -307,7 +307,7 @@ func GetUnallowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Facto
 		panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
 	}
 	toAddr := "0x0000000000000000000000000000000000000000"
-	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
+	amount := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
 	msgSend := banktypes.MsgSend{FromAddress: fromAddr, ToAddress: toAddr, Amount: amount}
 	txBld, err := tx.BuildUnsignedTx(txFct, &msgSend)
 	if err != nil {
@@ -334,7 +334,7 @@ func GetUnallowedMultiSendMsg(keeper keeper.Keeper, ctx sdk.Context) banktypes.M
 		panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
 	}
 	toAddr := "0x0000000000000000000000000000000000000000"
-	amount := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
+	amount := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
 	inputs := []banktypes.Input{{Address: fromAddr, Coins: amount}}
 	outputs := []banktypes.Output{{Address: toAddr, Coins: amount}}
 	return banktypes.MsgMultiSend{Inputs: inputs, Outputs: outputs}
@@ -371,7 +371,7 @@ func GetUnallowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfert
 	}
 	// nolint: goconst
 	toAddr := "0x0000000000000000000000000000000000000000"
-	amount := sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000))
+	amount := sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000))
 	return ibctransfertypes.MsgTransfer{
 		SourcePort:    "transfer",
 		SourceChannel: "channel-5",
@@ -403,7 +403,7 @@ func GetUnallowedMsgXfer(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.Msg
 	}
 	// nolint: goconst
 	toAddr := "0x0000000000000000000000000000000000000000"
-	amounts := sdk.NewCoins(sdk.NewCoin("ualtg", sdk.NewInt(1000000000000000000)))
+	amounts := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
 	return microtxtypes.MsgXfer{
 		Sender:   fromAddr,
 		Receiver: toAddr,

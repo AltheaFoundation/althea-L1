@@ -44,7 +44,7 @@ pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) 
     .await;
     lockup_the_chain(contact, &validator_keys, &lock_exempt).await;
 
-    // TODO: Add ibc transfer and check that transfers are blocked outbound for ualtg
+    // TODO: Add ibc transfer and check that transfers are blocked outbound for aalthea
     fail_to_send(
         contact,
         &validator_keys,
