@@ -8,7 +8,7 @@ use althea_proto::cosmos_sdk_proto::cosmos::{
 };
 use bytes::BytesMut;
 
-use clarity::{Address as EthAddress, Uint256};
+use clarity::{Address as EthAddress, PrivateKey as EthPrivateKey, Uint256};
 use deep_space::address::Address as CosmosAddress;
 use deep_space::client::ChainStatus;
 use deep_space::coin::Coin;
@@ -62,11 +62,22 @@ lazy_static! {
     pub static ref IBC_NODE_ABCI: String =
         env::var("IBC_NODE_ABCI").unwrap_or_else(|_| "http://localhost:27657".to_owned());
 
-    // this is the key the IBC relayer will use to send IBC messages and channel updates
-    // it's a distinct address to prevent sequence collisions
-    pub static ref RELAYER_MNEMONIC: String = "below great use captain upon ship tiger exhaust orient burger network uphold wink theory focus cloud energy flavor recall joy phone beach symptom hobby".to_string();
-    pub static ref RELAYER_PRIVATE_KEY: CosmosPrivateKey = CosmosPrivateKey::from_phrase(&RELAYER_MNEMONIC, "").unwrap();
-    pub static ref RELAYER_ADDRESS: CosmosAddress = RELAYER_PRIVATE_KEY.to_address(ADDRESS_PREFIX.as_str()).unwrap();
+    // LOCAL ETHEREUM CONSTANTS
+    pub static ref ETH_NODE: String =
+        env::var("ETH_NODE").unwrap_or_else(|_| "http://localhost:8545".to_owned());
+    pub static ref MINER_PRIVATE_KEY: EthPrivateKey =
+        "0x34d97aaf58b1a81d3ed3068a870d8093c6341cf5d1ef7e6efa03fe7f7fc2c3a8"
+            .parse()
+            .unwrap();
+    static ref MINER_ADDRESS: EthAddress = MINER_PRIVATE_KEY.to_address();
+}
+
+/// Parses the DEPLOY_CONTRACTS env variable and determines if the ethereum contracts must be deployed
+pub fn should_deploy_contracts() -> bool {
+    match env::var("DEPLOY_CONTRACTS") {
+        Ok(s) => s == "1" || s.to_lowercase() == "yes" || s.to_lowercase() == "true",
+        _ => false,
+    }
 }
 
 /// Gets the standard non-token fee for the testnet. We deploy the test chain with STAKE

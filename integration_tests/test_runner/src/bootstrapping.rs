@@ -1,7 +1,11 @@
-use crate::utils::ValidatorKeys;
+use crate::utils::{ValidatorKeys, COSMOS_NODE_ABCI, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT};
+use clarity::Address as EthAddress;
 use deep_space::private_key::{CosmosPrivateKey, PrivateKey};
+use deep_space::Contact;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read, Write};
+use std::path::Path;
+use std::process::{Command, ExitStatus};
 
 /// Parses the output of the cosmoscli keys add command to import the private key
 fn parse_phrases(filename: &str) -> (Vec<CosmosPrivateKey>, Vec<String>) {
@@ -58,6 +62,144 @@ pub fn get_keys() -> Vec<ValidatorKeys> {
     ret
 }
 
+/// This function deploys the required contracts onto the Ethereum testnet
+/// this runs only when the DEPLOY_CONTRACTS env var is set right after
+/// the Ethereum test chain starts in the testing environment. We write
+/// the stdout of this to a file for later test runs to parse
+pub async fn deploy_contracts(contact: &Contact) {
+    // prevents the node deployer from failing (rarely) when the chain has not
+    // yet produced the next block after submitting each eth address
+    contact.wait_for_next_block(TOTAL_TIMEOUT).await.unwrap();
+
+    // these are the possible paths where we could find the contract deployer
+    // and the gravity contract itself, feel free to expand this if it makes your
+    // deployments more straightforward.
+
+    // both files are just in the PWD
+    const A: [&str; 3] = ["contract-deployer", "Gravity.json", "GravityERC721.json"];
+    // files are placed in a root /solidity/ folder
+    const B: [&str; 3] = [
+        "/solidity/contract-deployer",
+        "/solidity/Gravity.json",
+        "/solidity/GravityERC721.json",
+    ];
+    // the default unmoved locations for the Gravity repo
+    const C: [&str; 4] = [
+        "/althea/solidity/contract-deployer.ts",
+        "/althea/solidity/artifacts/contracts/Gravity.sol/Gravity.json",
+        "/althea/solidity/artifacts/contracts/GravityERC721.sol/GravityERC721.json",
+        "/althea/solidity/",
+    ];
+    let output = if all_paths_exist(&A) || all_paths_exist(&B) {
+        let paths = return_existing(A, B);
+        Command::new(paths[0])
+            .args([
+                &format!("--cosmos-node={}", COSMOS_NODE_ABCI.as_str()),
+                &format!("--eth-node={}", ETH_NODE.as_str()),
+                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                &format!("--contract={}", paths[1]),
+                &format!("--contractERC721={}", paths[2]),
+                "--test-mode=true",
+            ])
+            .output()
+            .expect("Failed to deploy contracts!")
+    } else if all_paths_exist(&C) {
+        Command::new("npx")
+            .args([
+                "ts-node",
+                C[0],
+                &format!("--cosmos-node={}", COSMOS_NODE_ABCI.as_str()),
+                &format!("--eth-node={}", ETH_NODE.as_str()),
+                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                &format!("--contract={}", C[1]),
+                &format!("--contractERC721={}", C[2]),
+                "--test-mode=true",
+            ])
+            .current_dir(C[3])
+            .output()
+            .expect("Failed to deploy contracts!")
+    } else {
+        panic!("Could not find Gravity.json contract artifact in any known location!")
+    };
+
+    info!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+    info!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+    if !ExitStatus::success(&output.status) {
+        panic!("Contract deploy failed!")
+    }
+    let mut file = File::create("/contracts").unwrap();
+    file.write_all(&output.stdout).unwrap();
+}
+
+fn all_paths_exist(input: &[&str]) -> bool {
+    for i in input {
+        if !Path::new(i).exists() {
+            return false;
+        }
+    }
+    true
+}
+
+fn return_existing<'a>(a: [&'a str; 3], b: [&'a str; 3]) -> [&'a str; 3] {
+    if all_paths_exist(&a) {
+        a
+    } else if all_paths_exist(&b) {
+        b
+    } else {
+        panic!("No paths exist!")
+    }
+}
+
+pub struct BootstrapContractAddresses {
+    pub gravity_contract: EthAddress,
+    pub gravity_erc721_contract: EthAddress,
+    pub erc20_addresses: Vec<EthAddress>,
+    pub erc721_addresses: Vec<EthAddress>,
+    pub uniswap_liquidity_address: Option<EthAddress>,
+}
+
+/// Parses the ERC20 and Gravity contract addresses from the file created
+/// in deploy_contracts()
+pub fn parse_contract_addresses() -> BootstrapContractAddresses {
+    let mut file =
+        File::open("/contracts").expect("Failed to find contracts! did they not deploy?");
+    let mut output = String::new();
+    file.read_to_string(&mut output).unwrap();
+    let mut maybe_gravity_address = None;
+    let mut maybe_gravity_erc721_address = None;
+    let mut erc20_addresses = Vec::new();
+    let mut erc721_addresses = Vec::new();
+    let mut uniswap_liquidity = None;
+    for line in output.lines() {
+        if line.contains("Gravity deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            maybe_gravity_address = Some(address_string.trim().parse().unwrap());
+        } else if line.contains("GravityERC721 deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            maybe_gravity_erc721_address = Some(address_string.trim().parse().unwrap());
+        } else if line.contains("ERC20 deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            erc20_addresses.push(address_string.trim().parse().unwrap());
+            info!("found erc20 address it is {}", address_string);
+        } else if line.contains("ERC721 deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            erc721_addresses.push(address_string.trim().parse().unwrap());
+            info!("found erc721 address it is {}", address_string);
+        } else if line.contains("Uniswap Liquidity test deployed at Address - ") {
+            let address_string = line.split('-').last().unwrap();
+            uniswap_liquidity = Some(address_string.trim().parse().unwrap());
+        }
+    }
+    let gravity_address: EthAddress = maybe_gravity_address.unwrap();
+    let gravity_erc721_address: EthAddress = maybe_gravity_erc721_address.unwrap();
+    BootstrapContractAddresses {
+        gravity_contract: gravity_address,
+        gravity_erc721_contract: gravity_erc721_address,
+        erc20_addresses,
+        erc721_addresses,
+        uniswap_liquidity_address: uniswap_liquidity,
+    }
+}
 // Creates a key in the relayer's test keyring, which the relayer should use
 // Hermes stores its keys in hermes_home/ althea_phrase is for the main chain
 // ibc phrase is for the test chain
