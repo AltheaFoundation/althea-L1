@@ -51,3 +51,24 @@ dependency-graph.png
 *.out
 *.synctex.gz
 contract_tests/*
+
+node_modules
+typechain
+target
+tests/test-runner/Cargo.lock
+tests/dockerfile/gravity.tar.gz
+solidity/dist
+orchestrator/bins
+oldgravity
+
+# IDE files
+.idea/
+
+#Hardhat files
+cache
+artifacts
+*.test
+*-stamp
+
+#build artifacts
+/module/artifacts
