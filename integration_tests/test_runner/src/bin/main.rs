@@ -7,12 +7,12 @@ extern crate log;
 use deep_space::Contact;
 use deep_space::PrivateKey;
 use std::env;
-use test_runner::bootstrapping::get_keys;
+use test_runner::bootstrapping::{deploy_contracts, get_keys};
 use test_runner::tests::lockup::lockup_test;
 use test_runner::tests::microtx_fees::microtx_fees_test;
 use test_runner::utils::{
-    get_test_token_name, wait_for_cosmos_online, ADDRESS_PREFIX, COSMOS_NODE_GRPC,
-    OPERATION_TIMEOUT, TOTAL_TIMEOUT,
+    get_test_token_name, should_deploy_contracts, wait_for_cosmos_online, ADDRESS_PREFIX,
+    COSMOS_NODE_GRPC, OPERATION_TIMEOUT, TOTAL_TIMEOUT,
 };
 
 #[actix_rt::main]
@@ -25,6 +25,12 @@ pub async fn main() {
         ADDRESS_PREFIX.as_str(),
     )
     .unwrap();
+
+    if should_deploy_contracts() {
+        info!("test-runner in contract deploying mode, deploying contracts, then exiting");
+        deploy_contracts(&contact).await;
+        return;
+    }
 
     info!("Waiting for Cosmos chain to come online");
     wait_for_cosmos_online(&contact, TOTAL_TIMEOUT).await;
