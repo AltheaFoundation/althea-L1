@@ -56,10 +56,8 @@ node_modules
 typechain
 target
 tests/test-runner/Cargo.lock
-tests/dockerfile/gravity.tar.gz
+tests/dockerfile/althea.tar.gz
 solidity/dist
-orchestrator/bins
-oldgravity
 
 # IDE files
 .idea/
