@@ -40,9 +40,12 @@ $BIN init $STARTING_VALIDATOR_HOME --chain-id=$CHAIN_ID validator$STARTING_VALID
 # add in denom metadata for both native tokens
 jq '.app_state.bank.denom_metadata += [{"name": "althea", "symbol": "althea", "base": "aalthea", display: "althea", "description": "The native staking token of Althea-Chain (18 decimals)", "denom_units": [{"denom": "aalthea", "exponent": 0, "aliases": ["attoalthea", "althea-wei"]}, {"denom": "nalthea", "exponent": 9, "aliases": ["nanoalthea", "althea-gwei"]}, {"denom": "althea", "exponent": 18}]}]' /validator$STARTING_VALIDATOR/config/genesis.json > /staking-token-genesis.json
 jq '.app_state.bank.denom_metadata += [{"name": "FOO", "symbol": "FOO", "base": "ufootoken", display: "footoken", "description": "A non-staking native test token (6 decimals)", "denom_units": [{"denom": "ufootoken", "exponent": 0}, {"denom": "footoken", "exponent": 6}]}]' /staking-token-genesis.json > /foo-token-genesis.json
+# Link the native coin to the EVM
+jq '.app_state.evm.params.evm_denom="acanto"' /foo-token-genesis.json > /evm-denom-genesis.json
+
 
 # a 120 second voting period to allow us to pass governance proposals in the tests
-jq '.app_state.gov.voting_params.voting_period = "120s"' /foo-token-genesis.json > /edited-genesis.json
+jq '.app_state.gov.voting_params.voting_period = "120s"' /evm-denom-genesis.json > /edited-genesis.json
 
 # rename base denom to aalthea
 sed -i 's/stake/aalthea/g' /edited-genesis.json

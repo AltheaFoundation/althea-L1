@@ -151,26 +151,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 // initAppConfig defines the default configuration. These defaults can be overridden via an
 // app.toml file or with flags provided on the command line
 func initAppConfig() (string, interface{}) {
-	// type AltheaAppConfig struct {
-	// 	serverconfig.Config
-	// }
-
 	// DEFAULT SERVER CONFIGURATIONS
 	appTempl, appCfg := ethermintserverconfig.AppConfig(altheacfg.NativeToken)
-
-	// TODO: Analyze the differences between what the ethermint config provides, and the default one
-	//
-	// CUSTOM APP CONFIG - add members to this struct to add althea-specific configuration options
-	// NOTE: Make sure config options are explained with their default values in altheaAppTemplate
-	// altheaAppConfig := AltheaAppConfig{
-	// 	Config: *srvConfig,
-	// }
-
-	// TODO: Analyze the differences between what the ethermint config provides, and the default one
-	//
-	// CUSTOM CONFIG TEMPLATE - add to this string when adding althea-specific configurations have been added to
-	// AltheaAppConfig above, an example can be seen at https://github.com/cosmos/cosmos-sdk/blob/master/simapp/simd/cmd/root.go
-	// altheaAppTemplate := serverconfig.DefaultConfigTemplate
 
 	return appTempl, appCfg
 }
