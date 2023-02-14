@@ -68,11 +68,23 @@ fn compile_protos(out_dir: &Path, tmp_dir: &Path) {
 
     let mut althea_proto_include_dir = root.clone();
     althea_proto_include_dir.push("proto/");
-    let mut third_party_proto_include_dir = root;
+    let mut third_party_proto_include_dir = root.clone();
     third_party_proto_include_dir.push("third_party/proto");
 
+    // Third party protos which are not maintained in another repo
+
+    let mut ethermint_proto_dir = root.clone();
+    ethermint_proto_dir.push("third_party/proto/ethermint");
+    let mut canto_proto_dir = root;
+    canto_proto_dir.push("third_party/proto/canto");
+
     // Paths
-    let proto_paths = [lockup_proto_dir, microtx_proto_dir];
+    let proto_paths = [
+        lockup_proto_dir,
+        microtx_proto_dir,
+        ethermint_proto_dir,
+        canto_proto_dir,
+    ];
     // we need to have an include which is just the folder of our protos to satisfy protoc
     // which insists that any passed file be included in a directory passed as an include
     let proto_include_paths = [althea_proto_include_dir, third_party_proto_include_dir];
