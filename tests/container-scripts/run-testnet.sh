@@ -21,7 +21,7 @@ do
         RPC_ADDRESS="--rpc.laddr tcp://0.0.0.0:26657"
         GRPC_ADDRESS="--grpc.address 0.0.0.0:9090"
         GRPC_WEB_ADDRESS="--grpc-web.address 0.0.0.0:9092"
-        ETH_RPC_ADDRESS="--json-rpc.address 0.0.0.0:8545"
+        ETH_RPC_ADDRESS="--json-rpc.address 127.0.0.1:8545"
         sed -i 's/enable-unsafe-cors = false/enable-unsafe-cors = true/g' /validator$i/config/app.toml
         sed -i 's/enabled-unsafe-cors = false/enabled-unsafe-cors = true/g' /validator$i/config/app.toml
         sed -i 's/enable = false/enable = true/g' /validator$i/config/app.toml #enables more than we want, but will work for now
