@@ -489,7 +489,7 @@ pub async fn get_validator_to_delegate_to(contact: &Contact) -> (CosmosAddress, 
     let mut lowest = 0u8.into();
     for v in validators {
         let amount: Uint256 = v.tokens.parse().unwrap();
-        total_bonded_stake += amount.clone();
+        total_bonded_stake += amount;
 
         if lowest == 0u8.into() || amount < lowest {
             lowest = amount;
