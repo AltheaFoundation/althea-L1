@@ -21,7 +21,7 @@ make install
 tests/container-scripts/setup-validators.sh $NODES
 tests/container-scripts/run-testnet.sh $NODES
 
-sleep 60
+sleep 10
 
 # deploy the ethereum contracts
 pushd /althea/integration_tests/test_runner

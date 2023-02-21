@@ -1,5 +1,8 @@
-use crate::utils::{ValidatorKeys, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT};
+use crate::utils::{
+    send_erc20_bulk, EthermintUserKey, ValidatorKeys, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT,
+};
 use clarity::Address as EthAddress;
+use clarity::Uint256;
 use deep_space::private_key::CosmosPrivateKey;
 use deep_space::private_key::PrivateKey;
 use deep_space::Contact;
@@ -7,6 +10,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;
 use std::process::{Command, ExitStatus};
+use web30::client::Web3;
+use web30::jsonrpc::error::Web3Error;
 
 /// Parses the output of the cosmoscli keys add command to import the private key
 fn parse_phrases(filename: &str) -> (Vec<CosmosPrivateKey>, Vec<String>) {
@@ -117,6 +122,36 @@ pub async fn deploy_contracts(contact: &Contact) {
     file.write_all(&output.stdout).unwrap();
 }
 
+// TODO: Fix send_erc20_bulk to make this method not so slow
+pub async fn send_erc20s_to_evm_users(
+    web3: &Web3,
+    erc20_contracts: Vec<EthAddress>,
+    evm_users: Vec<EthermintUserKey>,
+    amount: Uint256,
+) -> Result<(), Web3Error> {
+    let destinations: Vec<EthAddress> = evm_users.into_iter().map(|euk| euk.eth_address).collect();
+
+    // The users have been funded, skip sending erc20s
+    if !web3
+        .get_erc20_balance(
+            *erc20_contracts.get(0).unwrap(),
+            *destinations.get(0).unwrap(),
+        )
+        .await
+        .unwrap()
+        .is_zero()
+    {
+        return Ok(());
+    }
+
+    for erc20 in erc20_contracts {
+        for dest in &destinations {
+            send_erc20_bulk(amount, erc20, &[dest.clone()], web3).await;
+        }
+    }
+    Ok(())
+}
+
 fn all_paths_exist(input: &[&str]) -> bool {
     for i in input {
         if !Path::new(i).exists() {
@@ -137,8 +172,6 @@ fn return_existing<'a>(a: [&'a str; 1], b: [&'a str; 1]) -> [&'a str; 1] {
 }
 
 pub struct BootstrapContractAddresses {
-    pub gravity_contract: EthAddress,
-    pub gravity_erc721_contract: EthAddress,
     pub erc20_addresses: Vec<EthAddress>,
     pub erc721_addresses: Vec<EthAddress>,
     pub uniswap_liquidity_address: Option<EthAddress>,
@@ -151,19 +184,11 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
         File::open("/contracts").expect("Failed to find contracts! did they not deploy?");
     let mut output = String::new();
     file.read_to_string(&mut output).unwrap();
-    let mut maybe_gravity_address = None;
-    let mut maybe_gravity_erc721_address = None;
     let mut erc20_addresses = Vec::new();
     let mut erc721_addresses = Vec::new();
     let mut uniswap_liquidity = None;
     for line in output.lines() {
-        if line.contains("Gravity deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
-            maybe_gravity_address = Some(address_string.trim().parse().unwrap());
-        } else if line.contains("GravityERC721 deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
-            maybe_gravity_erc721_address = Some(address_string.trim().parse().unwrap());
-        } else if line.contains("ERC20 deployed at Address -") {
+        if line.contains("ERC20 deployed at Address -") {
             let address_string = line.split('-').last().unwrap();
             erc20_addresses.push(address_string.trim().parse().unwrap());
             info!("found erc20 address it is {}", address_string);
@@ -176,11 +201,7 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
             uniswap_liquidity = Some(address_string.trim().parse().unwrap());
         }
     }
-    let gravity_address: EthAddress = maybe_gravity_address.unwrap();
-    let gravity_erc721_address: EthAddress = maybe_gravity_erc721_address.unwrap();
     BootstrapContractAddresses {
-        gravity_contract: gravity_address,
-        gravity_erc721_contract: gravity_erc721_address,
         erc20_addresses,
         erc721_addresses,
         uniswap_liquidity_address: uniswap_liquidity,
