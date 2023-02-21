@@ -13,6 +13,10 @@ ALLOCATION="1000000000000000000000000${STAKING_TOKEN},1000000000000ufootoken"
 
 # Static EVM addresses (Ethermint keys) which will receive enough althea token for EVM operations
 # These will be duplicated in the solidity directory and the integration_tests lib so that tests and CLI tools
+EVM_MINER_ALLOCATION="5000000000000000000000000${STAKING_TOKEN}"
+EVM_MINER_ETH_PRIVKEY="b1bab011e03a9862664706fc3bbaa1b16651528e5f0e7fbfcbfdd8be302a13e7"
+EVM_MINER_ADDRESS="althea1hanqss6jsq66tfyjz56wz44z0ejtyv0768q8r4"
+EVM_MINER_ETH_ADDRESS="bf660843528035a5a4921534e156a27e64b231fe"
 EVM_USER_ALLOCATION="500000000000000000000000${STAKING_TOKEN}"
 EVM_USER_MNEMONICS=( \
     "dial point debris employ position cheap inmate nominee crisp grow hello body meadow clever cloth strike agree include dirt tenant hello pattern tattoo option" \
@@ -71,9 +75,10 @@ do
     mkdir -p /validator$i/config/
     mv /genesis.json /validator$i/config/genesis.json
     $BIN add-genesis-account $ARGS $VALIDATOR_KEY $ALLOCATION
-    # Initialize a genesis allocation for the EVM users after we set up the first validator
+    # Initialize a genesis allocation for the EVM users and the miner after we set up the first validator
     # these genesis allocations will be carried through to the final genesis file
     if [ $i -eq  1 ]; then 
+        $BIN add-genesis-account $ARGS $EVM_MINER_ADDRESS $EVM_MINER_ALLOCATION
         # Loop through all the EVM_USER_ADDRESSES, addr gets the "althea1..." value
         for addr in ${EVM_USER_ADDRESSES[@]}; do
             # Do NOT provide $KEY_ARGS here, we want Ethermint style keys with hd path "m/44'/60'/0'/0"
