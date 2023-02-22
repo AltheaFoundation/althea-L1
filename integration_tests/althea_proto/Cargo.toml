@@ -1,6 +1,6 @@
 [package]
 name = "althea_proto"
-version = "0.0.1"
+version = "0.0.2"
 description = "Protobuf stuct defintions for interacting with Althea Chain"
 authors = ["Justin Kilpatrick <justin@althea.net>", "Christian Borst <christian@althea.systems>"]
 edition = "2018"
