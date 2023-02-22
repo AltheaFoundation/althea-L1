@@ -5,7 +5,7 @@ TEST_TYPE=$2
 set -eux
 
 bash /althea/tests/container-scripts/setup-validators.sh $NODES
-
+bash /althea/tests/container-scripts/setup-ibc-validators.sh $NODES
 bash /althea/tests/container-scripts/run-testnet.sh $NODES $TEST_TYPE &
 
 sleep 30

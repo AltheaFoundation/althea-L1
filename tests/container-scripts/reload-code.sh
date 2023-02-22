@@ -12,6 +12,7 @@ pkill althea || true # allowed to fail
 for i in $(seq 1 $NODES);
 do
     rm -rf "/validator$i"
+    rm -rf "/ibc$i"
 done
 
 
@@ -19,9 +20,16 @@ cd /althea/
 export PATH=$PATH:/usr/local/go/bin
 make install
 tests/container-scripts/setup-validators.sh $NODES
+read -p "Time to run setup-ibc-validators and figure out what hte issue s..."
+tests/container-scripts/setup-ibc-validators.sh $NODES
 tests/container-scripts/run-testnet.sh $NODES
 
-sleep 10
+# Setup relayer files to avoid permissions issues later
+set +e
+mkdir /ibc-relayer-logs
+touch /ibc-relayer-logs/hermes-logs
+touch /ibc-relayer-logs/channel-creation
+set -e
 
 # deploy the ethereum contracts
 pushd /althea/integration_tests/test_runner
