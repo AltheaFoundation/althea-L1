@@ -1,7 +1,7 @@
 # althea_proto
 
 [![Crate][crate-image]][crate-link]
-[![Apache 2.0 Licensed][license-image]]
+![Apache 2.0 Licensed][license-image]
 
 Rust crate for interacting with compiled Protobufs used by [Althea Chain].
 
