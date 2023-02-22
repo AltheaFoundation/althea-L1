@@ -1,8 +1,14 @@
 [package]
 name = "althea_proto"
-version = "0.1.0"
+version = "0.0.3"
+description = "Protobuf stuct defintions for interacting with Althea Chain"
 authors = ["Justin Kilpatrick <justin@althea.net>", "Christian Borst <christian@althea.systems>"]
 edition = "2018"
+license = "Apache-2.0"
+repository = "https://github.com/althea-net/althea-chain/tree/main/integration_tests/althea_proto"
+readme = "README.md"
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+keywords = ["blockchain", "cosmos", "tendermint", "proto"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,4 +17,3 @@ prost = "0.10"
 prost-types = "0.10"
 cosmos-sdk-proto = {package = "cosmos-sdk-proto-althea", version = "0.13", features = ["bech32ibc", "ethermint"]}
 tonic = "0.7"
-deep_space = "2.14"

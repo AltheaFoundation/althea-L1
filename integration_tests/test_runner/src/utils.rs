@@ -2,7 +2,6 @@ use althea_proto::{
     canto::erc20::v1::{RegisterCoinProposal, RegisterErc20Proposal},
     cosmos_sdk_proto::cosmos::{
         bank::v1beta1::Metadata,
-        base::abci::v1beta1::TxResponse,
         gov::v1beta1::VoteOption,
         params::v1beta1::{ParamChange, ParameterChangeProposal},
         staking::v1beta1::{DelegationResponse, QueryValidatorsRequest},
@@ -12,17 +11,16 @@ use althea_proto::{
 use bytes::BytesMut;
 
 use clarity::{Address as EthAddress, PrivateKey as EthPrivateKey, Uint256};
+use deep_space::address::Address as CosmosAddress;
 use deep_space::client::{types::LatestBlock, ChainStatus};
 use deep_space::coin::Coin;
 use deep_space::error::CosmosGrpcError;
 use deep_space::private_key::{CosmosPrivateKey, PrivateKey};
-use deep_space::{address::Address as CosmosAddress, error::AddressError};
 use deep_space::{Contact, EthermintPrivateKey};
 use futures::future::join_all;
 use prost::{DecodeError, Message};
 use prost_types::Any;
 use rand::Rng;
-use sha256;
 use std::{convert::TryInto, env};
 use std::{
     str::FromStr,
@@ -30,11 +28,6 @@ use std::{
 };
 use tokio::time::sleep;
 use web30::{client::Web3, jsonrpc::error::Web3Error, types::SendTxOption};
-
-use crate::type_urls::{
-    PARAMETER_CHANGE_PROPOSAL_TYPE_URL, REGISTER_COIN_PROPOSAL_TYPE_URL,
-    REGISTER_ERC20_PROPOSAL_TYPE_URL, SOFTWARE_UPGRADE_PROPOSAL_TYPE_URL,
-};
 
 /// the timeout for individual requests
 pub const OPERATION_TIMEOUT: Duration = Duration::from_secs(30);
@@ -313,16 +306,16 @@ pub async fn create_parameter_change_proposal(
         description: "test proposal".to_string(),
         changes: params_to_change,
     };
-    let res = submit_parameter_change_proposal(
-        proposal,
-        get_deposit(),
-        fee_coin,
-        contact,
-        key,
-        Some(TOTAL_TIMEOUT),
-    )
-    .await
-    .unwrap();
+    let res = contact
+        .submit_parameter_change_proposal(
+            proposal,
+            get_deposit(),
+            fee_coin,
+            key,
+            Some(TOTAL_TIMEOUT),
+        )
+        .await
+        .unwrap();
     trace!("Gov proposal executed with {:?}", res);
 }
 
@@ -365,16 +358,16 @@ pub async fn execute_register_erc20_proposal(
         description: erc20_params.proposal_desc,
         erc20address: erc20_params.erc20_address,
     };
-    let res = submit_register_erc20_proposal(
-        proposal,
-        get_deposit(),
-        get_fee(None),
-        contact,
-        keys[0].validator_key,
-        Some(duration),
-    )
-    .await
-    .unwrap();
+    let res = contact
+        .submit_register_erc20_proposal(
+            proposal,
+            get_deposit(),
+            get_fee(None),
+            keys[0].validator_key,
+            Some(duration),
+        )
+        .await
+        .unwrap();
     info!("Gov proposal executed with {:?}", res);
 
     vote_yes_on_proposals(contact, keys, None).await;
@@ -406,16 +399,16 @@ pub async fn execute_register_coin_proposal(
         description: coin_params.proposal_desc,
         metadata: Some(coin_params.coin_metadata),
     };
-    let res = submit_register_coin_proposal(
-        proposal,
-        get_deposit(),
-        get_fee(None),
-        contact,
-        keys[0].validator_key,
-        Some(duration),
-    )
-    .await
-    .unwrap();
+    let res = contact
+        .submit_register_coin_proposal(
+            proposal,
+            get_deposit(),
+            get_fee(None),
+            keys[0].validator_key,
+            Some(duration),
+        )
+        .await
+        .unwrap();
     info!("Gov proposal executed with {:?}", res);
 
     vote_yes_on_proposals(contact, keys, None).await;
@@ -454,16 +447,16 @@ pub async fn execute_upgrade_proposal(
         description: upgrade_params.proposal_desc,
         plan: Some(plan),
     };
-    let res = submit_upgrade_proposal(
-        proposal,
-        get_deposit(),
-        get_fee(None),
-        contact,
-        keys[0].validator_key,
-        Some(duration),
-    )
-    .await
-    .unwrap();
+    let res = contact
+        .submit_upgrade_proposal(
+            proposal,
+            get_deposit(),
+            get_fee(None),
+            keys[0].validator_key,
+            Some(duration),
+        )
+        .await
+        .unwrap();
     info!("Gov proposal executed with {:?}", res);
 
     vote_yes_on_proposals(contact, keys, None).await;
@@ -784,94 +777,6 @@ pub async fn wait_for_balance(
     }
 
     panic!("User did not attain >= expected balance");
-}
-
-// TODO: launch into deep space
-// Locally computes the address for a Cosmos ModuleAccount, which is the first 20 bytes of
-// the sha256 hash of the name of the module.
-// See Module() for more info: https://github.com/cosmos/cosmos-sdk/blob/main/types/address/hash.go
-//
-// Note: some accounts like the Distribution module's "fee_collector" work the same way,
-// despite the fact that "fee_collector" is not a module
-pub fn get_module_account_address(
-    module_name: &str,
-    prefix: Option<&str>,
-) -> Result<CosmosAddress, AddressError> {
-    let prefix = prefix.unwrap_or(&ADDRESS_PREFIX);
-    CosmosAddress::from_slice(&sha256::digest(module_name).as_bytes()[0..20], prefix)
-}
-
-// Performs the same function as `althea debug addr` to convert address types
-pub fn cosmos_address_to_eth_address(address: CosmosAddress) -> Result<EthAddress, clarity::Error> {
-    EthAddress::from_slice(address.get_bytes())
-}
-
-// TODO: launch into deep space
-/// Encodes and submits a proposal change bridge parameters, should maybe be in deep_space
-pub async fn submit_parameter_change_proposal(
-    proposal: ParameterChangeProposal,
-    deposit: Coin,
-    fee: Coin,
-    contact: &Contact,
-    key: impl PrivateKey,
-    wait_timeout: Option<Duration>,
-) -> Result<TxResponse, CosmosGrpcError> {
-    // encode as a generic proposal
-    let any = encode_any(proposal, PARAMETER_CHANGE_PROPOSAL_TYPE_URL.to_string());
-    contact
-        .create_gov_proposal(any, deposit, fee, key, wait_timeout)
-        .await
-}
-
-// TODO: launch into deep space
-/// Encodes and submits a proposal to register a Coin for use with the ev module
-pub async fn submit_register_coin_proposal(
-    proposal: RegisterCoinProposal,
-    deposit: Coin,
-    fee: Coin,
-    contact: &Contact,
-    key: impl PrivateKey,
-    wait_timeout: Option<Duration>,
-) -> Result<TxResponse, CosmosGrpcError> {
-    // encode as a generic proposal
-    let any = encode_any(proposal, REGISTER_COIN_PROPOSAL_TYPE_URL.to_string());
-    contact
-        .create_gov_proposal(any, deposit, fee, key, wait_timeout)
-        .await
-}
-
-// TODO: launch into deep space
-/// Encodes and submits a proposal to register an ERC20 for use with the bank module
-pub async fn submit_register_erc20_proposal(
-    proposal: RegisterErc20Proposal,
-    deposit: Coin,
-    fee: Coin,
-    contact: &Contact,
-    key: impl PrivateKey,
-    wait_timeout: Option<Duration>,
-) -> Result<TxResponse, CosmosGrpcError> {
-    // encode as a generic proposal
-    let any = encode_any(proposal, REGISTER_ERC20_PROPOSAL_TYPE_URL.to_string());
-    contact
-        .create_gov_proposal(any, deposit, fee, key, wait_timeout)
-        .await
-}
-
-// TODO: launch into deep space
-/// Encodes and submits a proposal to upgrade chain software, should maybe be in deep_space (sorry)
-pub async fn submit_upgrade_proposal(
-    proposal: SoftwareUpgradeProposal,
-    deposit: Coin,
-    fee: Coin,
-    contact: &Contact,
-    key: impl PrivateKey,
-    wait_timeout: Option<Duration>,
-) -> Result<TxResponse, CosmosGrpcError> {
-    // encode as a generic proposal
-    let any = encode_any(proposal, SOFTWARE_UPGRADE_PROPOSAL_TYPE_URL.to_string());
-    contact
-        .create_gov_proposal(any, deposit, fee, key, wait_timeout)
-        .await
 }
 
 /// waits for the governance proposal to execute by waiting for it to leave

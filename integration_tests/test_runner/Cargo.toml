@@ -15,12 +15,12 @@ name = "test-runner"
 path = "src/bin/main.rs"
 
 [dependencies]
-althea_proto = { path = "../althea_proto" }
 
 bytes = "1"
 prost = "0.10"
 prost-types = "0.10"
-deep_space = {version = "2.16", features = ["ethermint"]}
+althea_proto = "0"
+deep_space = {version = "2.17", features = ["ethermint"]}
 serde_derive = "1.0"
 clarity = "0.7"
 docopt = "1"
