@@ -56,6 +56,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/evidence"
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
+	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
@@ -176,6 +179,7 @@ var (
 		evm.AppModuleBasic{},
 		erc20.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
+		feegrantmodule.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -244,6 +248,7 @@ type AltheaApp struct { // nolint: golint
 	evmKeeper         *evmkeeper.Keeper
 	erc20Keeper       *erc20keeper.Keeper
 	feemarketKeeper   *feemarketkeeper.Keeper
+	feegrantKeeper    *feegrantkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      *capabilitykeeper.ScopedKeeper
@@ -326,6 +331,9 @@ func (app AltheaApp) ValidateMembers() {
 	if app.feemarketKeeper == nil {
 		panic("Nil feemarketKeeper!")
 	}
+	if app.feegrantKeeper == nil {
+		panic("Nil feegrantKeeper!")
+	}
 
 	// scoped keepers
 	if app.ScopedIBCKeeper == nil {
@@ -374,6 +382,7 @@ func NewAltheaApp(
 		ibchost.StoreKey, upgradetypes.StoreKey, evidencetypes.StoreKey,
 		ibctransfertypes.StoreKey, capabilitytypes.StoreKey, lockuptypes.StoreKey,
 		erc20types.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey,
+		feegrant.StoreKey,
 	)
 	// Transient keys which only last for a block before being wiped
 	// Params uses thsi to track whether some parameter changed this block or not
@@ -611,6 +620,9 @@ func NewAltheaApp(
 	)
 	app.evidenceKeeper = &evidenceKeeper
 
+	feegrantKeeper := feegrantkeeper.NewKeeper(appCodec, keys[feegrant.StoreKey], accountKeeper)
+	app.feegrantKeeper = &feegrantKeeper
+
 	// Althea custom modules
 
 	// Lockup locks the chain at genesis to prevent native token transfers before the chain is sufficiently decentralized
@@ -700,6 +712,7 @@ func NewAltheaApp(
 		ibc.NewAppModule(&ibcKeeper),
 		params.NewAppModule(paramsKeeper),
 		ibcTransferAppModule,
+		feegrantmodule.NewAppModule(appCodec, accountKeeper, bankKeeper, feegrantKeeper, interfaceRegistry),
 		lockup.NewAppModule(lockupKeeper, bankKeeper),
 		microtx.NewAppModule(microtxKeeper, bankKeeper),
 		evm.NewAppModule(evmKeeper, accountKeeper),
@@ -733,6 +746,7 @@ func NewAltheaApp(
 		genutiltypes.ModuleName,
 		authz.ModuleName,
 		govtypes.ModuleName,
+		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
@@ -759,6 +773,7 @@ func NewAltheaApp(
 		ibctransfertypes.ModuleName,
 		genutiltypes.ModuleName,
 		authz.ModuleName,
+		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
@@ -784,6 +799,7 @@ func NewAltheaApp(
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		authz.ModuleName,
+		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
@@ -841,7 +857,7 @@ func NewAltheaApp(
 		FeeMarketKeeper: feemarketKeeper,
 		StakingKeeper:   stakingKeeper,
 		EvmKeeper:       evmKeeper,
-		FeegrantKeeper:  nil,
+		FeegrantKeeper:  feegrantKeeper,
 		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 		SigGasConsumer:  SigVerificationGasConsumer,
 		Cdc:             appCodec,
