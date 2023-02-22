@@ -23,11 +23,8 @@ $BIN init $STARTING_VALIDATOR_HOME --chain-id=$CHAIN_ID ibc$STARTING_VALIDATOR
 ## testing the generated one with the default values provided by the module.
 
 # add in denom metadata for both native tokens
-jq \
-  '.app_state.bank.denom_metadata += [\
-  {"name": "FOO", "symbol": "FOO", "base": "ufootoken", display: "footoken", "description": "A non-staking native test token (6 decimals)", "denom_units": [{"denom": "ufootoken", "exponent": 0}, {"denom": "footoken", "exponent": 6}]}],\
-  {"name": "Stake Token", "symbol": "STEAK", "base": "stake", display: "mstake", "description": "A staking test token", "denom_units": [{"denom": "stake", "exponent": 0}, {"denom": "mstake", "exponent": 6}]}]'\
-  /ibc$STARTING_VALIDATOR/config/genesis.json > /ibc-metadata-genesis.json
+jq '.app_state.bank.denom_metadata += [{"name": "stake", "symbol": "STEAK", "base": "ustake", display: "stake", "description": "The staking token (6 decimals)", "denom_units": [{"denom": "ustake", "exponent": 0}, {"denom": "stake", "exponent": 6}]}]' /ibc$STARTING_VALIDATOR/config/genesis.json > /staking-token-genesis.json
+jq '.app_state.bank.denom_metadata += [{"name": "footoken", "symbol": "FOO", "base": "ufootoken", display: "footoken", "description": "A non-staking native test token (6 decimals)", "denom_units": [{"denom": "ufootoken", "exponent": 0}, {"denom": "footoken", "exponent": 6}]}]' /staking-token-genesis.json > /ibc-metadata-genesis.json
 
 # a 60 second voting period to allow us to pass governance proposals in the tests
 jq '.app_state.gov.voting_params.voting_period = "60s"' /ibc-metadata-genesis.json > /ibc-edited-genesis.json

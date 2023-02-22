@@ -20,7 +20,6 @@ cd /althea/
 export PATH=$PATH:/usr/local/go/bin
 make install
 tests/container-scripts/setup-validators.sh $NODES
-read -p "Time to run setup-ibc-validators and figure out what hte issue s..."
 tests/container-scripts/setup-ibc-validators.sh $NODES
 tests/container-scripts/run-testnet.sh $NODES
 
