@@ -2,12 +2,13 @@
 
 use std::str::FromStr;
 
+use crate::bootstrapping::STAKING_TOKEN;
 use crate::type_urls::{MSG_CONVERT_COIN_TYPE_URL, MSG_CONVERT_ERC20_TYPE_URL};
 use crate::utils::{
     cosmos_address_to_eth_address, execute_register_coin_proposal, execute_register_erc20_proposal,
     footoken_metadata, get_module_account_address, one_atom, one_eth, EthermintUserKey,
     RegisterCoinProposalParams, RegisterErc20ProposalParams, ValidatorKeys, OPERATION_TIMEOUT,
-    STAKING_TOKEN, TOTAL_TIMEOUT,
+    TOTAL_TIMEOUT,
 };
 use althea_proto::canto::erc20::v1::query_client::QueryClient as Erc20QueryClient;
 use althea_proto::canto::erc20::v1::{MsgConvertCoin, MsgConvertErc20, QueryTokenPairRequest};

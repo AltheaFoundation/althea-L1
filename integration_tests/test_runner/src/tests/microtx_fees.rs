@@ -1,7 +1,8 @@
+use crate::bootstrapping::STAKING_TOKEN;
 use crate::type_urls::MSG_XFER_TYPE_URL;
 use crate::utils::{
     bulk_get_user_keys, get_test_token_name, one_atom_128, send_funds_bulk, CosmosUser,
-    ValidatorKeys, OPERATION_TIMEOUT, STAKING_TOKEN,
+    ValidatorKeys, OPERATION_TIMEOUT,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use althea_proto::microtx::v1::MsgXfer;

@@ -11,18 +11,18 @@ use std::env;
 use test_runner::bootstrapping::parse_contract_addresses;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
 use test_runner::bootstrapping::{deploy_contracts, get_keys};
+use test_runner::bootstrapping::{
+    ADDRESS_PREFIX, COSMOS_NODE_GRPC, ETH_NODE, EVM_USER_KEYS, STAKING_TOKEN,
+};
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
 use test_runner::tests::lockup::lockup_test;
 use test_runner::tests::microtx_fees::microtx_fees_test;
 use test_runner::utils::one_atom;
 use test_runner::utils::one_hundred_eth;
 use test_runner::utils::send_funds_bulk;
-use test_runner::utils::ETH_NODE;
-use test_runner::utils::EVM_USER_KEYS;
-use test_runner::utils::STAKING_TOKEN;
 use test_runner::utils::{
-    get_test_token_name, should_deploy_contracts, wait_for_cosmos_online, ADDRESS_PREFIX,
-    COSMOS_NODE_GRPC, OPERATION_TIMEOUT, TOTAL_TIMEOUT,
+    get_test_token_name, should_deploy_contracts, wait_for_cosmos_online, OPERATION_TIMEOUT,
+    TOTAL_TIMEOUT,
 };
 
 #[actix_rt::main]

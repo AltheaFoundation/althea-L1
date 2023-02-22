@@ -10,7 +10,6 @@ use althea_proto::{
     },
 };
 use bytes::BytesMut;
-
 use clarity::{Address as EthAddress, PrivateKey as EthPrivateKey, Uint256};
 use deep_space::client::{types::LatestBlock, ChainStatus};
 use deep_space::coin::Coin;
@@ -31,59 +30,18 @@ use std::{
 use tokio::time::sleep;
 use web30::{client::Web3, jsonrpc::error::Web3Error, types::SendTxOption};
 
-use crate::type_urls::{
-    PARAMETER_CHANGE_PROPOSAL_TYPE_URL, REGISTER_COIN_PROPOSAL_TYPE_URL,
-    REGISTER_ERC20_PROPOSAL_TYPE_URL, SOFTWARE_UPGRADE_PROPOSAL_TYPE_URL,
+use crate::{
+    bootstrapping::{ADDRESS_PREFIX, MINER_ETH_ADDRESS, MINER_PRIVATE_KEY, STAKING_TOKEN},
+    type_urls::{
+        PARAMETER_CHANGE_PROPOSAL_TYPE_URL, REGISTER_COIN_PROPOSAL_TYPE_URL,
+        REGISTER_ERC20_PROPOSAL_TYPE_URL, SOFTWARE_UPGRADE_PROPOSAL_TYPE_URL,
+    },
 };
 
 /// the timeout for individual requests
 pub const OPERATION_TIMEOUT: Duration = Duration::from_secs(30);
 /// the timeout for the total system
 pub const TOTAL_TIMEOUT: Duration = Duration::from_secs(300);
-// The config file location for hermes
-pub const HERMES_CONFIG: &str = "/althea/tests/assets/ibc-relayer-config.toml";
-
-/// this value reflects the contents of /tests/container-scripts/setup-validator.sh
-/// and is used to compute if a stake change is big enough to trigger a validator set
-/// update since we want to make several such changes intentionally
-pub const STAKE_SUPPLY_PER_VALIDATOR: u128 = 1000000000;
-/// this is the amount each validator bonds at startup
-pub const STARTING_STAKE_PER_VALIDATOR: u128 = STAKE_SUPPLY_PER_VALIDATOR / 2;
-// Retrieve values from runtime ENV vars
-lazy_static! {
-    // ALTHEA CHAIN CONSTANTS
-    // These constants all apply to the althea instance running (althea-test-1)
-    pub static ref ADDRESS_PREFIX: String =
-        env::var("ADDRESS_PREFIX").unwrap_or_else(|_| "althea".to_string());
-    pub static ref STAKING_TOKEN: String =
-        env::var("STAKING_TOKEN").unwrap_or_else(|_| "aalthea".to_owned());
-    pub static ref COSMOS_NODE_GRPC: String =
-        env::var("COSMOS_NODE_GRPC").unwrap_or_else(|_| "http://localhost:9090".to_owned());
-    pub static ref COSMOS_NODE_ABCI: String =
-        env::var("COSMOS_NODE_ABCI").unwrap_or_else(|_| "http://localhost:26657".to_owned());
-
-    // IBC CHAIN CONSTANTS
-    // These constants all apply to the gaiad instance running (ibc-test-1)
-    pub static ref IBC_ADDRESS_PREFIX: String =
-        env::var("IBC_ADDRESS_PREFIX").unwrap_or_else(|_| "cosmos".to_string());
-    pub static ref IBC_STAKING_TOKEN: String =
-        env::var("IBC_STAKING_TOKEN").unwrap_or_else(|_| "stake".to_owned());
-    pub static ref IBC_NODE_GRPC: String =
-        env::var("IBC_NODE_GRPC").unwrap_or_else(|_| "http://localhost:9190".to_owned());
-    pub static ref IBC_NODE_ABCI: String =
-        env::var("IBC_NODE_ABCI").unwrap_or_else(|_| "http://localhost:27657".to_owned());
-
-    // LOCAL ETHEREUM CONSTANTS
-    pub static ref ETH_NODE: String =
-        env::var("ETH_NODE").unwrap_or_else(|_| "http://localhost:8545".to_owned());
-    pub static ref MINER_PRIVATE_KEY: EthPrivateKey =
-        "0xb1bab011e03a9862664706fc3bbaa1b16651528e5f0e7fbfcbfdd8be302a13e7"
-            .parse()
-            .unwrap();
-    pub static ref MINER_ETH_ADDRESS: EthAddress = MINER_PRIVATE_KEY.to_address();
-    pub static ref MINER_COSMOS_ADDRESS: CosmosAddress = CosmosAddress::from_bech32("althea1hanqss6jsq66tfyjz56wz44z0ejtyv0768q8r4".to_string()).unwrap();
-    pub static ref EVM_USER_KEYS: Vec<EthermintUserKey> = get_funded_evm_users();
-}
 
 /// Parses the DEPLOY_CONTRACTS env variable and determines if the ethereum contracts must be deployed
 pub fn should_deploy_contracts() -> bool {

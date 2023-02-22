@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 
+use crate::bootstrapping::{ADDRESS_PREFIX, STAKING_TOKEN};
 use crate::type_urls::{
     GENERIC_AUTHORIZATION_TYPE_URL, MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MULTI_SEND_TYPE_URL,
     MSG_SEND_TYPE_URL, MSG_TRANSFER_TYPE_URL, MSG_XFER_TYPE_URL,
@@ -7,7 +8,7 @@ use crate::type_urls::{
 use crate::utils::{
     create_parameter_change_proposal, encode_any, footoken_metadata, get_user_key, one_atom,
     send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute, CosmosUser,
-    ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
+    ValidatorKeys, OPERATION_TIMEOUT,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::authz::v1beta1::{
     GenericAuthorization, Grant, MsgExec, MsgGrant,
