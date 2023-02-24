@@ -48,10 +48,12 @@ jq '.app_state.bank.denom_metadata += [{"name": "althea", "symbol": "althea", "b
 jq '.app_state.bank.denom_metadata += [{"name": "FOO", "symbol": "FOO", "base": "ufootoken", display: "footoken", "description": "A non-staking native test token (6 decimals)", "denom_units": [{"denom": "ufootoken", "exponent": 0}, {"denom": "footoken", "exponent": 6}]}]' /staking-token-genesis.json > /foo-token-genesis.json
 # Link the native coin to the EVM
 jq ".app_state.evm.params.evm_denom=\"${STAKING_TOKEN}\"" /foo-token-genesis.json > /evm-denom-genesis.json
+# Unset the base fee in feemarket
+jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000000"' /evm-denom-genesis.json > /feemarket-gas-price-genesis.json
 
 
 # a 120 second voting period to allow us to pass governance proposals in the tests
-jq '.app_state.gov.voting_params.voting_period = "120s"' /evm-denom-genesis.json > /edited-genesis.json
+jq '.app_state.gov.voting_params.voting_period = "120s"' /feemarket-gas-price-genesis.json > /edited-genesis.json
 
 # rename base denom to aalthea
 sed -i 's/stake/aalthea/g' /edited-genesis.json

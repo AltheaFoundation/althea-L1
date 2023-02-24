@@ -9,8 +9,11 @@ const (
 	// 7357 = TEST, 417834 = ALTHEA mainnet
 	ChainIdPrefix  = "althea_7357-"
 	ChainIdVersion = "1"
+
+	OneGwei = int64(1_000_000_000)
 )
 
 var (
-	DefaultChainID = func() string { return ChainIdPrefix + ChainIdVersion }
+	DefaultChainID     = func() string { return ChainIdPrefix + ChainIdVersion }
+	DefaultMinGasPrice = func() int64 { return 1_000 * OneGwei }
 )

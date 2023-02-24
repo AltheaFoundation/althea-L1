@@ -112,6 +112,7 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 
 	altheaappparams "github.com/althea-net/althea-chain/app/params"
+	altheacfg "github.com/althea-net/althea-chain/config"
 	lockup "github.com/althea-net/althea-chain/x/lockup"
 	lockupkeeper "github.com/althea-net/althea-chain/x/lockup/keeper"
 	lockuptypes "github.com/althea-net/althea-chain/x/lockup/types"
@@ -134,7 +135,7 @@ func init() {
 	DefaultNodeHome = filepath.Join(userHomeDir, ".althea")
 
 	// TODO: Determine a sensible MinGasPrice for the EVM
-	feemarkettypes.DefaultMinGasPrice = sdk.NewDec(0)
+	feemarkettypes.DefaultMinGasPrice = sdk.NewDec(altheacfg.DefaultMinGasPrice())
 	feemarkettypes.DefaultMinGasMultiplier = sdk.NewDecWithPrec(1, 1)
 
 	// DefaultPowerReduction is used to translate full 6/8/18 decimal token value -> whole token representation for
