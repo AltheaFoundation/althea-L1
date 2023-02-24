@@ -46,10 +46,6 @@ issues:
         - gocyclo
         - exhaustruct
         - staticcheck
-    - path: x/microtx
-      linters:
-        - govet
-        - gocritic
     - path: contrib/
       linters:
         - exhaustruct
