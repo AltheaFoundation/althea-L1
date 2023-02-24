@@ -17,7 +17,7 @@ done
 
 cd /althea/
 export PATH=$PATH:/usr/local/go/bin
-make install
+make install-core
 tests/container-scripts/setup-validators.sh $NODES
 tests/container-scripts/run-testnet.sh $NODES
 

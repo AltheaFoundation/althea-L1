@@ -53,7 +53,11 @@ BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)' -gcflags="all=-N -l"
 
 all: install
 
-install: go.sum
+# run go mod verify + go install
+install: go.sum install-core
+
+# does not run go mod verify
+install-core:
 		export GOFLAGS='-buildmode=pie'
 		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
