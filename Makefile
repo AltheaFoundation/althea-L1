@@ -197,7 +197,7 @@ tools-clean:
 
 build-reproducible: go.sum
 	$(DOCKER) rm latest-build || true
-	$(DOCKER) run --volume=$(CURDIR)/.././:/sources:ro \
+	$(DOCKER) run --volume=$(CURDIR)/./:/sources:ro \
         --env TARGET_PLATFORMS='linux/amd64' \
         --env APP=althea \
         --env VERSION=$(VERSION) \

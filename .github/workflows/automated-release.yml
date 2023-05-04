@@ -1,0 +1,77 @@
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Automated release build
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build and upload release assets
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.13
+        id: go
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set ENV var for GOPATH
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+
+      # build the code before creating the release, GO and Solidity first for faster failures
+      - name: Build Althea Blockchain
+        run: |
+          make build-reproducible
+
+      # now that the code has built create the release and start uploading
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Althea Blockchain Build Report
+        id: upload-althea-blockchain-build-report
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/build_report
+          asset_name: build_report
+          asset_content_type: text
+ 
+      # the file names are hard to predict, so we rename them
+      - name: Rename build files
+        run: |
+          pushd ./artifacts/
+          cp *linux-amd64 althea-linux-amd64
+          popd
+
+      - name: Upload Althea blockchain Linux
+        id: upload-althea-linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/althea-linux-amd64
+          asset_name: althea-linux-amd64
+          asset_content_type: application/bin

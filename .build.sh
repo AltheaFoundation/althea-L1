@@ -1,6 +1,9 @@
+# This file is used in the reproducible cross platform builder for the Althea chain, it has to be at the top level
+# due to some expectations of the docker container doing the building, which is based off of Gaia's version
+
 #!/bin/bash
 
-set -ue
+set -uex
 
 # Expect the following envvars to be set:
 # - APP
@@ -17,12 +20,22 @@ set -ue
 # - BASEDIR
 # - OUTDIR
 
+export LEDGER_ENABLED=true
 # Build for each os-architecture pair
 for platform in ${TARGET_PLATFORMS} ; do
     # This function sets GOOS, GOARCH, and OS_FILE_EXT environment variables
     # according to the build target platform. OS_FILE_EXT is empty in all
     # cases except when the target platform is 'windows'.
     setup_build_env_for_platform "${platform}"
+
+    # build linux builds with security features these env vars
+    # are not unset, so it's important to run the linux builds last
+    if  [[ $platform == linux* ]] ;
+    then
+        export GOFLAGS='-buildmode=pie'
+        export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
+        export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
+    fi
 
     make clean
     echo Building for $(go env GOOS)/$(go env GOARCH) >&2
@@ -36,6 +49,7 @@ for platform in ${TARGET_PLATFORMS} ; do
 
     # This function restore the build environment variables to their
     # original state.
+
     restore_build_env
 done
 
