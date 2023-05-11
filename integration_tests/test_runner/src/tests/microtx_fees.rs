@@ -1,12 +1,12 @@
 use crate::type_urls::MSG_XFER_TYPE_URL;
 use crate::utils::{
     bulk_get_user_keys, get_test_token_name, one_atom_128, send_funds_bulk, CosmosUser,
-    ValidatorKeys, OPERATION_TIMEOUT, STAKING_TOKEN,
+    ValidatorKeys, OPERATION_TIMEOUT, STAKING_TOKEN, ADDRESS_PREFIX,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use althea_proto::microtx::v1::MsgXfer;
 use clarity::Uint256;
-use deep_space::{Address, Coin, Contact, Msg};
+use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
 use rand::distributions::Uniform;
 use rand::{thread_rng, Rng};
 
@@ -40,11 +40,15 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
             .iter()
             .map(|u| u.cosmos_address.clone())
             .collect::<Vec<Address>>(),
-        amount,
+        amount.clone(),
         Some(OPERATION_TIMEOUT),
     )
     .await
     .expect("Unable to send funds to all senders!");
+
+    info!("Sending test microtx");
+    let res = contact.send_microtx(amount, None, validator_keys[1].validator_key.to_address(&ADDRESS_PREFIX).unwrap(), None, validator_keys[0].validator_key).await;
+    info!("Microtx res {res:?}");
 
     let param = contact
         .get_param(MICROTX_SUBSPACE, XFER_FEE_BASIS_POINTS_PARAM_KEY)
