@@ -16,11 +16,11 @@ path = "src/bin/main.rs"
 
 [dependencies]
 
-bytes = "1"
+althea_proto = "0.1"
 prost = "0.10"
 prost-types = "0.10"
-althea_proto = "0"
-deep_space = {version = "2.17", features = ["ethermint"]}
+bytes = "1"
+deep_space = {version = "2.18", features = ["althea", "ethermint"]}
 serde_derive = "1.0"
 clarity = "0.7"
 docopt = "1"
@@ -40,3 +40,4 @@ tonic = "0.7"
 futures = "0.3"
 serde_json = "1.0"
 sha256 = "1"
+
