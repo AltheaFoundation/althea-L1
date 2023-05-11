@@ -436,11 +436,13 @@ pub async fn execute_upgrade_proposal(
         None => OPERATION_TIMEOUT,
     };
 
+    #[allow(deprecated)]
     let plan = Plan {
         name: upgrade_params.plan_name,
         time: None,
         height: upgrade_params.upgrade_height,
         info: upgrade_params.plan_info,
+        upgraded_client_state: None,
     };
     let proposal = SoftwareUpgradeProposal {
         title: upgrade_params.proposal_title,
