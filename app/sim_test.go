@@ -8,7 +8,6 @@ import (
 
 	althea "github.com/althea-net/althea-chain/app"
 
-	"github.com/cosmos/gaia/v4/app/helpers"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -88,7 +87,7 @@ func TestAppStateDeterminism(t *testing.T) {
 	config.ExportParamsPath = ""
 	config.OnOperation = false
 	config.AllInvariants = false
-	config.ChainID = helpers.SimAppChainID
+	config.ChainID = "gaia-app"
 
 	numSeeds := 3
 	numTimesToRunPerSeed := 5
