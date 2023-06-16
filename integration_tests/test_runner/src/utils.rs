@@ -842,16 +842,14 @@ pub async fn send_erc20_bulk(
         .await
         .unwrap();
     let mut transactions = Vec::new();
-    for (i, address) in destinations.iter().enumerate() {
+    for address in destinations {
         let send = web3.erc20_send(
             amount,
             *address,
             erc20,
             *MINER_PRIVATE_KEY,
             Some(OPERATION_TIMEOUT),
-            vec![
-                SendTxOption::Nonce(nonce.clone()),
-            ],
+            vec![SendTxOption::Nonce(nonce)],
         );
         transactions.push(send);
         nonce += 1u64.into();
