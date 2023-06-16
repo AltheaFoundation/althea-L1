@@ -6,54 +6,25 @@ on:
   pull_request:
     branches: [master, main]
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  lockup:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: satackey/action-docker-layer-caching@v0.0.11
-        continue-on-error: true
+      - uses: Swatinem/rust-cache@v1
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
-      - name: Prune cache to keep the size down
-        run: docker builder prune -af && docker system prune -af
-      - name: Lock up the chain and ensure funds are not transferrable
-        run: tests/all-up-test.sh LOCKUP
-  microtx_fees:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: satackey/action-docker-layer-caching@v0.0.11
-        continue-on-error: true
-        with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
-      - name: Prune cache to keep the size down
-        run: docker builder prune -af && docker system prune -af
-      - name: Assert that fees are collected by the microtx module
-        run: tests/all-up-test.sh MICROTX_FEES
-  erc20_conversion:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: satackey/action-docker-layer-caching@v0.0.11
-        continue-on-error: true
-        with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
-      - name: Prune cache to keep the size down
-        run: docker builder prune -af && docker system prune -af
-      - name: Test the erc20 module's token conversion functionality
-        run: tests/all-up-test.sh ERC20_CONVERSION
+          working-directory: integration-tests/
+      - name: Build Integration Tests
+        run: cd integration_tests && cargo check --all --verbose
   native_token:
     runs-on: ubuntu-latest
+    needs: build
     steps:
       - uses: actions/checkout@v2
-      - uses: satackey/action-docker-layer-caching@v0.0.11
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
         continue-on-error: true
         with:
           key: integration-test-cache-{hash}
@@ -63,4 +34,45 @@ jobs:
         run: docker builder prune -af && docker system prune -af
       - name: Test the native token features of the EVM
         run: tests/all-up-test.sh NATIVE_TOKEN
-
+  lockup:
+    runs-on: ubuntu-latest
+    needs: native_token
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Lock up the chain and ensure funds are not transferrable
+        run: tests/all-up-test.sh LOCKUP
+        env:
+          NO_IMAGE_BUILD: True
+  microtx_fees:
+    runs-on: ubuntu-latest
+    needs: native_token
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Assert that fees are collected by the microtx module
+        run: tests/all-up-test.sh MICROTX_FEES
+        env:
+          NO_IMAGE_BUILD: True
+  erc20_conversion:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Test the erc20 module's token conversion functionality
+        run: tests/all-up-test.sh ERC20_CONVERSION
+        env:
+          NO_IMAGE_BUILD: True
