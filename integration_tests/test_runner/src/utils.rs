@@ -221,7 +221,7 @@ pub fn get_ethermint_key(cosmos_prefix: Option<&str>) -> EthermintUserKey {
     // the starting location of the funds
     // the destination on cosmos that sends along to the final ethereum destination
     let ethermint_key = EthermintPrivateKey::from_secret(&secret);
-    let eth_privkey = EthPrivateKey::from_slice(&secret).unwrap();
+    let eth_privkey = EthPrivateKey::from_bytes(secret).unwrap();
     let ethermint_address = ethermint_key.to_address(cosmos_prefix).unwrap();
     // TODO: Verify that this conversion works like `evmosd debug addr`
     let eth_address = EthAddress::from_slice(ethermint_address.get_bytes()).unwrap();
@@ -850,9 +850,7 @@ pub async fn send_erc20_bulk(
             *MINER_PRIVATE_KEY,
             Some(OPERATION_TIMEOUT),
             vec![
-                SendTxOption::Nonce(nonce),
-                SendTxOption::GasLimit(100_000u32.into()),
-                SendTxOption::GasPriceMultiplier(5.0 + (0.1 * i as f32)),
+                SendTxOption::Nonce(nonce.clone()),
             ],
         );
         transactions.push(send);
