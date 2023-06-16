@@ -76,3 +76,17 @@ jobs:
         run: tests/all-up-test.sh ERC20_CONVERSION
         env:
           NO_IMAGE_BUILD: True
+  tokenized_accounts:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Test the microtx module's tokenized accounts functions
+        run: tests/all-up-test.sh TOKENIZED_ACCOUNTS
+        env:
+          NO_IMAGE_BUILD: True

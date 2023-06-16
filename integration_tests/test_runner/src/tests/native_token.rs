@@ -19,10 +19,11 @@ pub async fn native_token_test(
         validator_phrase: _,
     } in validator_keys
     {
-        let user = get_ethermint_key(Some(ADDRESS_PREFIX.as_str()));
+        let user = get_ethermint_key(None, None);
         users.push(user);
 
         let val_addr = key.to_address(ADDRESS_PREFIX.as_str()).unwrap();
+
         info!(
             "Validator {val_addr} balances: {:?}",
             contact.get_balances(val_addr).await
@@ -44,7 +45,7 @@ pub async fn native_token_test(
                 key,
             )
             .await
-            .expect("Failed to send tokens to user");
+            .unwrap();
 
         let user_cos_bal = contact
             .get_balance(user.ethermint_address, STAKING_TOKEN.to_string())

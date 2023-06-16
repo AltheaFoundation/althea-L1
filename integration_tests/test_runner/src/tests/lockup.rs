@@ -6,7 +6,7 @@ use crate::type_urls::{
 };
 use crate::utils::{
     create_parameter_change_proposal, encode_any, footoken_metadata, get_user_key, one_atom,
-    send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute, CosmosUser,
+    send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute, EthermintUserKey,
     ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::authz::v1beta1::{
@@ -65,7 +65,7 @@ pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) 
 async fn fund_lock_exempt_user(
     contact: &Contact,
     validator_keys: &[ValidatorKeys],
-    lock_exempt: CosmosUser,
+    lock_exempt: EthermintUserKey,
 ) {
     let sender = validator_keys.get(0).unwrap().validator_key;
     let amount = Coin {
@@ -73,12 +73,12 @@ async fn fund_lock_exempt_user(
         amount: one_atom() * 100u16.into(),
     };
 
-    info!("Funding lock exempt user {}", lock_exempt.cosmos_address);
+    info!("Funding lock exempt user {}", lock_exempt.ethermint_address);
     contact
         .send_coins(
             amount.clone(),
             Some(amount),
-            lock_exempt.cosmos_address,
+            lock_exempt.ethermint_address,
             Some(OPERATION_TIMEOUT),
             sender,
         )
@@ -89,31 +89,31 @@ async fn fund_lock_exempt_user(
 async fn fund_authorized_users(
     contact: &Contact,
     validator_keys: &[ValidatorKeys],
-    auth_1: CosmosUser,
-    auth_2: CosmosUser,
+    auth_1: EthermintUserKey,
+    auth_2: EthermintUserKey,
 ) {
     let sender = validator_keys.get(0).unwrap().validator_key;
     let amount = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: one_atom(),
     };
-    info!("Funding auth_1 user {}", auth_1.cosmos_address);
+    info!("Funding auth_1 user {}", auth_1.ethermint_address);
     contact
         .send_coins(
             amount.clone(),
             Some(amount.clone()),
-            auth_1.cosmos_address,
+            auth_1.ethermint_address,
             Some(OPERATION_TIMEOUT),
             sender,
         )
         .await
         .expect("Unable to send funds to auth_1 user!");
-    info!("Funding auth_2 user {}", auth_2.cosmos_address);
+    info!("Funding auth_2 user {}", auth_2.ethermint_address);
     contact
         .send_coins(
             amount.clone(),
             Some(amount),
-            auth_2.cosmos_address,
+            auth_2.ethermint_address,
             Some(OPERATION_TIMEOUT),
             sender,
         )
@@ -124,9 +124,9 @@ async fn fund_authorized_users(
 pub async fn lockup_the_chain(
     contact: &Contact,
     validator_keys: &[ValidatorKeys],
-    lock_exempt: &CosmosUser,
+    lock_exempt: &EthermintUserKey,
 ) {
-    let to_change = create_lockup_param_changes(lock_exempt.cosmos_address);
+    let to_change = create_lockup_param_changes(lock_exempt.ethermint_address);
     let proposer = validator_keys.get(0).unwrap();
     let zero_fee = Coin {
         denom: STAKING_TOKEN.clone(),
@@ -174,7 +174,7 @@ pub fn create_lockup_param_changes(exempt_user: Address) -> Vec<ParamChange> {
 pub async fn fail_to_send(
     contact: &Contact,
     validator_keys: &[ValidatorKeys],
-    authorized_users: [CosmosUser; 3],
+    authorized_users: [EthermintUserKey; 3],
 ) {
     let sender = validator_keys.get(0).unwrap().validator_key;
     let receiver = get_user_key(None);
@@ -183,13 +183,13 @@ pub async fn fail_to_send(
         amount: one_atom().to_string(),
     };
 
-    let msg_send = create_bank_msg_send(sender, receiver.cosmos_address, amount.clone());
+    let msg_send = create_bank_msg_send(sender, receiver.ethermint_address, amount.clone());
     let res = contact
         .send_message(&[msg_send], None, &[], Some(OPERATION_TIMEOUT), sender)
         .await;
     res.expect_err("Successfully sent via bank MsgSend? Should not be possible!");
     let msg_multi_send =
-        create_bank_msg_multi_send(sender, receiver.cosmos_address, amount.clone());
+        create_bank_msg_multi_send(sender, receiver.ethermint_address, amount.clone());
     let res = contact
         .send_message(
             &[msg_multi_send],
@@ -200,7 +200,8 @@ pub async fn fail_to_send(
         )
         .await;
     res.expect_err("Successfully sent via bank MsgMultiSend? Should not be possible!");
-    let msg_xfer = create_microtx_msg_xfer(sender, receiver.cosmos_address, amount.clone());
+    let msg_xfer =
+        create_microtx_msg_xfer(sender, receiver.ethermint_address, amount.clone());
     let res = contact
         .send_message(&[msg_xfer], None, &[], Some(OPERATION_TIMEOUT), sender)
         .await;
@@ -210,7 +211,7 @@ pub async fn fail_to_send(
         contact,
         sender,
         msg_send_authorized,
-        receiver.cosmos_address,
+        receiver.ethermint_address,
         amount.clone(),
     )
     .await
@@ -221,7 +222,7 @@ pub async fn fail_to_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
-            msg_send_authorized.cosmos_key,
+            msg_send_authorized.ethermint_key,
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgSend)? Should not be possible!");
@@ -230,7 +231,7 @@ pub async fn fail_to_send(
         contact,
         sender,
         msg_multi_send_authorized,
-        receiver.cosmos_address,
+        receiver.ethermint_address,
         amount.clone(),
     )
     .await
@@ -241,7 +242,7 @@ pub async fn fail_to_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
-            msg_multi_send_authorized.cosmos_key,
+            msg_multi_send_authorized.ethermint_key,
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgMultiSend)? Should not be possible!");
@@ -250,7 +251,7 @@ pub async fn fail_to_send(
         contact,
         sender,
         msg_xfer_authorized,
-        receiver.cosmos_address,
+        receiver.ethermint_address,
         amount.clone(),
     )
     .await
@@ -261,7 +262,7 @@ pub async fn fail_to_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
-            msg_xfer_authorized.cosmos_key,
+            msg_xfer_authorized.ethermint_key,
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgXfer)? Should not be possible!");
@@ -318,13 +319,13 @@ pub fn create_microtx_msg_xfer(
 pub async fn create_authz_bank_msg_send(
     contact: &Contact,
     sender: impl PrivateKey,
-    authorizee: CosmosUser,
+    authorizee: EthermintUserKey,
     receiver: Address,
     amount: ProtoCoin,
 ) -> Result<Msg, CosmosGrpcError> {
     let grant_msg_send = create_authorization(
         sender.clone(),
-        authorizee.cosmos_address,
+        authorizee.ethermint_address,
         MSG_SEND_TYPE_URL.to_string(),
     );
 
@@ -343,7 +344,7 @@ pub async fn create_authz_bank_msg_send(
     let send = create_bank_msg_send(sender.clone(), receiver, amount);
     let send_any: prost_types::Any = send.into();
     let exec = MsgExec {
-        grantee: authorizee.cosmos_address.to_string(),
+        grantee: authorizee.ethermint_address.to_string(),
         msgs: vec![send_any],
     };
     let exec_msg = Msg::new(MSG_EXEC_TYPE_URL, exec);
@@ -356,13 +357,13 @@ pub async fn create_authz_bank_msg_send(
 pub async fn create_authz_bank_msg_multi_send(
     contact: &Contact,
     sender: impl PrivateKey,
-    authorizee: CosmosUser,
+    authorizee: EthermintUserKey,
     receiver: Address,
     amount: ProtoCoin,
 ) -> Result<Msg, CosmosGrpcError> {
     let grant_msg_multi_send = create_authorization(
         sender.clone(),
-        authorizee.cosmos_address,
+        authorizee.ethermint_address,
         MSG_MULTI_SEND_TYPE_URL.to_string(),
     );
 
@@ -381,7 +382,7 @@ pub async fn create_authz_bank_msg_multi_send(
     let multi_send = create_bank_msg_multi_send(sender.clone(), receiver, amount);
     let multi_send_any: prost_types::Any = multi_send.into();
     let exec = MsgExec {
-        grantee: authorizee.cosmos_address.to_string(),
+        grantee: authorizee.ethermint_address.to_string(),
         msgs: vec![multi_send_any],
     };
     let exec_msg = Msg::new(MSG_EXEC_TYPE_URL, exec);
@@ -394,13 +395,13 @@ pub async fn create_authz_bank_msg_multi_send(
 pub async fn create_authz_microtx_msg_xfer(
     contact: &Contact,
     sender: impl PrivateKey,
-    authorizee: CosmosUser,
+    authorizee: EthermintUserKey,
     receiver: Address,
     amount: ProtoCoin,
 ) -> Result<Msg, CosmosGrpcError> {
     let grant_msg_xfer = create_authorization(
         sender.clone(),
-        authorizee.cosmos_address,
+        authorizee.ethermint_address,
         MSG_XFER_TYPE_URL.to_string(),
     );
 
@@ -419,7 +420,7 @@ pub async fn create_authz_microtx_msg_xfer(
     let xfer = create_microtx_msg_xfer(sender.clone(), receiver, amount);
     let xfer_any: prost_types::Any = xfer.into();
     let exec = MsgExec {
-        grantee: authorizee.cosmos_address.to_string(),
+        grantee: authorizee.ethermint_address.to_string(),
         msgs: vec![xfer_any],
     };
     let exec_msg = Msg::new(MSG_EXEC_TYPE_URL, exec);
@@ -464,13 +465,13 @@ pub fn create_authorization(
     Msg::new(MSG_GRANT_TYPE_URL, msg_grant)
 }
 
-async fn send_from_lock_exempt(contact: &Contact, lock_exempt: CosmosUser) {
+async fn send_from_lock_exempt(contact: &Contact, lock_exempt: EthermintUserKey) {
     let amount = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: one_atom(),
     };
 
-    send_from_and_assert_balance_changes(contact, lock_exempt.cosmos_key, amount).await;
+    send_from_and_assert_balance_changes(contact, lock_exempt.ethermint_key, amount).await;
 }
 
 pub async fn send_from_and_assert_balance_changes(
@@ -480,20 +481,20 @@ pub async fn send_from_and_assert_balance_changes(
 ) {
     let receiver = get_user_key(None);
     let pre_balance = contact
-        .get_balance(receiver.cosmos_address, amount.denom.clone())
+        .get_balance(receiver.ethermint_address, amount.denom.clone())
         .await
         .unwrap();
     send_funds_bulk(
         contact,
         from.clone(),
-        &[receiver.cosmos_address],
+        &[receiver.ethermint_address],
         amount.clone(),
         Some(OPERATION_TIMEOUT),
     )
     .await
     .unwrap();
     let post_balance = contact
-        .get_balance(receiver.cosmos_address, amount.denom.clone())
+        .get_balance(receiver.ethermint_address, amount.denom.clone())
         .await
         .unwrap();
     assert_balance_changes(pre_balance, post_balance, amount.amount);
@@ -541,7 +542,7 @@ async fn unlock_the_chain(contact: &Contact, validator_keys: &[ValidatorKeys]) {
 async fn successfully_send(
     contact: &Contact,
     validator_keys: &[ValidatorKeys],
-    lock_exempt: CosmosUser,
+    lock_exempt: EthermintUserKey,
 ) {
     let val0 = validator_keys.get(0).unwrap().validator_key;
     let amount = Coin {
@@ -549,7 +550,7 @@ async fn successfully_send(
         amount: one_atom(),
     };
     send_from_and_assert_balance_changes(contact, val0, amount.clone()).await;
-    send_from_and_assert_balance_changes(contact, lock_exempt.cosmos_key, amount.clone()).await;
+    send_from_and_assert_balance_changes(contact, lock_exempt.ethermint_key, amount.clone()).await;
 }
 
 async fn send_unlocked_token(contact: &Contact, validator_keys: &[ValidatorKeys]) {
