@@ -49,7 +49,7 @@ jq '.app_state.bank.denom_metadata += [{"name": "FOO", "symbol": "FOO", "base": 
 # Link the native coin to the EVM
 jq ".app_state.evm.params.evm_denom=\"${STAKING_TOKEN}\"" /foo-token-genesis.json > /evm-denom-genesis.json
 # Unset the base fee in feemarket
-jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000000"' /evm-denom-genesis.json > /feemarket-gas-price-genesis.json
+jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000001"' /evm-denom-genesis.json > /feemarket-gas-price-genesis.json
 
 
 # a 120 second voting period to allow us to pass governance proposals in the tests
@@ -97,7 +97,7 @@ do
     cp /genesis.json /validator$i/config/genesis.json
     GAIA_HOME="--home /validator$i"
     ARGS="$GAIA_HOME --keyring-backend test --chain-id=$CHAIN_ID --ip 7.7.7.$i"
-    GENTX_FLAGS="--moniker validator$i --commission-rate 0.05 --commission-max-rate 0.05"
+    GENTX_FLAGS="--moniker validator$i --commission-rate 0.05 --commission-max-rate 0.05 --fees 1aalthea"
     # the /8 containing 7.7.7.7 is assigned to the DOD and never routable on the public internet
     # we're using it in private to prevent gaia from blacklisting it as unroutable
     # and allow local pex
