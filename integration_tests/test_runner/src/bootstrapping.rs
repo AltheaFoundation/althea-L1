@@ -1,6 +1,7 @@
 use crate::utils::{
     send_erc20_bulk, EthermintUserKey, ValidatorKeys, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT,
 };
+
 use clarity::Address as EthAddress;
 use clarity::Uint256;
 use deep_space::private_key::CosmosPrivateKey;
@@ -132,6 +133,7 @@ pub async fn send_erc20s_to_evm_users(
     let destinations: Vec<EthAddress> = evm_users.into_iter().map(|euk| euk.eth_address).collect();
 
     // The users have been funded, skip sending erc20s
+    info!("Checking for existing balances, might skip funding");
     if !web3
         .get_erc20_balance(
             *erc20_contracts.get(0).unwrap(),
@@ -144,6 +146,7 @@ pub async fn send_erc20s_to_evm_users(
         return Ok(());
     }
 
+    info!("Actually funding EVM users with the ERC20s");
     for erc20 in erc20_contracts {
         for dest in &destinations {
             send_erc20_bulk(amount, erc20, &[*dest], web3).await;

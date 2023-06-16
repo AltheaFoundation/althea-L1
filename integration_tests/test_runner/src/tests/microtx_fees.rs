@@ -1,6 +1,6 @@
 use crate::type_urls::MSG_XFER_TYPE_URL;
 use crate::utils::{
-    bulk_get_user_keys, get_test_token_name, one_atom_128, send_funds_bulk, CosmosUser,
+    bulk_get_user_keys, get_test_token_name, one_atom_128, send_funds_bulk, EthermintUserKey,
     ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
@@ -38,7 +38,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
         &senders
             .clone()
             .iter()
-            .map(|u| u.cosmos_address)
+            .map(|u| u.ethermint_address)
             .collect::<Vec<Address>>(),
         amount.clone(),
         Some(OPERATION_TIMEOUT),
@@ -98,8 +98,8 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
 /// The generated MsgXfer's will have a randomized transfer amount and a derived associated fee
 /// Order is preserved so the i-th Msg corresponds to the i-th amount and the i-th fee
 pub fn generate_msg_xfers(
-    senders: &[CosmosUser],
-    receivers: &[CosmosUser],
+    senders: &[EthermintUserKey],
+    receivers: &[EthermintUserKey],
     denom: &str,
     sender_balance: u128,
     xfer_fee_basis_points: u128,
@@ -125,8 +125,8 @@ pub fn generate_msg_xfers(
         let amount_coins = vec![amount_coin];
 
         let msg_xfer = MsgXfer {
-            receiver: receiver.cosmos_address.to_string(),
-            sender: sender.cosmos_address.to_string(),
+            receiver: receiver.ethermint_address.to_string(),
+            sender: sender.ethermint_address.to_string(),
             amounts: amount_coins,
         };
         let msg = Msg::new(MSG_XFER_TYPE_URL, msg_xfer);
@@ -136,10 +136,10 @@ pub fn generate_msg_xfers(
         fees.push(expected_fee.into());
         info!(
             "{}: {} (+ {}) -> {}",
-            sender.cosmos_address,
+            sender.ethermint_address,
             amount.to_string(),
             expected_fee.to_string(),
-            receiver.cosmos_address,
+            receiver.ethermint_address,
         );
     }
 
@@ -151,7 +151,7 @@ pub fn generate_msg_xfers(
 /// where an amount and fee total higher than the account's balance
 pub async fn exec_and_check(
     contact: &Contact,
-    senders: &[CosmosUser],
+    senders: &[EthermintUserKey],
     msgs: &[Msg],
     msg_amounts: &[Uint256],
     msg_exp_fees: &[Uint256],
@@ -174,7 +174,7 @@ pub async fn exec_and_check(
                 None,
                 &[zero_fee.clone()],
                 Some(OPERATION_TIMEOUT),
-                sender.cosmos_key,
+                sender.ethermint_key,
             )
             .await;
         if token_balance < *amt + *exp_fee {
@@ -183,7 +183,7 @@ pub async fn exec_and_check(
                 res.is_err(),
                 "Unexpected success when sending more than {}: address {}, amt {}, fee {}",
                 token_balance,
-                sender.cosmos_address,
+                sender.ethermint_address,
                 amt,
                 exp_fee
             );
@@ -193,7 +193,7 @@ pub async fn exec_and_check(
                 res.is_ok(),
                 "Unexpected failure when sending <= {}: address {}, amt {}, fee {}: res {:?}",
                 token_balance,
-                sender.cosmos_address,
+                sender.ethermint_address,
                 amt,
                 exp_fee,
                 res,
@@ -207,8 +207,8 @@ pub async fn exec_and_check(
 /// have increased balances, accounting for expected failures
 pub async fn assert_balance_changes(
     contact: &Contact,
-    senders: &[CosmosUser],
-    receivers: &[CosmosUser],
+    senders: &[EthermintUserKey],
+    receivers: &[EthermintUserKey],
     msg_amounts: &[Uint256],
     msg_exp_fees: &[Uint256],
     token_balance: u128,
@@ -222,11 +222,11 @@ pub async fn assert_balance_changes(
         .zip(msg_exp_fees.iter())
     {
         let sender_bal = contact
-            .get_balance(sender.cosmos_address, token_denom.to_string())
+            .get_balance(sender.ethermint_address, token_denom.to_string())
             .await
             .unwrap();
         let receiver_bal = contact
-            .get_balance(receiver.cosmos_address, token_denom.to_string())
+            .get_balance(receiver.ethermint_address, token_denom.to_string())
             .await
             .unwrap();
         let sender_bal = match sender_bal {
@@ -246,9 +246,9 @@ pub async fn assert_balance_changes(
             assert!(
                 sender_bal == exp_send_bal && receiver_bal == exp_recv_bal,
                 "Expected unchanged balances, found sender {} balance ({}), receiver {} balance ({})",
-                sender.cosmos_address,
+                sender.ethermint_address,
                 sender_bal,
-                receiver.cosmos_address,
+                receiver.ethermint_address,
                 receiver_bal,
             );
         } else {
@@ -259,9 +259,9 @@ pub async fn assert_balance_changes(
             assert!(
                 sender_bal == exp_send_bal && receiver_bal == exp_recv_bal,
                 "Expected balance transfer less fee, found sender {} balance ({}), receiver {} balance ({})",
-                sender.cosmos_address,
+                sender.ethermint_address,
                 sender_bal,
-                receiver.cosmos_address,
+                receiver.ethermint_address,
                 receiver_bal,
             );
         }

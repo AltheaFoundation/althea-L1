@@ -1,4 +1,5 @@
 use althea_proto::{
+    canto::erc20::v1::{query_client::QueryClient as Erc20QueryClient, QueryTokenPairRequest},
     canto::erc20::v1::{RegisterCoinProposal, RegisterErc20Proposal},
     cosmos_sdk_proto::cosmos::{
         bank::v1beta1::Metadata,
@@ -11,7 +12,7 @@ use althea_proto::{
 use bytes::BytesMut;
 
 use clarity::{Address as EthAddress, PrivateKey as EthPrivateKey, Uint256};
-use deep_space::address::Address as CosmosAddress;
+use deep_space::address::{cosmos_address_to_eth_address, Address as CosmosAddress};
 use deep_space::client::{types::LatestBlock, ChainStatus};
 use deep_space::coin::Coin;
 use deep_space::error::CosmosGrpcError;
@@ -20,13 +21,14 @@ use deep_space::{Contact, EthermintPrivateKey};
 use futures::future::join_all;
 use prost::{DecodeError, Message};
 use prost_types::Any;
-use rand::Rng;
+use rand::{rngs::ThreadRng, Rng};
 use std::{convert::TryInto, env};
 use std::{
     str::FromStr,
     time::{Duration, Instant},
 };
 use tokio::time::sleep;
+use tonic::transport::Channel;
 use web30::{client::Web3, jsonrpc::error::Web3Error, types::SendTxOption};
 
 /// the timeout for individual requests
@@ -42,6 +44,10 @@ pub const HERMES_CONFIG: &str = "/althea/tests/assets/ibc-relayer-config.toml";
 pub const STAKE_SUPPLY_PER_VALIDATOR: u128 = 1000000000;
 /// this is the amount each validator bonds at startup
 pub const STARTING_STAKE_PER_VALIDATOR: u128 = STAKE_SUPPLY_PER_VALIDATOR / 2;
+
+/// The amount of STAKING_TOKEN required to be submitted with any cosmos transaction now that the feemarket module is enabled
+/// MUST coincide with .app_state.feemarket.params.min_gas_price in tests/cointainer-scripts/setup-validators.sh
+pub const MIN_GLOBAL_FEE_AMOUNT: u128 = 10;
 // Retrieve values from runtime ENV vars
 lazy_static! {
     // ALTHEA CHAIN CONSTANTS
@@ -76,6 +82,8 @@ lazy_static! {
     pub static ref MINER_ETH_ADDRESS: EthAddress = MINER_PRIVATE_KEY.to_address();
     pub static ref MINER_COSMOS_ADDRESS: CosmosAddress = CosmosAddress::from_bech32("althea1hanqss6jsq66tfyjz56wz44z0ejtyv0768q8r4".to_string()).unwrap();
     pub static ref EVM_USER_KEYS: Vec<EthermintUserKey> = get_funded_evm_users();
+    // Coins ready to be used for RegisterCoin proposals
+    pub static ref COINS_FOR_REGISTERING: Vec<String> = vec!["aerc20coin1".to_string(), "aerc20coin2".to_string(), "aerc20coin3".to_string(), "aerc20coin4".to_string()];
 }
 
 /// Parses the DEPLOY_CONTRACTS env variable and determines if the ethereum contracts must be deployed
@@ -93,12 +101,12 @@ pub fn should_deploy_contracts() -> bool {
 pub fn get_fee(denom: Option<String>) -> Coin {
     match denom {
         None => Coin {
-            denom: get_test_token_name(),
-            amount: 1u32.into(),
+            denom: STAKING_TOKEN.to_string(),
+            amount: MIN_GLOBAL_FEE_AMOUNT.into(),
         },
         Some(denom) => Coin {
             denom,
-            amount: 1u32.into(),
+            amount: MIN_GLOBAL_FEE_AMOUNT.into(),
         },
     }
 }
@@ -156,6 +164,28 @@ pub async fn footoken_metadata(contact: &Contact) -> Metadata {
     panic!("Footoken metadata not set?");
 }
 
+// Searches a set of hardcoded coins set to be registered as ERC20s for the first one not yet registered
+pub async fn get_unregistered_coin_for_erc20(erc20_qc: Erc20QueryClient<Channel>) -> String {
+    let mut erc20_qc = erc20_qc;
+    for denom in &*COINS_FOR_REGISTERING {
+        let pair = erc20_qc
+            .token_pair(QueryTokenPairRequest {
+                token: denom.clone(),
+            })
+            .await;
+        if pair.is_err() {
+            return denom.clone();
+        };
+        let pair = pair.unwrap().into_inner().token_pair;
+        if pair.is_some() {
+            continue;
+        } else {
+            return denom.clone();
+        }
+    }
+    panic!("No configured coins are left to register for x/erc20 RegisterCoin proposals");
+}
+
 pub fn get_decimals(meta: &Metadata) -> u32 {
     for m in meta.denom_units.iter() {
         if m.denom == meta.display {
@@ -180,24 +210,16 @@ pub const HIGH_GAS_PRICE: u64 = 1_000_000_000u64;
 
 // Generates a new BridgeUserKey through randomly generated secrets
 // cosmos_prefix allows for generation of a cosmos_address with a different prefix than "althea"
-pub fn get_user_key(cosmos_prefix: Option<&str>) -> CosmosUser {
+pub fn get_user_key(cosmos_prefix: Option<&str>) -> EthermintUserKey {
     *bulk_get_user_keys(cosmos_prefix, 1).get(0).unwrap()
 }
 
 // Generates many CosmosUser keys + addresses
-pub fn bulk_get_user_keys(cosmos_prefix: Option<&str>, num_users: i64) -> Vec<CosmosUser> {
-    let cosmos_prefix = cosmos_prefix.unwrap_or(ADDRESS_PREFIX.as_str());
-
-    let mut rng = rand::thread_rng();
+pub fn bulk_get_user_keys(cosmos_prefix: Option<&str>, num_users: i64) -> Vec<EthermintUserKey> {
+    let rng = rand::thread_rng();
     let mut users = Vec::with_capacity(num_users.try_into().unwrap());
     for _ in 0..num_users {
-        let secret: [u8; 32] = rng.gen();
-        let cosmos_key = CosmosPrivateKey::from_secret(&secret);
-        let cosmos_address = cosmos_key.to_address(cosmos_prefix).unwrap();
-        let user = CosmosUser {
-            cosmos_address,
-            cosmos_key,
-        };
+        let user = get_ethermint_key(cosmos_prefix, Some(rng.clone()));
 
         users.push(user)
     }
@@ -205,26 +227,25 @@ pub fn bulk_get_user_keys(cosmos_prefix: Option<&str>, num_users: i64) -> Vec<Co
     users
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
-pub struct CosmosUser {
-    pub cosmos_address: CosmosAddress,
-    pub cosmos_key: CosmosPrivateKey,
-}
-
 // Generates a new EthermintUserKey through a randomly generated secret
 // cosmos_prefix allows for generation of a cosmos_address with a different prefix than "althea"
-pub fn get_ethermint_key(cosmos_prefix: Option<&str>) -> EthermintUserKey {
+// rng allows for reuse of a ThreadRng across key generation
+pub fn get_ethermint_key(cosmos_prefix: Option<&str>, rng: Option<ThreadRng>) -> EthermintUserKey {
     let cosmos_prefix = cosmos_prefix.unwrap_or(ADDRESS_PREFIX.as_str());
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rng.unwrap_or_else(rand::thread_rng);
     let secret: [u8; 32] = rng.gen();
     // the starting location of the funds
     // the destination on cosmos that sends along to the final ethereum destination
-    let ethermint_key = EthermintPrivateKey::from_secret(&secret);
     let eth_privkey = EthPrivateKey::from_bytes(secret).unwrap();
+    let ethermint_key: EthermintPrivateKey = eth_privkey.into();
+    let eth_address = eth_privkey.to_address();
     let ethermint_address = ethermint_key.to_address(cosmos_prefix).unwrap();
-    // TODO: Verify that this conversion works like `evmosd debug addr`
-    let eth_address = EthAddress::from_slice(ethermint_address.get_bytes()).unwrap();
+
+    // double check addresses
+    let ethermint_to_eth_addr =
+        cosmos_address_to_eth_address(ethermint_address).expect("invalid ethermint address");
+    assert_eq!(eth_address, ethermint_to_eth_addr);
 
     EthermintUserKey {
         ethermint_address,
@@ -743,13 +764,19 @@ pub async fn send_funds_bulk(
     amount: Coin,
     timeout: Option<Duration>,
 ) -> Result<(), CosmosGrpcError> {
-    let fee = Some(Coin {
+    let fee = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: 10u8.into(),
-    });
+    };
     for dest in receivers {
         contact
-            .send_coins(amount.clone(), fee.clone(), *dest, timeout, sender.clone())
+            .send_coins(
+                amount.clone(),
+                Some(fee.clone()),
+                *dest,
+                timeout,
+                sender.clone(),
+            )
             .await?;
     }
 
@@ -849,9 +876,7 @@ pub async fn send_erc20_bulk(
             erc20,
             *MINER_PRIVATE_KEY,
             Some(OPERATION_TIMEOUT),
-            vec![
-                SendTxOption::Nonce(nonce.clone()),
-            ],
+            vec![SendTxOption::Nonce(nonce)],
         );
         transactions.push(send);
         nonce += 1u64.into();
