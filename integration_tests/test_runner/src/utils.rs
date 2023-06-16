@@ -849,7 +849,7 @@ pub async fn send_erc20_bulk(
             erc20,
             *MINER_PRIVATE_KEY,
             Some(OPERATION_TIMEOUT),
-            vec![SendTxOption::Nonce(nonce)],
+            vec![SendTxOption::Nonce(nonce.clone())],
         );
         transactions.push(send);
         nonce += 1u64.into();
