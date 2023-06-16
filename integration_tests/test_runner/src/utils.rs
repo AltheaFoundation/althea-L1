@@ -745,7 +745,7 @@ pub async fn send_funds_bulk(
 ) -> Result<(), CosmosGrpcError> {
     let fee = Some(Coin {
         denom: STAKING_TOKEN.clone(),
-        amount: 0u8.into(),
+        amount: 10u8.into(),
     });
     for dest in receivers {
         contact

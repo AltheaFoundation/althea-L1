@@ -49,3 +49,18 @@ jobs:
         run: docker builder prune -af && docker system prune -af
       - name: Test the erc20 module's token conversion functionality
         run: tests/all-up-test.sh ERC20_CONVERSION
+  native_token:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        continue-on-error: true
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Prune cache to keep the size down
+        run: docker builder prune -af && docker system prune -af
+      - name: Test the native token features of the EVM
+        run: tests/all-up-test.sh NATIVE_TOKEN
+

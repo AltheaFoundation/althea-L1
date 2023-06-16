@@ -14,6 +14,7 @@ use test_runner::bootstrapping::{deploy_contracts, get_keys};
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
 use test_runner::tests::lockup::lockup_test;
 use test_runner::tests::microtx_fees::microtx_fees_test;
+use test_runner::tests::native_token::native_token_test;
 use test_runner::utils::one_atom;
 use test_runner::utils::one_hundred_eth;
 use test_runner::utils::send_funds_bulk;
@@ -47,6 +48,7 @@ pub async fn main() {
     // addresses of deployed ERC20 token contracts to be used for testing
     let erc20_addresses = contracts.erc20_addresses.clone();
 
+    info!("Funding EVM users with ERC20s ({erc20_addresses:?})");
     send_erc20s_to_evm_users(
         &web30,
         erc20_addresses.clone(),
@@ -63,6 +65,7 @@ pub async fn main() {
     // keys for the primary test chain
     let keys = get_keys();
 
+    info!("Funding EVM users with the native coin");
     // Send the EVM users some althea token
     send_funds_bulk(
         &contact,
@@ -81,6 +84,7 @@ pub async fn main() {
     .await
     .unwrap();
 
+    info!("Checking footoken balances");
     // assert that the validators have a balance of the footoken we use
     // for test transfers
     assert!(contact
@@ -117,6 +121,10 @@ pub async fn main() {
                 erc20_addresses.clone(),
             )
             .await;
+            return;
+        } else if test_type == "NATIVE_TOKEN" {
+            info!("Starting native token test");
+            native_token_test(&contact, &web30, keys).await;
             return;
         }
     }
