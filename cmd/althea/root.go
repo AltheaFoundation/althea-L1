@@ -1,6 +1,6 @@
 // The root command contains everything under `$ althea`, notably the `tx` and
 // `q` commands, the `start` command for validators, and all defaults are set here
-package cmd
+package main
 
 import (
 	"bufio"
@@ -25,7 +25,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/input"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
@@ -48,6 +47,7 @@ import (
 	ethermintclient "github.com/evmos/ethermint/client"
 	ethermintserver "github.com/evmos/ethermint/server"
 	ethermintserverconfig "github.com/evmos/ethermint/server/config"
+	ethermintserverflags "github.com/evmos/ethermint/server/flags"
 
 	// Althea
 	althea "github.com/althea-net/althea-chain/app"
@@ -55,6 +55,8 @@ import (
 	altheacfg "github.com/althea-net/althea-chain/config"
 	"github.com/althea-net/althea-chain/crypto/keyring"
 )
+
+const EnvPrefix = "althea"
 
 type printInfo struct {
 	Moniker    string          `json:"moniker" yaml:"moniker"`
@@ -96,24 +98,21 @@ func displayInfo(info printInfo) error {
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	encodingConfig := althea.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
-		WithHomeDir(althea.DefaultNodeHome).
-		// Tx submission config
-		WithKeyringOptions(keyring.Option()).
-		WithTxConfig(encodingConfig.TxConfig).
-		WithBroadcastMode(flags.BroadcastBlock).
 		// Encoding and interfaces
 		WithCodec(encodingConfig.Codec).
-		// WithJSONCodec(encodingConfig.Marshaler).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
+		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
-		// Misc
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
-		WithViper("althea")
+		WithBroadcastMode(flags.BroadcastBlock).
+		WithHomeDir(althea.DefaultNodeHome).
+		WithKeyringOptions(keyring.Option()).
+		WithViper(EnvPrefix)
 
 	rootCmd := &cobra.Command{
-		Use:   "althea",
-		Short: "Althea Chain: Submit transactions or run a validator",
+		Use:   althea.Name,
+		Short: "Althea L1: Submit transactions or run a validator",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
@@ -143,7 +142,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig)
+	initRootCmd(rootCmd, &encodingConfig)
 
 	return rootCmd, encodingConfig
 }
@@ -152,13 +151,13 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 // app.toml file or with flags provided on the command line
 func initAppConfig() (string, interface{}) {
 	// DEFAULT SERVER CONFIGURATIONS
-	appTempl, appCfg := ethermintserverconfig.AppConfig(altheacfg.NativeToken)
+	appTempl, appCfg := ethermintserverconfig.AppConfig(altheacfg.BaseDenom)
 
 	return appTempl, appCfg
 }
 
 // Execute executes the root command.
-func Execute(rootCmd *cobra.Command) error {
+func Execute(rootCmd *cobra.Command, defaultHome string) error {
 	// Create and set a client.Context on the command's Context. During the pre-run
 	// of the root command, a default initialized client.Context is provided to
 	// seed child command execution with values such as AccountRetriver, Keyring,
@@ -171,19 +170,18 @@ func Execute(rootCmd *cobra.Command) error {
 	ctx = context.WithValue(ctx, server.ServerContextKey, srvCtx)
 
 	rootCmd.PersistentFlags().String("log_level", "info", "The logging level in the format of <module>:<level>,...")
+	rootCmd.PersistentFlags().String(flags.FlagLogFormat, cfg.LogFormatPlain, "The logging format (json|plain)")
 
-	executor := tmcli.PrepareBaseCmd(rootCmd, "", althea.DefaultNodeHome)
+	executor := tmcli.PrepareBaseCmd(rootCmd, "", defaultHome)
 	return executor.ExecuteContext(ctx)
 }
 
 // Setup all of the subcommands for the root command
-func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
-	rootCmd.Flags().String(flags.FlagChainID, altheacfg.DefaultChainID(), "The network chain ID")
+func initRootCmd(rootCmd *cobra.Command, encodingConfig *params.EncodingConfig) {
 	rootCmd.AddCommand(
 		// ValidateChainID will make sure the configured chain id adheres to strings like althea_1234-1
 		ethermintclient.ValidateChainID(InitCmd(althea.ModuleBasics, althea.DefaultNodeHome)),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, althea.DefaultNodeHome),
-		althea.MigrateGenesisCmd(),
 		genutilcli.GenTxCmd(althea.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, althea.DefaultNodeHome),
 		ValidateGenesisCmd(althea.ModuleBasics),
 		AddGenesisAccountCmd(althea.DefaultNodeHome),
@@ -193,9 +191,10 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		config.Cmd(), // Set config options one by one
 	)
 
+	ac := appCreator{encodingConfig}
 	// The ethermint server commands perform a lot of modifications on top of the base ones, notably setting up the
 	// EVM JSONRPC server, tx indexer, and some various improvements like closing the DB automatically
-	ethermintserver.AddCommands(rootCmd, althea.DefaultNodeHome, newApp, createSimappAndExport, addModuleInitFlags)
+	ethermintserver.AddCommands(rootCmd, althea.DefaultNodeHome, ac.newApp, ac.createSimappAndExport, addModuleInitFlags)
 
 	rootCmd.AddCommand(ethermintserver.NewIndexTxCmd())
 
@@ -210,6 +209,13 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		// keys.Commands(althea.DefaultNodeHome),
 		ethermintclient.KeyCommands(althea.DefaultNodeHome),
 	)
+
+	rootCmd, err := ethermintserverflags.AddTxFlags(rootCmd)
+	if err != nil {
+		panic(err)
+	}
+
+	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec))
 }
 
 // InitCmd returns a command that initializes all files needed for Tendermint
@@ -300,7 +306,7 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 	cmd.Flags().String(tmcli.HomeFlag, defaultNodeHome, "node's home directory")
 	cmd.Flags().BoolP(genutilcli.FlagOverwrite, "o", false, "overwrite the genesis.json file")
 	cmd.Flags().Bool(genutilcli.FlagRecover, false, "provide seed phrase to recover existing key instead of creating")
-	cmd.Flags().String(flags.FlagChainID, altheacfg.DefaultChainID(), "genesis file chain-id, if left blank will be randomly created")
+	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
 
 	return cmd
 }
@@ -331,7 +337,7 @@ func queryCommand() *cobra.Command {
 	)
 
 	althea.ModuleBasics.AddQueryCommands(cmd)
-	cmd.PersistentFlags().String(flags.FlagChainID, altheacfg.DefaultChainID(), "The network chain ID")
+	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
 }
@@ -351,6 +357,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetSignCommand(),
 		authcmd.GetSignBatchCommand(),
 		authcmd.GetMultiSignCommand(),
+		authcmd.GetMultiSignBatchCmd(),
 		authcmd.GetValidateSignaturesCommand(),
 		flags.LineBreak,
 		authcmd.GetBroadcastCommand(),
@@ -361,14 +368,19 @@ func txCommand() *cobra.Command {
 	)
 
 	althea.ModuleBasics.AddTxCommands(cmd)
-	cmd.PersistentFlags().String(flags.FlagChainID, altheacfg.DefaultChainID(), "The network chain ID")
+	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
 }
 
+// Convenience type to make parameter passing simpler + remove duplication of encoding config
+type appCreator struct {
+	encCfg *params.EncodingConfig
+}
+
 // newApp is an AppCreator used for the start command, anything which must be passed to NewAltheaApp (in app.go)
 // can be fetched and added here
-func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
+func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
 	var cache sdk.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
@@ -399,7 +411,7 @@ func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts serverty
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		althea.MakeEncodingConfig(), // Ideally, we would reuse the one created by NewRootCmd.
+		*a.encCfg,
 		appOpts,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
@@ -417,22 +429,24 @@ func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts serverty
 
 // Creates an app which will not run, instead used for state exports
 // Pass -1 to export the current state, any other positive value to export that state (if it is available)
-func createSimappAndExport(
+func (a appCreator) createSimappAndExport(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
-
-	encCfg := althea.MakeEncodingConfig() // Ideally, we would reuse the one created by NewRootCmd.
-	encCfg.Codec = codec.NewProtoCodec(encCfg.InterfaceRegistry)
 	var altheaApp *althea.AltheaApp
+	homePath, ok := appOpts.Get(flags.FlagHome).(string)
+	if !ok || homePath == "" {
+		return servertypes.ExportedApp{}, errors.New("application home not set")
+	}
+
 	if height != -1 {
-		altheaApp = althea.NewAltheaApp(logger, db, traceStore, false, map[int64]bool{}, "", uint(1), encCfg, appOpts)
+		altheaApp = althea.NewAltheaApp(logger, db, traceStore, false, map[int64]bool{}, "", uint(1), *a.encCfg, appOpts)
 
 		if err := altheaApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		altheaApp = althea.NewAltheaApp(logger, db, traceStore, true, map[int64]bool{}, "", uint(1), encCfg, appOpts)
+		altheaApp = althea.NewAltheaApp(logger, db, traceStore, true, map[int64]bool{}, "", uint(1), *a.encCfg, appOpts)
 	}
 
 	return altheaApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)

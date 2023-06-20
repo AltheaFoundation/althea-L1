@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"encoding/json"
@@ -92,7 +92,7 @@ func altheaValidateGenesis(cdc codec.JSONCodec, ctx client.Context, genesis map[
 	return nil
 }
 
-// ValidateMintGenesis will assert that the config's NativeToken constant and the mint MintDenom match before the chain
+// ValidateMintGenesis will assert that the config's BaseDenom constant and the mint MintDenom match before the chain
 // starts up. We have an assertion at chain runtime to ensure this, but a genesis check leads to easier chain launch.
 func ValidateMintGenesis(cdc codec.JSONCodec, ctx client.Context, genesis json.RawMessage) error {
 	var data minttypes.GenesisState
@@ -100,8 +100,8 @@ func ValidateMintGenesis(cdc codec.JSONCodec, ctx client.Context, genesis json.R
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", minttypes.ModuleName, err)
 	}
 
-	if data.Params.MintDenom != altheacfg.NativeToken {
-		return fmt.Errorf("the NativeToken set in althea-chain/config (%v) is not the mint module's MintDenom (%v)", altheacfg.NativeToken, data.Params.MintDenom)
+	if data.Params.MintDenom != altheacfg.BaseDenom {
+		return fmt.Errorf("the BaseDenom set in althea-chain/config (%v) is not the mint module's MintDenom (%v)", altheacfg.BaseDenom, data.Params.MintDenom)
 	}
 
 	return nil

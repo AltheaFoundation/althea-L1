@@ -5,13 +5,19 @@ package main
 import (
 	"os"
 
-	"github.com/althea-net/althea-chain/cmd/althea/cmd"
 	"github.com/cosmos/cosmos-sdk/server"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	althea "github.com/althea-net/althea-chain/app"
+	altheacfg "github.com/althea-net/althea-chain/config"
 )
 
 func main() {
-	rootCmd, _ := cmd.NewRootCmd()
-	if err := cmd.Execute(rootCmd); err != nil {
+	setupConfig()
+	altheacfg.RegisterDenoms() // Register aalthea and althea as token denoms
+
+	rootCmd, _ := NewRootCmd()
+	if err := Execute(rootCmd, althea.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
 			os.Exit(e.Code)
@@ -19,4 +25,14 @@ func main() {
 			os.Exit(1)
 		}
 	}
+}
+
+// Applies modifications to the sdk Config:
+// Bech32 prefixes
+// HD path
+func setupConfig() {
+	config := sdk.GetConfig()
+	altheacfg.SetBech32Prefixes(config)
+	altheacfg.SetBip44CoinType(config)
+	config.Seal()
 }
