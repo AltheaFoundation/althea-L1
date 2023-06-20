@@ -96,8 +96,10 @@ import (
 
 	cantoante "github.com/Canto-Network/Canto/v5/app/ante"
 	"github.com/Canto-Network/Canto/v5/x/erc20"
+	erc20client "github.com/Canto-Network/Canto/v5/x/erc20/client"
 	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
 	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
+	"github.com/Canto-Network/Canto/v5/x/vesting"
 	ethermintsrvflags "github.com/evmos/ethermint/server/flags"
 	ethermint "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm"
@@ -121,11 +123,6 @@ import (
 	microtxtypes "github.com/althea-net/althea-chain/x/microtx/types"
 )
 
-const appName = "althea"
-
-// DefaultNodeHome default home directories for the application daemon
-var DefaultNodeHome string
-
 func init() {
 	// Set DefaultNodeHome before the chain starts
 	userHomeDir, err := os.UserHomeDir()
@@ -134,17 +131,22 @@ func init() {
 	}
 	DefaultNodeHome = filepath.Join(userHomeDir, ".althea")
 
-	// TODO: Determine a sensible MinGasPrice for the EVM
-	feemarkettypes.DefaultMinGasPrice = sdk.NewDec(altheacfg.DefaultMinGasPrice())
-	feemarkettypes.DefaultMinGasMultiplier = sdk.NewDecWithPrec(1, 1)
-
 	// DefaultPowerReduction is used to translate full 6/8/18 decimal token value -> whole token representation for
 	// computing validator power. By importing Canto's app package the DefaultPowerReduction is set for their
 	// staking token, we manually adjust here to 18 decimals for aalthea here for peace of mind.
-	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1000000000000000000)
+	sdk.DefaultPowerReduction = sdk.NewIntFromUint64(1_000_000_000_000_000_000)
+
+	// TODO: Determine a sensible MinGasPrice for the EVM
+	feemarkettypes.DefaultMinGasPrice = sdk.NewDec(altheacfg.DefaultMinGasPrice())
+	feemarkettypes.DefaultMinGasMultiplier = sdk.NewDecWithPrec(1, 1)
 }
 
+const Name = "althea"
+
 var (
+	// DefaultNodeHome default home directories for the application daemon
+	DefaultNodeHome string
+
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
@@ -164,6 +166,9 @@ var (
 			upgradeclient.CancelProposalHandler,
 			ibcclientclient.UpdateClientProposalHandler,
 			ibcclientclient.UpgradeProposalHandler,
+			erc20client.RegisterCoinProposalHandler,
+			erc20client.RegisterERC20ProposalHandler,
+			erc20client.ToggleTokenConversionProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -172,6 +177,7 @@ var (
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
+		vesting.AppModuleBasic{},
 		lockup.AppModuleBasic{},
 		microtx.AppModuleBasic{},
 		evm.AppModuleBasic{},
@@ -183,15 +189,15 @@ var (
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:     nil,
 		distrtypes.ModuleName:          nil,
-		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
+		minttypes.ModuleName:           {authtypes.Minter},
+		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		lockuptypes.ModuleName:         nil,
 		microtxtypes.ModuleName:        nil,
-		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
-		evmtypes.ModuleName:            nil,
 		feemarkettypes.ModuleName:      nil,
 	}
 
@@ -362,7 +368,7 @@ func NewAltheaApp(
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
 	// Baseapp initialization, provides correct implementation of ABCI layer, I/O services, state storage, and more
-	bApp := *baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
+	bApp := *baseapp.NewBaseApp(Name, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
@@ -888,7 +894,7 @@ func (app *AltheaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) 
 
 // firstBeginBlocker runs once at the end of the first BeginBlocker to check static assertions as a validator starts up
 func (app *AltheaApp) firstBeginBlocker(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	app.assertNativeTokenMatchesConfig(ctx)
+	app.assertBaseDenomMatchesConfig(ctx)
 }
 
 // EndBlocker delegates the ABCI EndBlock execution to the ModuleManager

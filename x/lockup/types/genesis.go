@@ -40,7 +40,7 @@ func DefaultParams() *Params {
 		   first BeginBlock. If you change any of these values, change app/config
 		   where necessary */
 		LockedTokenDenoms: []string{
-			config.NativeToken,
+			config.BaseDenom,
 		},
 	}
 }
