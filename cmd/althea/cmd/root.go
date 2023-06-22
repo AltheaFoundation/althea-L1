@@ -209,7 +209,6 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		// Adds the same commands as sdk keys.Commands(), but enables dry run and sets the default keytype to eth_secp256k1
 		// keys.Commands(althea.DefaultNodeHome),
 		ethermintclient.KeyCommands(althea.DefaultNodeHome),
-		Commands(althea.DefaultNodeHome),
 	)
 }
 
