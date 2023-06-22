@@ -171,7 +171,7 @@ pub async fn erc20_register_and_round_trip_test(
         "Account balances after ERC20 conversion execution: {:?}",
         balances
     );
-    let expected_erc20_denom = format!("erc20/{}", registered_erc20.to_string());
+    let expected_erc20_denom = format!("erc20/{}", registered_erc20);
 
     // The linter is annoying here, I cannot actually inline those format args into the string
     assert!(

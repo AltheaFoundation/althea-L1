@@ -1,7 +1,7 @@
 use crate::type_urls::MSG_XFER_TYPE_URL;
 use crate::utils::{
     bulk_get_user_keys, get_test_token_name, one_atom_128, send_funds_bulk, CosmosUser,
-    ValidatorKeys, OPERATION_TIMEOUT, STAKING_TOKEN, ADDRESS_PREFIX,
+    ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use althea_proto::microtx::v1::MsgXfer;
@@ -38,7 +38,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
         &senders
             .clone()
             .iter()
-            .map(|u| u.cosmos_address.clone())
+            .map(|u| u.cosmos_address)
             .collect::<Vec<Address>>(),
         amount.clone(),
         Some(OPERATION_TIMEOUT),
@@ -47,7 +47,18 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
     .expect("Unable to send funds to all senders!");
 
     info!("Sending test microtx");
-    let res = contact.send_microtx(amount, None, validator_keys[1].validator_key.to_address(&ADDRESS_PREFIX).unwrap(), None, validator_keys[0].validator_key).await;
+    let res = contact
+        .send_microtx(
+            amount,
+            None,
+            validator_keys[1]
+                .validator_key
+                .to_address(&ADDRESS_PREFIX)
+                .unwrap(),
+            None,
+            validator_keys[0].validator_key,
+        )
+        .await;
     info!("Microtx res {res:?}");
 
     let param = contact
@@ -58,7 +69,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
     let xfer_fee_basis_points = param.trim_matches('"');
     info!("Got xfer_fee_basis_points: [{}]", xfer_fee_basis_points);
 
-    let xfer_fee_basis_points: u128 = serde_json::from_str(&xfer_fee_basis_points).unwrap();
+    let xfer_fee_basis_points: u128 = serde_json::from_str(xfer_fee_basis_points).unwrap();
     let (xfers, amounts, fees) = generate_msg_xfers(
         &senders,
         &receivers,
@@ -99,7 +110,7 @@ pub fn generate_msg_xfers(
 
     let mut rng = thread_rng();
     let amount_range = Uniform::new(0u128, sender_balance);
-    for (i, (sender, receiver)) in senders.into_iter().zip(receivers.into_iter()).enumerate() {
+    for (i, (sender, receiver)) in senders.iter().zip(receivers.iter()).enumerate() {
         let amount: u128 = if i == 0 {
             // Guarantee one MsgXfer failure
             sender_balance
@@ -152,10 +163,10 @@ pub async fn exec_and_check(
     };
     let token_balance: Uint256 = token_balance.into();
     for (((sender, msg), amt), exp_fee) in senders
-        .into_iter()
-        .zip(msgs.into_iter())
-        .zip(msg_amounts.into_iter())
-        .zip(msg_exp_fees.into_iter())
+        .iter()
+        .zip(msgs.iter())
+        .zip(msg_amounts.iter())
+        .zip(msg_exp_fees.iter())
     {
         let res = contact
             .send_message(
@@ -166,7 +177,7 @@ pub async fn exec_and_check(
                 sender.cosmos_key,
             )
             .await;
-        if token_balance < amt.clone() + exp_fee.clone() {
+        if token_balance < *amt + *exp_fee {
             // FAILURE CASE
             assert!(
                 res.is_err(),
@@ -205,10 +216,10 @@ pub async fn assert_balance_changes(
 ) {
     let token_balance: Uint256 = token_balance.into();
     for (((sender, receiver), amt), exp_fee) in senders
-        .into_iter()
-        .zip(receivers.into_iter())
-        .zip(msg_amounts.into_iter())
-        .zip(msg_exp_fees.into_iter())
+        .iter()
+        .zip(receivers.iter())
+        .zip(msg_amounts.iter())
+        .zip(msg_exp_fees.iter())
     {
         let sender_bal = contact
             .get_balance(sender.cosmos_address, token_denom.to_string())
@@ -227,30 +238,30 @@ pub async fn assert_balance_changes(
             None => 0u8.into(),
         };
 
-        if token_balance < amt.clone() + exp_fee.clone() {
+        if token_balance < *amt + *exp_fee {
             // FAILURE CASE
-            let exp_send_bal: Uint256 = token_balance.clone();
+            let exp_send_bal: Uint256 = token_balance;
             let exp_recv_bal: Uint256 = 0u8.into();
 
             assert!(
                 sender_bal == exp_send_bal && receiver_bal == exp_recv_bal,
                 "Expected unchanged balances, found sender {} balance ({}), receiver {} balance ({})",
-                sender.cosmos_address.to_string(),
+                sender.cosmos_address,
                 sender_bal,
-                receiver.cosmos_address.to_string(),
+                receiver.cosmos_address,
                 receiver_bal,
             );
         } else {
             // SUCCESS CASE
-            let exp_send_bal: Uint256 = token_balance.clone() - amt.clone() - exp_fee.clone();
-            let exp_recv_bal: Uint256 = amt.clone();
+            let exp_send_bal: Uint256 = token_balance - *amt - *exp_fee;
+            let exp_recv_bal: Uint256 = *amt;
 
             assert!(
                 sender_bal == exp_send_bal && receiver_bal == exp_recv_bal,
                 "Expected balance transfer less fee, found sender {} balance ({}), receiver {} balance ({})",
-                sender.cosmos_address.to_string(),
+                sender.cosmos_address,
                 sender_bal,
-                receiver.cosmos_address.to_string(),
+                receiver.cosmos_address,
                 receiver_bal,
             );
         }
