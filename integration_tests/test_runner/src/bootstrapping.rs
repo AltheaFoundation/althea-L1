@@ -146,7 +146,7 @@ pub async fn send_erc20s_to_evm_users(
 
     for erc20 in erc20_contracts {
         for dest in &destinations {
-            send_erc20_bulk(amount, erc20, &[dest.clone()], web3).await;
+            send_erc20_bulk(amount, erc20, &[*dest], web3).await;
         }
     }
     Ok(())
