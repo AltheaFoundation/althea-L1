@@ -42,22 +42,20 @@ $BIN init $STARTING_VALIDATOR_HOME --chain-id=$CHAIN_ID validator$STARTING_VALID
 ## Modify generated genesis.json to our liking by editing fields using jq
 ## we could keep a hardcoded genesis file around but that would prevent us from
 ## testing the generated one with the default values provided by the module.
-
+cp /validator$STARTING_VALIDATOR/config/genesis.json /genesis.json
 # add in denom metadata for both native tokens
-jq '.app_state.bank.denom_metadata += [{"name": "althea", "symbol": "althea", "base": "aalthea", display: "althea", "description": "The native staking token of Althea-Chain (18 decimals)", "denom_units": [{"denom": "aalthea", "exponent": 0, "aliases": ["attoalthea", "althea-wei"]}, {"denom": "nalthea", "exponent": 9, "aliases": ["nanoalthea", "althea-gwei"]}, {"denom": "althea", "exponent": 18}]}]' /validator$STARTING_VALIDATOR/config/genesis.json > /staking-token-genesis.json
-jq '.app_state.bank.denom_metadata += [{"name": "FOO", "symbol": "FOO", "base": "ufootoken", display: "footoken", "description": "A non-staking native test token (6 decimals)", "denom_units": [{"denom": "ufootoken", "exponent": 0}, {"denom": "footoken", "exponent": 6}]}]' /staking-token-genesis.json > /foo-token-genesis.json
+jq '.app_state.bank.denom_metadata += [{"name": "althea", "symbol": "althea", "base": "aalthea", display: "althea", "description": "The native staking token of althea-L1 (18 decimals)", "denom_units": [{"denom": "aalthea", "exponent": 0, "aliases": ["attoalthea", "althea-wei"]}, {"denom": "nalthea", "exponent": 9, "aliases": ["nanoalthea", "althea-gwei"]}, {"denom": "althea", "exponent": 18}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
+jq '.app_state.bank.denom_metadata += [{"name": "FOO", "symbol": "FOO", "base": "ufootoken", display: "footoken", "description": "A non-staking native test token (6 decimals)", "denom_units": [{"denom": "ufootoken", "exponent": 0}, {"denom": "footoken", "exponent": 6}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 # Link the native coin to the EVM
-jq ".app_state.evm.params.evm_denom=\"${STAKING_TOKEN}\"" /foo-token-genesis.json > /evm-denom-genesis.json
+jq ".app_state.evm.params.evm_denom=\"${STAKING_TOKEN}\"" /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 # Unset the base fee in feemarket
-jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000000"' /evm-denom-genesis.json > /zero-gas-genesis.json
+jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000000"' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 
 # a 120 second voting period to allow us to pass governance proposals in the tests
-jq '.app_state.gov.voting_params.voting_period = "120s"' /zero-gas-genesis.json > /edited-genesis.json
+jq '.app_state.gov.voting_params.voting_period = "120s"' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 
 # rename base denom to aalthea
-sed -i 's/stake/aalthea/g' /edited-genesis.json
-
-mv /edited-genesis.json /genesis.json
+sed -i 's/stake/aalthea/g' /genesis.json
 
 
 # Sets up an arbitrary number of validators on a single machine by manipulating
