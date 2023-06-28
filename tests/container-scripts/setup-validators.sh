@@ -8,7 +8,9 @@ CHAIN_ID="althea_417834-1"
 NODES=$1
 
 STAKING_TOKEN="aalthea"
-ALLOCATION="1000000000000000000000000${STAKING_TOKEN},1000000000000ufootoken"
+ALLOC_18_DECIMALS="1000000000000000000000000"
+ALLOC_6_DECIMALS="1000000000000"
+ALLOCATION="${ALLOC_18_DECIMALS}${STAKING_TOKEN},${ALLOC_6_DECIMALS}ufootoken,${ALLOC_18_DECIMALS}aerc20coin1,${ALLOC_18_DECIMALS}aerc20coin2,${ALLOC_18_DECIMALS}aerc20coin3,${ALLOC_18_DECIMALS}aerc20coin4"
  DELEGATION="500000000000000000000000${STAKING_TOKEN}"
 
 # Static EVM addresses (Ethermint keys) which will receive enough althea token for EVM operations
@@ -46,6 +48,10 @@ cp /validator$STARTING_VALIDATOR/config/genesis.json /genesis.json
 # add in denom metadata for both native tokens
 jq '.app_state.bank.denom_metadata += [{"name": "althea", "symbol": "althea", "base": "aalthea", display: "althea", "description": "The native staking token of althea-L1 (18 decimals)", "denom_units": [{"denom": "aalthea", "exponent": 0, "aliases": ["attoalthea", "althea-wei"]}, {"denom": "nalthea", "exponent": 9, "aliases": ["nanoalthea", "althea-gwei"]}, {"denom": "althea", "exponent": 18}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 jq '.app_state.bank.denom_metadata += [{"name": "FOO", "symbol": "FOO", "base": "ufootoken", display: "footoken", "description": "A non-staking native test token (6 decimals)", "denom_units": [{"denom": "ufootoken", "exponent": 0}, {"denom": "footoken", "exponent": 6}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
+jq '.app_state.bank.denom_metadata += [{"name": "erc20coin1", "symbol": "erc20coin1", "base": "aerc20coin1", display: "erc20coin1", "description": "(18 decimals)", "denom_units": [{"denom": "aerc20coin1", "exponent": 0}, {"denom": "erc20coin1", "exponent": 18}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
+jq '.app_state.bank.denom_metadata += [{"name": "erc20coin2", "symbol": "erc20coin2", "base": "aerc20coin2", display: "erc20coin2", "description": "(18 decimals)", "denom_units": [{"denom": "aerc20coin2", "exponent": 0}, {"denom": "erc20coin2", "exponent": 18}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
+jq '.app_state.bank.denom_metadata += [{"name": "erc20coin3", "symbol": "erc20coin3", "base": "aerc20coin3", display: "erc20coin3", "description": "(18 decimals)", "denom_units": [{"denom": "aerc20coin3", "exponent": 0}, {"denom": "erc20coin3", "exponent": 18}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
+jq '.app_state.bank.denom_metadata += [{"name": "erc20coin4", "symbol": "erc20coin4", "base": "aerc20coin4", display: "erc20coin4", "description": "(18 decimals)", "denom_units": [{"denom": "aerc20coin4", "exponent": 0}, {"denom": "erc20coin4", "exponent": 18}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 # Link the native coin to the EVM
 jq ".app_state.evm.params.evm_denom=\"${STAKING_TOKEN}\"" /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 # Unset the base fee in feemarket
