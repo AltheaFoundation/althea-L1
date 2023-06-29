@@ -11,12 +11,12 @@ import (
 // will produce incomprehensible results due to proto encoding.
 
 const (
-	EventTypeXfer = "xfer"
+	EventTypeMicrotx = "microtx"
 
-	XferKeySender   = "sender"
-	XferKeyReceiver = "receiver"
-	XferKeyAmounts  = "amounts"
-	XferKeyFee      = "fee"
+	MicrotxKeySender   = "sender"
+	MicrotxKeyReceiver = "receiver"
+	MicrotxKeyAmounts  = "amounts"
+	MicrotxKeyFee      = "fee"
 
 	EventTypeBalanceRedirect = "balance-redirect"
 	RedirectKeyReceiver      = "receiver"
@@ -28,13 +28,13 @@ const (
 	TokenizedAccountKeyNFTAddress = "nft-address"
 )
 
-func NewEventXfer(sender string, receiver string, amounts sdk.Coins, fees sdk.Coins) sdk.Event {
+func NewEventMicrotx(sender string, receiver string, amounts sdk.Coins, fees sdk.Coins) sdk.Event {
 	return sdk.NewEvent(
-		EventTypeXfer,
-		sdk.NewAttribute(XferKeySender, sender),
-		sdk.NewAttribute(XferKeyReceiver, receiver),
-		sdk.NewAttribute(XferKeyAmounts, amounts.String()),
-		sdk.NewAttribute(XferKeyFee, fees.String()),
+		EventTypeMicrotx,
+		sdk.NewAttribute(MicrotxKeySender, sender),
+		sdk.NewAttribute(MicrotxKeyReceiver, receiver),
+		sdk.NewAttribute(MicrotxKeyAmounts, amounts.String()),
+		sdk.NewAttribute(MicrotxKeyFee, fees.String()),
 	)
 }
 

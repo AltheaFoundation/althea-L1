@@ -7,9 +7,9 @@ option go_package = "github.com/althea-net/althea-chain/x/microtx/types";
 
 // Msg defines the state transitions possible within microtx
 service Msg {
-  // The Xfer service is a customizeable version of the bank module's Send
-  rpc Xfer(MsgXfer) returns (MsgXferResponse) {
-    option (google.api.http).post = "/microtx/v1/xfer";
+  // The Microtx service handles payments to Althea accounts
+  rpc Microtx(MsgMicrotx) returns (MsgMicrotxResponse) {
+    option (google.api.http).post = "/microtx/v1/microtx";
   }
   // The TokenizeAccount service converts a wallet into a piece of Liquid Infrastructure
   rpc TokenizeAccount(MsgTokenizeAccount) returns (MsgTokenizeAccountResponse) {
@@ -17,24 +17,26 @@ service Msg {
   }
 }
 
-// MsgXfer A Msg meant to send funds from one Althea network wallet to another,
-// via an automated device.
+// MsgMicrotx A Msg used to send funds from one Althea network wallet to another,
+// via an automated device. Facilitates Liquid Infrastructure by automatically
+// redirecting funds received by Tokenized Accounts beyond configured amounts to the EVM.
 // SENDER The account sending funds to receiver, must also be the signer of the
 // message
 // RECEIVER The account receiving funds from sender
-// AMOUNTS The tokens and their quantities which should be transferred
-message MsgXfer {
+// AMOUNTS The tokens and their quantities which should be transferred, these
+// must be Cosmos coins registered as ERC20s, or the Cosmos representation of ERC20s
+message MsgMicrotx {
   string sender = 1;
   string receiver = 2;
   repeated cosmos.base.v1beta1.Coin amounts = 3
       [ (gogoproto.nullable) = false ];
 }
 
-message MsgXferResponse {}
+message MsgMicrotxResponse {}
 
-// A type for the block's event log, every successful Xfer must create one of
+// A type for the block's event log, every successful Microtx must create one of
 // these in the event log
-message EventXfer {
+message EventMicrotx {
   string sender = 1;
   string receiver = 2;
   repeated cosmos.base.v1beta1.Coin amounts = 3

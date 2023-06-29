@@ -111,14 +111,14 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	return nil
 }
 
-// GetXferFeeBasisPoints will get the XferFeeBasisPoints, if the params have been set
-func (k Keeper) GetXferFeeBasisPoints(ctx sdk.Context) (uint64, error) {
+// GetMicrotxFeeBasisPoints will get the MicrotxFeeBasisPoints, if the params have been set
+func (k Keeper) GetMicrotxFeeBasisPoints(ctx sdk.Context) (uint64, error) {
 	params, err := k.GetParamsIfSet(ctx)
 	if err != nil {
 		// The params have been set, get the min send to eth fee
 		return 0, err
 	}
-	return params.XferFeeBasisPoints, nil
+	return params.MicrotxFeeBasisPoints, nil
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
