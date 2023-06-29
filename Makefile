@@ -182,7 +182,7 @@ proto-tools-stamp:
 buf: buf-stamp
 
 buf-stamp:
-	echo "Installing buf..."
+	@echo "Installing buf..."
 	curl -sSL \
     "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-${UNAME_S}-${UNAME_M}" \
     -o "${BIN}/buf" && \
@@ -190,7 +190,7 @@ buf-stamp:
 
 	touch $@
 
-tools-clean:
+proto-tools-clean:
 	rm -f proto-tools-stamp buf-stamp
 
 # below are all for the reproducible builder
@@ -206,8 +206,7 @@ build-reproducible: go.sum
         --name latest-build altheanet/cosmos-rbuilder:latest
 	$(DOCKER) cp -a latest-build:/home/builder/artifacts/ $(CURDIR)/
 
-clean:
-	rm -rf $(BUILDDIR)/ artifacts/
+
 
 BUILD_TARGETS := build
 
@@ -218,3 +217,29 @@ $(BUILD_TARGETS): go.sum $(BUILDDIR)/
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
+
+###############################################################################
+###                           EVM Contracts                                 ###
+###############################################################################
+
+COMPILED_CONTRACTS_GO_OUTPUT := contracts/compiled/
+
+contracts: contracts-clean contracts-go
+
+contracts-clean:
+	@echo "Deleting and recreating compiled-contracts directory"
+	@rm -fr $(COMPILED_CONTRACTS_GO_OUTPUT)
+	@mkdir -p ${COMPILED_CONTRACTS_GO_OUTPUT}
+
+contracts-go:
+	@echo "Formatting compiled contracts and placing in compiled-contracts"
+	@scripts/compile-contracts-for-go.sh
+
+###############################################################################
+###                           MISC DIRECTIVES                               ###
+###############################################################################
+
+tools: proto-tools buf
+
+clean: proto-tools-clean contract-tools-clean
+	rm -rf $(BUILDDIR)/ artifacts/
