@@ -552,7 +552,7 @@ func NewAltheaApp(
 	app.feemarketKeeper = &feemarketKeeper
 
 	// EVM calls the go-ethereum source code within ABCI to implement an EVM within Althea Chain
-	evmKeeper := evmkeeper.NewKeeper(
+	evmKeeper := *evmkeeper.NewKeeper(
 		appCodec,
 		keys[evmtypes.StoreKey],
 		tkeys[evmtypes.TransientKey],
@@ -571,14 +571,14 @@ func NewAltheaApp(
 		app.GetSubspace(erc20types.ModuleName),
 		accountKeeper,
 		bankKeeper,
-		evmKeeper,
+		&evmKeeper,
 	)
 	app.erc20Keeper = &erc20Keeper
 
 	// Connect the inter-module EVM hooks together, these are the only modules allowed to interact with how contracts are
 	// executed, including ERC20's  Cosmos Coin <-> EVM ERC20 Token translation functions via magic contract address
-	evmKeeper = evmKeeper.SetHooks(evmkeeper.NewMultiEvmHooks(erc20Keeper.Hooks()))
-	app.evmKeeper = evmKeeper
+	evmKeeper = *evmKeeper.SetHooks(evmkeeper.NewMultiEvmHooks(erc20Keeper.Hooks()))
+	app.evmKeeper = &evmKeeper
 
 	// Register custom governance proposal logic via router keys and handler functions
 	govRouter := govtypes.NewRouter()
@@ -629,7 +629,7 @@ func NewAltheaApp(
 
 	// Microtx enables peer-to-peer automated microtransactions to form the payment layer for Althea-based networks
 	microtxKeeper := microtxkeeper.NewKeeper(
-		keys[microtxtypes.StoreKey], app.GetSubspace(microtxtypes.ModuleName), appCodec, &bankKeeper, &accountKeeper,
+		keys[microtxtypes.StoreKey], app.GetSubspace(microtxtypes.ModuleName), appCodec, &bankKeeper, &accountKeeper, &evmKeeper, &erc20Keeper,
 	)
 	app.microtxKeeper = &microtxKeeper
 
@@ -709,8 +709,8 @@ func NewAltheaApp(
 		params.NewAppModule(paramsKeeper),
 		ibcTransferAppModule,
 		lockup.NewAppModule(lockupKeeper, bankKeeper),
-		microtx.NewAppModule(microtxKeeper, bankKeeper),
-		evm.NewAppModule(evmKeeper, accountKeeper),
+		microtx.NewAppModule(microtxKeeper, accountKeeper, bankKeeper),
+		evm.NewAppModule(&evmKeeper, accountKeeper),
 		erc20.NewAppModule(erc20Keeper, accountKeeper),
 		feemarket.NewAppModule(feemarketKeeper),
 	)
@@ -823,7 +823,7 @@ func NewAltheaApp(
 		evidence.NewAppModule(evidenceKeeper),
 		ibc.NewAppModule(&ibcKeeper),
 		ibcTransferAppModule,
-		evm.NewAppModule(evmKeeper, accountKeeper),
+		evm.NewAppModule(&evmKeeper, accountKeeper),
 		feemarket.NewAppModule(feemarketKeeper),
 	)
 	app.sm = &sm
@@ -848,7 +848,7 @@ func NewAltheaApp(
 		IBCKeeper:       &ibcKeeper,
 		FeeMarketKeeper: feemarketKeeper,
 		StakingKeeper:   stakingKeeper,
-		EvmKeeper:       evmKeeper,
+		EvmKeeper:       &evmKeeper,
 		FeegrantKeeper:  nil,
 		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 		SigGasConsumer:  SigVerificationGasConsumer,

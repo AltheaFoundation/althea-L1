@@ -1,6 +1,12 @@
 package types
 
-import "crypto/md5"
+import (
+	"crypto/md5"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/common"
+)
 
 const (
 	// ModuleName is the name of the module
@@ -17,17 +23,26 @@ const (
 )
 
 var (
-// PrefixKey is an example prefix for store keys, items under this key would have keys like
-// Prefix00001, PrefixAxE10034ADF0018547, serialized to bytes. This is great for implicit
-// ordering or nesting like "Prefix[Sub-prefix][Item-identifier]"
-// PrefixKey = HashString("Prefix")
+	// The Microtx Module's bech32 address
+	ModuleAddress = authtypes.NewModuleAddress(ModuleName)
+	// The Microtx Module's EVM address
+	ModuleEVMAddress = common.BytesToAddress(ModuleAddress.Bytes())
+
+	// TokenizedAccountsKey is the index for all TokenizedAccounts, whose keys contain
+	// a bech32 x/auth account address and values are EVM TokenizedAccountNFT contract addresses
+	TokenizedAccountsKey = HashString("TokenizedAccounts")
 )
 
-// GetPrefixKey is an example function to return items under the key PrefixKey
-// e.g. it would return Prefix00001 like in the comment above
-// func GetPrefixKey(subPrefix string) []byte {
-// 	return AppendBytes(PrefixKey, []byte(subPrefix))
-// }
+// GetTokenizedAccountKey returns the TokenizedAccount key for the given bech32 address,
+// the key's format is [ TokenizedAccountsKey | bech32 address ]
+func GetTokenizedAccountKey(address sdk.AccAddress) []byte {
+	return AppendBytes(TokenizedAccountsKey, []byte(address.String()))
+}
+
+func GetAccountFromTokenizedAccountKey(key []byte) sdk.AccAddress {
+	accountBz := key[len(TokenizedAccountsKey):]
+	return sdk.AccAddress(accountBz)
+}
 
 // Hashing string using cryptographic MD5 function
 // returns 128bit(16byte) value
