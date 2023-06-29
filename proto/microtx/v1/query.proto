@@ -1,6 +1,7 @@
 syntax = "proto3";
 package microtx.v1;
 import "microtx/v1/genesis.proto";
+import "microtx/v1/msgs.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 option go_package = "github.com/althea-net/althea-chain/x/microtx/types";
@@ -14,6 +15,15 @@ service Query {
   // Get an authoritative fee amount which must be paid on Xfer
   rpc XferFee(QueryXferFeeRequest) returns (QueryXferFeeResponse) {
     option (google.api.http).get = "/microtx/v1/xfer_fee";
+  }
+  // Get all of the tokenized accounts known to the module
+  rpc TokenizedAccounts(QueryTokenizedAccountsRequest) returns (QueryTokenizedAccountsResponse) {
+    option (google.api.http).get = "/microtx/v1/tokenized_accounts";
+  }
+  // Get info about one particular tokenized account by owner, bech32 address, or nft address
+  // TODO: Investigate the http API and what we might need to put into this URL
+  rpc TokenizedAccount(QueryTokenizedAccountRequest) returns (QueryTokenizedAccountResponse) {
+    option (google.api.http).get = "/microtx/v1/tokenized_account";
   }
 }
 
@@ -29,4 +39,25 @@ message QueryXferFeeRequest {
 }
 message QueryXferFeeResponse {
   uint64 fee_amount = 1;
+}
+
+
+// Query the tokenized accounts known to the module
+message QueryTokenizedAccountsRequest {
+}
+message QueryTokenizedAccountsResponse {
+  repeated TokenizedAccount accounts = 1;
+}
+
+// Query for info about one particular Tokenized Account
+// OWNER if a bech32 address is provided, potenitally many accounts will be returned
+// TOKENIZED_ACCOUNT if a bech32 address is provided, the owner and nft contract address will be returned
+// NFT_ADDRESS if a EVM address is provided and happens to be a TokenizedAccountNFT contract, the owner and tokenized_account will be returned
+message QueryTokenizedAccountRequest {
+  string owner = 1;
+  string tokenized_account = 2;
+  string nft_address = 3;
+}
+message QueryTokenizedAccountResponse {
+  repeated TokenizedAccount accounts = 1;
 }

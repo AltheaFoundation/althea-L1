@@ -1,12 +1,19 @@
 package keeper
 
 import (
+	"fmt"
+
+	"github.com/tendermint/tendermint/libs/log"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
+	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 
 	"github.com/althea-net/althea-chain/x/microtx/types"
 )
@@ -21,6 +28,8 @@ type Keeper struct {
 	cdc           codec.BinaryCodec // The wire codec for binary encoding/decoding.
 	bankKeeper    *bankkeeper.BaseKeeper
 	accountKeeper *authkeeper.AccountKeeper
+	evmKeeper     *evmkeeper.Keeper
+	erc20Keeper   *erc20keeper.Keeper
 }
 
 // Check for nil members
@@ -31,6 +40,12 @@ func (k Keeper) ValidateMembers() {
 	if k.accountKeeper == nil {
 		panic("Nil accountKeeper!")
 	}
+	if k.evmKeeper == nil {
+		panic("Nil evmKeeper!")
+	}
+	if k.erc20Keeper == nil {
+		panic("Nil erc20Keeper!")
+	}
 }
 
 // NewKeeper returns a new instance of the microtx keeper
@@ -40,6 +55,8 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	bankKeeper *bankkeeper.BaseKeeper,
 	accKeeper *authkeeper.AccountKeeper,
+	evmKeeper *evmkeeper.Keeper,
+	erc20Keeper *erc20keeper.Keeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -53,6 +70,8 @@ func NewKeeper(
 		cdc:           cdc,
 		bankKeeper:    bankKeeper,
 		accountKeeper: accKeeper,
+		evmKeeper:     evmKeeper,
+		erc20Keeper:   erc20Keeper,
 	}
 
 	k.ValidateMembers()
@@ -100,4 +119,8 @@ func (k Keeper) GetXferFeeBasisPoints(ctx sdk.Context) (uint64, error) {
 		return 0, err
 	}
 	return params.XferFeeBasisPoints, nil
+}
+
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
