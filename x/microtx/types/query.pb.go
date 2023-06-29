@@ -199,40 +199,244 @@ func (m *QueryXferFeeResponse) GetFeeAmount() uint64 {
 	return 0
 }
 
+// Query the tokenized accounts known to the module
+type QueryTokenizedAccountsRequest struct {
+}
+
+func (m *QueryTokenizedAccountsRequest) Reset()         { *m = QueryTokenizedAccountsRequest{} }
+func (m *QueryTokenizedAccountsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryTokenizedAccountsRequest) ProtoMessage()    {}
+func (*QueryTokenizedAccountsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1552e394eb0ed2e0, []int{4}
+}
+func (m *QueryTokenizedAccountsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryTokenizedAccountsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryTokenizedAccountsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryTokenizedAccountsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTokenizedAccountsRequest.Merge(m, src)
+}
+func (m *QueryTokenizedAccountsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryTokenizedAccountsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTokenizedAccountsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryTokenizedAccountsRequest proto.InternalMessageInfo
+
+type QueryTokenizedAccountsResponse struct {
+	Accounts []*TokenizedAccount `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
+}
+
+func (m *QueryTokenizedAccountsResponse) Reset()         { *m = QueryTokenizedAccountsResponse{} }
+func (m *QueryTokenizedAccountsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryTokenizedAccountsResponse) ProtoMessage()    {}
+func (*QueryTokenizedAccountsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1552e394eb0ed2e0, []int{5}
+}
+func (m *QueryTokenizedAccountsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryTokenizedAccountsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryTokenizedAccountsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryTokenizedAccountsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTokenizedAccountsResponse.Merge(m, src)
+}
+func (m *QueryTokenizedAccountsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryTokenizedAccountsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTokenizedAccountsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryTokenizedAccountsResponse proto.InternalMessageInfo
+
+func (m *QueryTokenizedAccountsResponse) GetAccounts() []*TokenizedAccount {
+	if m != nil {
+		return m.Accounts
+	}
+	return nil
+}
+
+// Query for info about one particular Tokenized Account
+// OWNER if a bech32 address is provided, potenitally many accounts will be returned
+// TOKENIZED_ACCOUNT if a bech32 address is provided, the owner and nft contract address will be returned
+// NFT_ADDRESS if a EVM address is provided and happens to be a TokenizedAccountNFT contract, the owner and tokenized_account will be returned
+type QueryTokenizedAccountRequest struct {
+	Owner            string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	TokenizedAccount string `protobuf:"bytes,2,opt,name=tokenized_account,json=tokenizedAccount,proto3" json:"tokenized_account,omitempty"`
+	NftAddress       string `protobuf:"bytes,3,opt,name=nft_address,json=nftAddress,proto3" json:"nft_address,omitempty"`
+}
+
+func (m *QueryTokenizedAccountRequest) Reset()         { *m = QueryTokenizedAccountRequest{} }
+func (m *QueryTokenizedAccountRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryTokenizedAccountRequest) ProtoMessage()    {}
+func (*QueryTokenizedAccountRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1552e394eb0ed2e0, []int{6}
+}
+func (m *QueryTokenizedAccountRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryTokenizedAccountRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryTokenizedAccountRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryTokenizedAccountRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTokenizedAccountRequest.Merge(m, src)
+}
+func (m *QueryTokenizedAccountRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryTokenizedAccountRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTokenizedAccountRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryTokenizedAccountRequest proto.InternalMessageInfo
+
+func (m *QueryTokenizedAccountRequest) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
+func (m *QueryTokenizedAccountRequest) GetTokenizedAccount() string {
+	if m != nil {
+		return m.TokenizedAccount
+	}
+	return ""
+}
+
+func (m *QueryTokenizedAccountRequest) GetNftAddress() string {
+	if m != nil {
+		return m.NftAddress
+	}
+	return ""
+}
+
+type QueryTokenizedAccountResponse struct {
+	Accounts []*TokenizedAccount `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
+}
+
+func (m *QueryTokenizedAccountResponse) Reset()         { *m = QueryTokenizedAccountResponse{} }
+func (m *QueryTokenizedAccountResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryTokenizedAccountResponse) ProtoMessage()    {}
+func (*QueryTokenizedAccountResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1552e394eb0ed2e0, []int{7}
+}
+func (m *QueryTokenizedAccountResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryTokenizedAccountResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryTokenizedAccountResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryTokenizedAccountResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTokenizedAccountResponse.Merge(m, src)
+}
+func (m *QueryTokenizedAccountResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryTokenizedAccountResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTokenizedAccountResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryTokenizedAccountResponse proto.InternalMessageInfo
+
+func (m *QueryTokenizedAccountResponse) GetAccounts() []*TokenizedAccount {
+	if m != nil {
+		return m.Accounts
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "microtx.v1.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "microtx.v1.QueryParamsResponse")
 	proto.RegisterType((*QueryXferFeeRequest)(nil), "microtx.v1.QueryXferFeeRequest")
 	proto.RegisterType((*QueryXferFeeResponse)(nil), "microtx.v1.QueryXferFeeResponse")
+	proto.RegisterType((*QueryTokenizedAccountsRequest)(nil), "microtx.v1.QueryTokenizedAccountsRequest")
+	proto.RegisterType((*QueryTokenizedAccountsResponse)(nil), "microtx.v1.QueryTokenizedAccountsResponse")
+	proto.RegisterType((*QueryTokenizedAccountRequest)(nil), "microtx.v1.QueryTokenizedAccountRequest")
+	proto.RegisterType((*QueryTokenizedAccountResponse)(nil), "microtx.v1.QueryTokenizedAccountResponse")
 }
 
 func init() { proto.RegisterFile("microtx/v1/query.proto", fileDescriptor_1552e394eb0ed2e0) }
 
 var fileDescriptor_1552e394eb0ed2e0 = []byte{
-	// 357 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x51, 0xbd, 0x4e, 0xeb, 0x30,
-	0x14, 0x4e, 0xae, 0x7a, 0x73, 0x75, 0x7d, 0x37, 0xdf, 0xa8, 0xaa, 0xa2, 0xe2, 0x56, 0x99, 0x58,
-	0x1a, 0xd3, 0x22, 0x1e, 0x80, 0x0e, 0xb0, 0x30, 0x40, 0x27, 0xc4, 0x52, 0xb9, 0xd5, 0x49, 0x1a,
-	0xd4, 0xd8, 0x69, 0xec, 0x54, 0xed, 0xca, 0x13, 0x20, 0xf1, 0x52, 0x1d, 0x2b, 0xb1, 0x20, 0x06,
-	0x84, 0x5a, 0x1e, 0x04, 0xd5, 0x31, 0x90, 0xa8, 0xea, 0x76, 0xfc, 0xf9, 0x3b, 0xdf, 0x8f, 0x8d,
-	0xea, 0x49, 0x3c, 0xce, 0x84, 0x5a, 0xd0, 0x79, 0x97, 0xce, 0x72, 0xc8, 0x96, 0x41, 0x9a, 0x09,
-	0x25, 0x30, 0x32, 0x78, 0x30, 0xef, 0x7a, 0x8d, 0x12, 0x27, 0x02, 0x0e, 0x32, 0x96, 0x05, 0xcb,
-	0x73, 0x23, 0x11, 0x09, 0x3d, 0xd2, 0xdd, 0x64, 0xd0, 0x66, 0x24, 0x44, 0x34, 0x05, 0xca, 0xd2,
-	0x98, 0x32, 0xce, 0x85, 0x62, 0x2a, 0x16, 0xdc, 0xec, 0xf8, 0x2e, 0xc2, 0x37, 0x3b, 0xa3, 0x6b,
-	0x96, 0xb1, 0x44, 0x0e, 0x60, 0x96, 0x83, 0x54, 0xfe, 0x25, 0xfa, 0x5f, 0x41, 0x65, 0x2a, 0xb8,
-	0x04, 0x7c, 0x82, 0x9c, 0x54, 0x23, 0x0d, 0xbb, 0x6d, 0x1f, 0xff, 0xeb, 0xe1, 0xe0, 0x27, 0x57,
-	0x50, 0x70, 0xfb, 0xb5, 0xd5, 0x5b, 0xcb, 0x1a, 0x18, 0x9e, 0xdf, 0x31, 0x42, 0xb7, 0x21, 0x64,
-	0x17, 0x00, 0x46, 0x1f, 0xd7, 0x91, 0xc3, 0x12, 0x91, 0x73, 0xa5, 0x85, 0x6a, 0x03, 0x73, 0xf2,
-	0xcf, 0x90, 0x5b, 0xa5, 0x1b, 0xe3, 0x23, 0x84, 0x42, 0x80, 0x61, 0x65, 0xe7, 0x6f, 0x08, 0x70,
-	0xae, 0x81, 0xde, 0xab, 0x8d, 0x7e, 0xeb, 0x3d, 0x0c, 0xc8, 0x29, 0x72, 0x60, 0x52, 0xce, 0xb6,
-	0x5f, 0xd1, 0x6b, 0x1d, 0xbc, 0x2f, 0x3c, 0x7d, 0xef, 0xe1, 0xf9, 0xe3, 0xe9, 0x97, 0x8b, 0x31,
-	0x2d, 0x3d, 0x78, 0x51, 0x0b, 0xdf, 0xa3, 0x3f, 0x26, 0x22, 0xde, 0xd7, 0xa9, 0x76, 0xf5, 0xda,
-	0x87, 0x09, 0xc6, 0xa9, 0xa9, 0x9d, 0xea, 0xd8, 0x2d, 0x3b, 0x2d, 0x42, 0xc8, 0x86, 0x21, 0x40,
-	0xff, 0x6a, 0xb5, 0x21, 0xf6, 0x7a, 0x43, 0xec, 0xf7, 0x0d, 0xb1, 0x1f, 0xb7, 0xc4, 0x5a, 0x6f,
-	0x89, 0xf5, 0xb2, 0x25, 0xd6, 0x5d, 0x2f, 0x8a, 0xd5, 0x24, 0x1f, 0x05, 0x63, 0x91, 0x50, 0x36,
-	0x55, 0x13, 0x60, 0x1d, 0x0e, 0xea, 0x6b, 0x1c, 0x4f, 0x58, 0xcc, 0xe9, 0xe2, 0x5b, 0x53, 0x2d,
-	0x53, 0x90, 0x23, 0x47, 0x7f, 0xfb, 0xe9, 0x67, 0x00, 0x00, 0x00, 0xff, 0xff, 0x85, 0xba, 0xae,
-	0x63, 0x6a, 0x02, 0x00, 0x00,
+	// 534 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0x4f, 0x6f, 0x12, 0x41,
+	0x14, 0x67, 0x5b, 0x8a, 0xf6, 0x71, 0x69, 0x9f, 0x2b, 0x21, 0x1b, 0x58, 0xc8, 0x26, 0x1a, 0xaa,
+	0x29, 0x6b, 0x31, 0x26, 0x5e, 0xe9, 0x41, 0x2f, 0x1e, 0x94, 0x78, 0xd0, 0x5e, 0xc8, 0x14, 0xde,
+	0x2e, 0xab, 0x65, 0x86, 0xee, 0x0c, 0x95, 0x7a, 0x32, 0xfd, 0x00, 0xc6, 0xe8, 0x97, 0xea, 0xb1,
+	0x89, 0x17, 0x4f, 0xc6, 0x80, 0x1f, 0xc4, 0x30, 0x3b, 0xe0, 0x02, 0xa2, 0x4d, 0xbc, 0xcd, 0xbe,
+	0xf9, 0xfd, 0x7b, 0xcc, 0x2f, 0x40, 0xa1, 0x1f, 0x75, 0x62, 0xa1, 0x46, 0xfe, 0xd9, 0x81, 0x7f,
+	0x3a, 0xa4, 0xf8, 0xbc, 0x3e, 0x88, 0x85, 0x12, 0x08, 0x66, 0x5e, 0x3f, 0x3b, 0x70, 0x8a, 0x29,
+	0x4c, 0x48, 0x9c, 0x64, 0x24, 0x13, 0x94, 0x73, 0x3b, 0x75, 0xd3, 0x97, 0xe1, 0x6c, 0x6c, 0x87,
+	0x22, 0x14, 0xfa, 0xe8, 0x4f, 0x4f, 0x66, 0x5a, 0x0a, 0x85, 0x08, 0x4f, 0xc8, 0x67, 0x83, 0xc8,
+	0x67, 0x9c, 0x0b, 0xc5, 0x54, 0x24, 0xb8, 0xe1, 0x78, 0x36, 0xe0, 0x8b, 0xa9, 0xff, 0x73, 0x16,
+	0xb3, 0xbe, 0x6c, 0xd1, 0xe9, 0x90, 0xa4, 0xf2, 0x9e, 0xc2, 0xad, 0x85, 0xa9, 0x1c, 0x08, 0x2e,
+	0x09, 0x1f, 0x40, 0x6e, 0xa0, 0x27, 0x45, 0xab, 0x6a, 0xd5, 0xf2, 0x0d, 0xac, 0xff, 0x8e, 0x5b,
+	0x4f, 0xb0, 0x87, 0xd9, 0xcb, 0xef, 0x95, 0x4c, 0xcb, 0xe0, 0xbc, 0x7d, 0x23, 0xf4, 0x2a, 0xa0,
+	0xf8, 0x09, 0x91, 0xd1, 0xc7, 0x02, 0xe4, 0x58, 0x5f, 0x0c, 0xb9, 0xd2, 0x42, 0xd9, 0x96, 0xf9,
+	0xf2, 0x1e, 0x81, 0xbd, 0x08, 0x37, 0xc6, 0x65, 0x80, 0x80, 0xa8, 0xbd, 0xc0, 0xd9, 0x0e, 0x88,
+	0x9a, 0x09, 0xad, 0x02, 0x65, 0x4d, 0x7b, 0x29, 0xde, 0x12, 0x8f, 0xde, 0x53, 0xb7, 0xd9, 0xe9,
+	0x4c, 0x2f, 0xe6, 0xfb, 0x1c, 0x81, 0xbb, 0x0e, 0x60, 0x1c, 0x1e, 0xc3, 0x4d, 0x66, 0x66, 0x45,
+	0xab, 0xba, 0x59, 0xcb, 0x37, 0x4a, 0xe9, 0xe5, 0x96, 0x89, 0xad, 0x39, 0xda, 0xbb, 0xb0, 0xa0,
+	0xf4, 0x47, 0xf1, 0xd9, 0xb2, 0x36, 0x6c, 0x89, 0x77, 0x9c, 0x62, 0x9d, 0x7b, 0xbb, 0x95, 0x7c,
+	0xe0, 0x7d, 0xd8, 0x55, 0x33, 0x42, 0xdb, 0x88, 0x15, 0x37, 0x34, 0x62, 0x47, 0x2d, 0x29, 0x61,
+	0x05, 0xf2, 0x3c, 0x50, 0x6d, 0xd6, 0xed, 0xc6, 0x24, 0x65, 0x71, 0x53, 0xc3, 0x80, 0x07, 0xaa,
+	0x99, 0x4c, 0xbc, 0xd7, 0x6b, 0x7e, 0x81, 0xff, 0xdf, 0xaf, 0xf1, 0x21, 0x0b, 0x5b, 0x5a, 0x1b,
+	0x09, 0x72, 0xc9, 0x23, 0xa3, 0x9b, 0xe6, 0xae, 0xf6, 0xc7, 0xa9, 0xac, 0xbd, 0x4f, 0xe2, 0x78,
+	0xce, 0xc5, 0xd7, 0x9f, 0x5f, 0x36, 0x6c, 0x44, 0x3f, 0x55, 0xe5, 0xa4, 0x33, 0xf8, 0x06, 0x6e,
+	0x98, 0xf7, 0xc7, 0x55, 0x9d, 0xc5, 0x22, 0x39, 0xd5, 0xf5, 0x00, 0xe3, 0x54, 0xd2, 0x4e, 0x05,
+	0xb4, 0xd3, 0x4e, 0xa3, 0x80, 0xe2, 0x76, 0x40, 0x84, 0x9f, 0x2d, 0xd8, 0x5d, 0x29, 0x05, 0xee,
+	0xad, 0xa8, 0xae, 0x6b, 0x96, 0x73, 0xef, 0x3a, 0x50, 0x13, 0xe5, 0xae, 0x8e, 0x52, 0x45, 0x37,
+	0x1d, 0x65, 0xa5, 0x04, 0x12, 0x3f, 0x5a, 0xb0, 0xb3, 0xac, 0x82, 0xb5, 0x7f, 0x1a, 0xcd, 0x22,
+	0xed, 0x5d, 0x03, 0x69, 0x12, 0xdd, 0xd1, 0x89, 0x2a, 0x58, 0xfe, 0x6b, 0xa2, 0xc3, 0x67, 0x97,
+	0x63, 0xd7, 0xba, 0x1a, 0xbb, 0xd6, 0x8f, 0xb1, 0x6b, 0x7d, 0x9a, 0xb8, 0x99, 0xab, 0x89, 0x9b,
+	0xf9, 0x36, 0x71, 0x33, 0x47, 0x8d, 0x30, 0x52, 0xbd, 0xe1, 0x71, 0xbd, 0x23, 0xfa, 0x3e, 0x3b,
+	0x51, 0x3d, 0x62, 0xfb, 0x9c, 0xd4, 0xec, 0xd8, 0xe9, 0xb1, 0x88, 0xfb, 0xa3, 0xb9, 0xb8, 0x3a,
+	0x1f, 0x90, 0x3c, 0xce, 0xe9, 0x7f, 0x9e, 0x87, 0xbf, 0x02, 0x00, 0x00, 0xff, 0xff, 0x95, 0x17,
+	0x57, 0xef, 0x04, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -251,6 +455,11 @@ type QueryClient interface {
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// Get an authoritative fee amount which must be paid on Xfer
 	XferFee(ctx context.Context, in *QueryXferFeeRequest, opts ...grpc.CallOption) (*QueryXferFeeResponse, error)
+	// Get all of the tokenized accounts known to the module
+	TokenizedAccounts(ctx context.Context, in *QueryTokenizedAccountsRequest, opts ...grpc.CallOption) (*QueryTokenizedAccountsResponse, error)
+	// Get info about one particular tokenized account by owner, bech32 address, or nft address
+	// TODO: Investigate the http API and what we might need to put into this URL
+	TokenizedAccount(ctx context.Context, in *QueryTokenizedAccountRequest, opts ...grpc.CallOption) (*QueryTokenizedAccountResponse, error)
 }
 
 type queryClient struct {
@@ -279,12 +488,35 @@ func (c *queryClient) XferFee(ctx context.Context, in *QueryXferFeeRequest, opts
 	return out, nil
 }
 
+func (c *queryClient) TokenizedAccounts(ctx context.Context, in *QueryTokenizedAccountsRequest, opts ...grpc.CallOption) (*QueryTokenizedAccountsResponse, error) {
+	out := new(QueryTokenizedAccountsResponse)
+	err := c.cc.Invoke(ctx, "/microtx.v1.Query/TokenizedAccounts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) TokenizedAccount(ctx context.Context, in *QueryTokenizedAccountRequest, opts ...grpc.CallOption) (*QueryTokenizedAccountResponse, error) {
+	out := new(QueryTokenizedAccountResponse)
+	err := c.cc.Invoke(ctx, "/microtx.v1.Query/TokenizedAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Query the current microtx params
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// Get an authoritative fee amount which must be paid on Xfer
 	XferFee(context.Context, *QueryXferFeeRequest) (*QueryXferFeeResponse, error)
+	// Get all of the tokenized accounts known to the module
+	TokenizedAccounts(context.Context, *QueryTokenizedAccountsRequest) (*QueryTokenizedAccountsResponse, error)
+	// Get info about one particular tokenized account by owner, bech32 address, or nft address
+	// TODO: Investigate the http API and what we might need to put into this URL
+	TokenizedAccount(context.Context, *QueryTokenizedAccountRequest) (*QueryTokenizedAccountResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -296,6 +528,12 @@ func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsReq
 }
 func (*UnimplementedQueryServer) XferFee(ctx context.Context, req *QueryXferFeeRequest) (*QueryXferFeeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method XferFee not implemented")
+}
+func (*UnimplementedQueryServer) TokenizedAccounts(ctx context.Context, req *QueryTokenizedAccountsRequest) (*QueryTokenizedAccountsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TokenizedAccounts not implemented")
+}
+func (*UnimplementedQueryServer) TokenizedAccount(ctx context.Context, req *QueryTokenizedAccountRequest) (*QueryTokenizedAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TokenizedAccount not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -338,6 +576,42 @@ func _Query_XferFee_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_TokenizedAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryTokenizedAccountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).TokenizedAccounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/microtx.v1.Query/TokenizedAccounts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).TokenizedAccounts(ctx, req.(*QueryTokenizedAccountsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_TokenizedAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryTokenizedAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).TokenizedAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/microtx.v1.Query/TokenizedAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).TokenizedAccount(ctx, req.(*QueryTokenizedAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "microtx.v1.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -349,6 +623,14 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "XferFee",
 			Handler:    _Query_XferFee_Handler,
+		},
+		{
+			MethodName: "TokenizedAccounts",
+			Handler:    _Query_TokenizedAccounts_Handler,
+		},
+		{
+			MethodName: "TokenizedAccount",
+			Handler:    _Query_TokenizedAccount_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -467,6 +749,147 @@ func (m *QueryXferFeeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryTokenizedAccountsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryTokenizedAccountsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryTokenizedAccountsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryTokenizedAccountsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryTokenizedAccountsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryTokenizedAccountsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Accounts) > 0 {
+		for iNdEx := len(m.Accounts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Accounts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryTokenizedAccountRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryTokenizedAccountRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryTokenizedAccountRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.NftAddress) > 0 {
+		i -= len(m.NftAddress)
+		copy(dAtA[i:], m.NftAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.NftAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.TokenizedAccount) > 0 {
+		i -= len(m.TokenizedAccount)
+		copy(dAtA[i:], m.TokenizedAccount)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.TokenizedAccount)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Owner) > 0 {
+		i -= len(m.Owner)
+		copy(dAtA[i:], m.Owner)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Owner)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryTokenizedAccountResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryTokenizedAccountResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryTokenizedAccountResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Accounts) > 0 {
+		for iNdEx := len(m.Accounts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Accounts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -518,6 +941,66 @@ func (m *QueryXferFeeResponse) Size() (n int) {
 	_ = l
 	if m.FeeAmount != 0 {
 		n += 1 + sovQuery(uint64(m.FeeAmount))
+	}
+	return n
+}
+
+func (m *QueryTokenizedAccountsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryTokenizedAccountsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Accounts) > 0 {
+		for _, e := range m.Accounts {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryTokenizedAccountRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Owner)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.TokenizedAccount)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.NftAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryTokenizedAccountResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Accounts) > 0 {
+		for _, e := range m.Accounts {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
 	}
 	return n
 }
@@ -778,6 +1261,370 @@ func (m *QueryXferFeeResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryTokenizedAccountsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryTokenizedAccountsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryTokenizedAccountsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryTokenizedAccountsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryTokenizedAccountsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryTokenizedAccountsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Accounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Accounts = append(m.Accounts, &TokenizedAccount{})
+			if err := m.Accounts[len(m.Accounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryTokenizedAccountRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryTokenizedAccountRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryTokenizedAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Owner", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Owner = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TokenizedAccount", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TokenizedAccount = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NftAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NftAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryTokenizedAccountResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryTokenizedAccountResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryTokenizedAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Accounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Accounts = append(m.Accounts, &TokenizedAccount{})
+			if err := m.Accounts[len(m.Accounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
