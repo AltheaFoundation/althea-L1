@@ -1,8 +1,8 @@
 use std::time::SystemTime;
 
 use crate::type_urls::{
-    GENERIC_AUTHORIZATION_TYPE_URL, MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MULTI_SEND_TYPE_URL,
-    MSG_SEND_TYPE_URL, MSG_TRANSFER_TYPE_URL, MSG_XFER_TYPE_URL,
+    GENERIC_AUTHORIZATION_TYPE_URL, MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MICROTX_TYPE_URL,
+    MSG_MULTI_SEND_TYPE_URL, MSG_SEND_TYPE_URL, MSG_TRANSFER_TYPE_URL,
 };
 use crate::utils::{
     create_parameter_change_proposal, encode_any, footoken_metadata, get_user_key, one_atom,
@@ -15,7 +15,7 @@ use althea_proto::cosmos_sdk_proto::cosmos::authz::v1beta1::{
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{Input, MsgMultiSend, MsgSend, Output};
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParamChange;
-use althea_proto::microtx::v1::MsgXfer;
+use althea_proto::microtx::v1::MsgMicrotx;
 use clarity::Uint256;
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
@@ -33,7 +33,7 @@ pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) 
     let lock_exempt = get_user_key(None);
     let msg_send_authorized = get_user_key(None);
     let msg_multi_send_authorized = get_user_key(None);
-    let msg_xfer_authorized = get_user_key(None);
+    let msg_microtx_authorized = get_user_key(None);
     fund_lock_exempt_user(contact, &validator_keys, lock_exempt).await;
     fund_authorized_users(
         contact,
@@ -51,7 +51,7 @@ pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) 
         [
             msg_send_authorized,
             msg_multi_send_authorized,
-            msg_xfer_authorized,
+            msg_microtx_authorized,
         ],
     )
     .await;
@@ -156,7 +156,7 @@ pub fn create_lockup_param_changes(exempt_user: Address) -> Vec<ParamChange> {
     let locked_msgs = vec![
         MSG_SEND_TYPE_URL.to_string(),
         MSG_MULTI_SEND_TYPE_URL.to_string(),
-        MSG_XFER_TYPE_URL.to_string(),
+        MSG_MICROTX_TYPE_URL.to_string(),
         MSG_TRANSFER_TYPE_URL.to_string(),
     ];
     let mut locked_msg_types = lockup_param.clone();
@@ -200,12 +200,12 @@ pub async fn fail_to_send(
         )
         .await;
     res.expect_err("Successfully sent via bank MsgMultiSend? Should not be possible!");
-    let msg_xfer =
-        create_microtx_msg_xfer(sender, receiver.ethermint_address, amount.clone());
+    let msg_microtx =
+        create_microtx_msg_microtx(sender, receiver.ethermint_address, amount.clone());
     let res = contact
-        .send_message(&[msg_xfer], None, &[], Some(OPERATION_TIMEOUT), sender)
+        .send_message(&[msg_microtx], None, &[], Some(OPERATION_TIMEOUT), sender)
         .await;
-    res.expect_err("Successfully sent via microtx MsgXfer? Should not be possible!");
+    res.expect_err("Successfully sent via microtx MsgMicrotx? Should not be possible!");
     let msg_send_authorized = authorized_users[0];
     let authz_send = create_authz_bank_msg_send(
         contact,
@@ -246,11 +246,11 @@ pub async fn fail_to_send(
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgMultiSend)? Should not be possible!");
-    let msg_xfer_authorized = authorized_users[1];
-    let authz_msg_xfer = create_authz_microtx_msg_xfer(
+    let msg_microtx_authorized = authorized_users[1];
+    let authz_msg_microtx = create_authz_microtx_msg_microtx(
         contact,
         sender,
-        msg_xfer_authorized,
+        msg_microtx_authorized,
         receiver.ethermint_address,
         amount.clone(),
     )
@@ -258,14 +258,14 @@ pub async fn fail_to_send(
     .unwrap();
     let res = contact
         .send_message(
-            &[authz_msg_xfer.clone()],
+            &[authz_msg_microtx.clone()],
             None,
             &[],
             Some(OPERATION_TIMEOUT),
-            msg_xfer_authorized.ethermint_key,
+            msg_microtx_authorized.ethermint_key,
         )
         .await;
-    res.expect_err("Successfully sent via authz Exec(MsgXfer)? Should not be possible!");
+    res.expect_err("Successfully sent via authz Exec(MsgMicrotx)? Should not be possible!");
 }
 
 /// Creates a x/bank MsgSend to transfer `amount` from `sender` to `receiver`
@@ -300,18 +300,18 @@ pub fn create_bank_msg_multi_send(
     Msg::new(MSG_MULTI_SEND_TYPE_URL, multi_send)
 }
 
-/// Creates a x/microtx MsgXfer to transfer `amount` from `sender` to `receiver`
-pub fn create_microtx_msg_xfer(
+/// Creates a x/microtx MsgMicrotx to transfer `amount` from `sender` to `receiver`
+pub fn create_microtx_msg_microtx(
     sender: impl PrivateKey,
     receiver: Address,
     amount: ProtoCoin,
 ) -> Msg {
-    let send = MsgXfer {
+    let send = MsgMicrotx {
         sender: sender.to_address(&ADDRESS_PREFIX).unwrap().to_string(),
         receiver: receiver.to_string(),
         amounts: vec![amount],
     };
-    Msg::new(MSG_XFER_TYPE_URL, send)
+    Msg::new(MSG_MICROTX_TYPE_URL, send)
 }
 
 /// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
@@ -391,37 +391,37 @@ pub async fn create_authz_bank_msg_multi_send(
 }
 
 /// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
-/// an authz MsgExec-wrapped microtx MsgXfer and returns that as well
-pub async fn create_authz_microtx_msg_xfer(
+/// an authz MsgExec-wrapped microtx MsgMicrotx and returns that as well
+pub async fn create_authz_microtx_msg_microtx(
     contact: &Contact,
     sender: impl PrivateKey,
     authorizee: EthermintUserKey,
     receiver: Address,
     amount: ProtoCoin,
 ) -> Result<Msg, CosmosGrpcError> {
-    let grant_msg_xfer = create_authorization(
+    let grant_msg_microtx = create_authorization(
         sender.clone(),
         authorizee.ethermint_address,
-        MSG_XFER_TYPE_URL.to_string(),
+        MSG_MICROTX_TYPE_URL.to_string(),
     );
 
     let res = contact
         .send_message(
-            &[grant_msg_xfer],
+            &[grant_msg_microtx],
             None,
             &[],
             Some(OPERATION_TIMEOUT),
             sender.clone(),
         )
         .await;
-    info!("Granted MsgXfer authorization with response {:?}", res);
+    info!("Granted MsgMicrotx authorization with response {:?}", res);
     res?;
 
-    let xfer = create_microtx_msg_xfer(sender.clone(), receiver, amount);
-    let xfer_any: prost_types::Any = xfer.into();
+    let microtx = create_microtx_msg_microtx(sender.clone(), receiver, amount);
+    let microtx_any: prost_types::Any = microtx.into();
     let exec = MsgExec {
         grantee: authorizee.ethermint_address.to_string(),
-        msgs: vec![xfer_any],
+        msgs: vec![microtx_any],
     };
     let exec_msg = Msg::new(MSG_EXEC_TYPE_URL, exec);
 

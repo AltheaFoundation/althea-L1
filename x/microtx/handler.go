@@ -17,8 +17,8 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 		ctx = ctx.WithEventManager(sdk.NewEventManager())
 		switch msg := msg.(type) {
-		case *types.MsgXfer:
-			res, err := msgServer.Xfer(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgMicrotx:
+			res, err := msgServer.Microtx(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		default:
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, fmt.Sprintf("Unrecognized microtx Msg type: %v", sdk.MsgTypeURL(msg)))

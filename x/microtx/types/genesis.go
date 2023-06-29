@@ -19,7 +19,7 @@ var (
 	// nolint: exhaustruct
 	_ paramtypes.ParamSet = &Params{}
 
-	ParamsStoreKeyXferFeeBasisPoints = "XferFeeBasisPoints"
+	ParamsStoreKeyMicrotxFeeBasisPoints = "MicrotxFeeBasisPoints"
 )
 
 // ValidateBasic validates genesis state by looping through the params and
@@ -41,14 +41,14 @@ func DefaultGenesisState() *GenesisState {
 // DefaultParams returns a copy of the default params
 func DefaultParams() *Params {
 	return &Params{
-		XferFeeBasisPoints: 1000,
+		MicrotxFeeBasisPoints: 1000,
 	}
 }
 
 // ValidateBasic checks that the parameters have valid values.
 func (p Params) ValidateBasic() error {
-	if err := validateXferFeeBasisPoints(p.XferFeeBasisPoints); err != nil {
-		return sdkerrors.Wrap(err, "XferFeeBasisPoints")
+	if err := validateMicrotxFeeBasisPoints(p.MicrotxFeeBasisPoints); err != nil {
+		return sdkerrors.Wrap(err, "MicrotxFeeBasisPoints")
 	}
 	return nil
 }
@@ -56,7 +56,7 @@ func (p Params) ValidateBasic() error {
 // ParamKeyTable for auth module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{
-		XferFeeBasisPoints: 1000,
+		MicrotxFeeBasisPoints: 1000,
 	})
 }
 
@@ -64,7 +64,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 // pairs of auth module's parameters.
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair([]byte(ParamsStoreKeyXferFeeBasisPoints), &p.XferFeeBasisPoints, validateXferFeeBasisPoints),
+		paramtypes.NewParamSetPair([]byte(ParamsStoreKeyMicrotxFeeBasisPoints), &p.MicrotxFeeBasisPoints, validateMicrotxFeeBasisPoints),
 	}
 }
 
@@ -75,14 +75,14 @@ func (p Params) Equal(p2 Params) bool {
 	return bytes.Equal(bz1, bz2)
 }
 
-func validateXferFeeBasisPoints(i interface{}) error {
+func validateMicrotxFeeBasisPoints(i interface{}) error {
 	v, ok := i.(uint64)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
 	if v >= 10000 {
-		return fmt.Errorf("excessive xfer fee of at least 100 percent")
+		return fmt.Errorf("excessive microtx fee of at least 100 percent")
 	}
 	return nil
 }

@@ -29,7 +29,7 @@ func GetQueryCmd() *cobra.Command {
 	}
 	microtxQueryCmd.AddCommand([]*cobra.Command{
 		CmdQueryParams(),
-		CmdQueryXferFee(),
+		CmdQueryMicrotxFee(),
 		CmdQueryTokenizedAccount(),
 		CmdQueryTokenizedAccounts(),
 	}...)
@@ -64,13 +64,13 @@ func CmdQueryParams() *cobra.Command {
 	return cmd
 }
 
-// CmdQueryXferFee fetches the fee needed to Xfer a certain amount
-func CmdQueryXferFee() *cobra.Command {
+// CmdQueryMicrotxFee fetches the fee needed to Microtx a certain amount
+func CmdQueryMicrotxFee() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
-		Use:   "xfer-fee amount",
+		Use:   "Microtx-fee amount",
 		Args:  cobra.ExactArgs(1),
-		Short: "Query the fee needed to Xfer amount to another wallet",
+		Short: "Query the fee needed to Microtx amount to another wallet",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -83,11 +83,11 @@ func CmdQueryXferFee() *cobra.Command {
 				return sdkerrors.Wrap(err, "invalid amount, expecting a nonnegative integer")
 			}
 
-			req := types.QueryXferFeeRequest{
+			req := types.QueryMicrotxFeeRequest{
 				Amount: amount,
 			}
 
-			res, err := queryClient.XferFee(cmd.Context(), &req)
+			res, err := queryClient.MicrotxFee(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}
