@@ -124,8 +124,6 @@ $ %s migrate /path/to/genesis.json --chain-id=cosmoshub-4 --genesis-time=2019-04
 				var authGenesis auth.GenesisState
 				clientCtx.Codec.MustUnmarshalJSON(newGenState[auth.ModuleName], &authGenesis)
 
-				authGenesis, bankGenesis, distrGenesis = Prop29Migration(&authGenesis, &bankGenesis, &distrGenesis)
-
 				newGenState[bank.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenesis)
 				newGenState[distr.ModuleName] = clientCtx.Codec.MustMarshalJSON(&distrGenesis)
 				newGenState[auth.ModuleName] = clientCtx.Codec.MustMarshalJSON(&authGenesis)
