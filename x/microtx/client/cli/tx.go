@@ -24,18 +24,18 @@ func GetTxCmd(storeKey string) *cobra.Command {
 	}
 
 	microtxTxCmd.AddCommand([]*cobra.Command{
-		CmdXfer(),
+		CmdMicrotx(),
 	}...)
 
 	return microtxTxCmd
 }
 
-// CmdXfer crafts and submits a MsgXfer to the chain
-func CmdXfer() *cobra.Command {
+// CmdMicrotx crafts and submits a MsgMicrotx to the chain
+func CmdMicrotx() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
-		Use:   "xfer [sender] [receiver] [amount1] [[amount2] [amount3] ...]",
-		Short: "xfer sends all provided amounts from sender to receiver",
+		Use:   "microtx [sender] [receiver] [amount1] [[amount2] [amount3] ...]",
+		Short: "microtx sends all provided amounts from sender to receiver",
 		Args:  cobra.MinimumNArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx, err := client.GetClientTxContext(cmd)
@@ -64,7 +64,7 @@ func CmdXfer() *cobra.Command {
 			}
 
 			// Make the message
-			msg := types.NewMsgXfer(sender.String(), receiver.String(), amounts)
+			msg := types.NewMsgMicrotx(sender.String(), receiver.String(), amounts)
 			if err := msg.ValidateBasic(); err != nil {
 				return sdkerrors.Wrap(err, "invalid argument provided")
 			}

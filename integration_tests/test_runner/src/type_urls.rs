@@ -1,5 +1,5 @@
 // microtx
-pub const MSG_XFER_TYPE_URL: &str = "/microtx.v1.MsgXfer";
+pub const MSG_MICROTX_TYPE_URL: &str = "/microtx.v1.MsgMicrotx";
 
 // authz
 pub const GENERIC_AUTHORIZATION_TYPE_URL: &str = "/cosmos.authz.v1beta1.GenericAuthorization";

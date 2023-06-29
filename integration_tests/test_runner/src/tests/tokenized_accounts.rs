@@ -170,7 +170,7 @@ pub async fn tokenized_accounts_test(
     )
     .await;
 
-    // Create MsgXfers with 0 balances, balances less than the trigger, balances at the trigger, and balances above the trigger
+    // Create MsgMicrotxs with 0 balances, balances less than the trigger, balances at the trigger, and balances above the trigger
     // Expect total transfers over the threshold to leave only the threshold in the router account, then query the NFT's balance of associated tokens
     let redirected_balances = execute_microtxs(
         contact,

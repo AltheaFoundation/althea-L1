@@ -189,15 +189,15 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 
 	// ^v^v^v^v^v^v^v^v^v^v^v^v MICROTX MODULE MESSAGES ^v^v^v^v^v^v^v^v^v^v^v^v
 	// nolint: exhaustruct
-	case sdk.MsgTypeURL(&microtxtypes.MsgXfer{}):
-		msgXfer := msg.(*microtxtypes.MsgXfer)
-		if _, present := exemptSet[msgXfer.GetSender()]; !present {
+	case sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}):
+		msgMicrotx := msg.(*microtxtypes.MsgMicrotx)
+		if _, present := exemptSet[msgMicrotx.GetSender()]; !present {
 			// The sender is not exempt, but are they sending a locked token?
-			for _, coin := range msgXfer.Amounts {
+			for _, coin := range msgMicrotx.Amounts {
 				if _, present := lockedTokenDenomsSet[coin.Denom]; present {
 					// The token is locked, return an error
 					return false, sdkerrors.Wrap(types.ErrLocked,
-						"The chain is locked, only exempt addresses may Xfer a locked token denom")
+						"The chain is locked, only exempt addresses may Microtx a locked token denom")
 				}
 			}
 		}

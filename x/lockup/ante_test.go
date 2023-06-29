@@ -75,11 +75,11 @@ func AnteHandlerLockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keeper
 	assert.Nil(t, largeErr)
 	t.Log("Successful good large transaction")
 
-	allowedMsgXferTx := GetAllowedMsgXferTx(keeper, ctx, txFct, txCfg)
-	allXferCtx, allXferErr := handler(ctx, allowedMsgXferTx, false)
-	assert.Equal(t, ctx, allXferCtx)
-	assert.Nil(t, allXferErr)
-	t.Log("Successful good MsgXfer")
+	allowedMsgMicrotxTx := GetAllowedMsgMicrotxTx(keeper, ctx, txFct, txCfg)
+	allMicrotxCtx, allMicrotxErr := handler(ctx, allowedMsgMicrotxTx, false)
+	assert.Equal(t, ctx, allMicrotxCtx)
+	assert.Nil(t, allMicrotxErr)
+	t.Log("Successful good MsgMicrotx")
 
 	allowedMsgTransferTx := GetAllowedMsgTransferTx(keeper, ctx, txFct, txCfg)
 	allTransCtx, allTransErr := handler(ctx, allowedMsgTransferTx, false)
@@ -110,11 +110,11 @@ func AnteHandlerLockedUnhappy(t *testing.T, handler sdk.AnteHandler, keeper keep
 	assert.NotNil(t, unallLargeErr)
 	t.Log("Successful bad large Tx")
 
-	unallowedMsgXferTx := GetUnallowedMsgXferTx(keeper, ctx, txFct, txCfg)
-	unallXferCtx, unallXferErr := handler(ctx, unallowedMsgXferTx, false)
-	assert.Equal(t, ctx, unallXferCtx)
-	assert.NotNil(t, unallXferErr)
-	t.Log("Successful bad MsgXfer")
+	unallowedMsgMicrotxTx := GetUnallowedMsgMicrotxTx(keeper, ctx, txFct, txCfg)
+	unallMicrotxCtx, unallMicrotxErr := handler(ctx, unallowedMsgMicrotxTx, false)
+	assert.Equal(t, ctx, unallMicrotxCtx)
+	assert.NotNil(t, unallMicrotxErr)
+	t.Log("Successful bad MsgMicrotx")
 
 	unallowedMsgTransferTx := GetUnallowedMsgTransferTx(keeper, ctx, txFct, txCfg)
 	unallTransCtx, unallTransErr := handler(ctx, unallowedMsgTransferTx, false)
@@ -151,11 +151,11 @@ func AnteHandlerUnlockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keep
 	assert.Nil(t, largeErr)
 	t.Log("Successful large bad Tx")
 
-	unallowedMsgXferTx := GetUnallowedMsgXferTx(keeper, ctx, txFct, txCfg)
-	unallXferCtx, unallXferErr := handler(ctx, unallowedMsgXferTx, false)
-	assert.Equal(t, ctx, unallXferCtx)
-	assert.Nil(t, unallXferErr)
-	t.Log("Successful bad MsgXfer")
+	unallowedMsgMicrotxTx := GetUnallowedMsgMicrotxTx(keeper, ctx, txFct, txCfg)
+	unallMicrotxCtx, unallMicrotxErr := handler(ctx, unallowedMsgMicrotxTx, false)
+	assert.Equal(t, ctx, unallMicrotxCtx)
+	assert.Nil(t, unallMicrotxErr)
+	t.Log("Successful bad MsgMicrotx")
 
 	unallowedMsgTransferTx := GetUnallowedMsgTransferTx(keeper, ctx, txFct, txCfg)
 	unallTransCtx, unallTransErr := handler(ctx, unallowedMsgTransferTx, false)
@@ -274,17 +274,17 @@ func GetAllowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfertyp
 	}
 }
 
-func GetAllowedMsgXferTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
-	msgXfer := GetAllowedMsgXfer(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgXfer)
+func GetAllowedMsgMicrotxTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
+	msgMicrotx := GetAllowedMsgMicrotx(keeper, ctx)
+	txBld, err := tx.BuildUnsignedTx(txFct, &msgMicrotx)
 	if err != nil {
-		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgXfer, err))
+		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgMicrotx, err))
 	}
 
 	return txBld.GetTx()
 }
 
-func GetAllowedMsgXfer(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.MsgXfer {
+func GetAllowedMsgMicrotx(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.MsgMicrotx {
 	fromAddr := "0x0000000000000000000000000000000000000000"
 	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
 	if _, ok := exemptSet[fromAddr]; !ok {
@@ -293,7 +293,7 @@ func GetAllowedMsgXfer(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.MsgXf
 	// nolint: goconst
 	toAddr := "0x1111111111111111111111111111111111111111"
 	amounts := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
-	return microtxtypes.MsgXfer{
+	return microtxtypes.MsgMicrotx{
 		Sender:   fromAddr,
 		Receiver: toAddr,
 		Amounts:  amounts,
@@ -385,17 +385,17 @@ func GetUnallowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfert
 	}
 }
 
-func GetUnallowedMsgXferTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
-	msgXfer := GetUnallowedMsgXfer(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgXfer)
+func GetUnallowedMsgMicrotxTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
+	msgMicrotx := GetUnallowedMsgMicrotx(keeper, ctx)
+	txBld, err := tx.BuildUnsignedTx(txFct, &msgMicrotx)
 	if err != nil {
-		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgXfer, err))
+		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgMicrotx, err))
 	}
 
 	return txBld.GetTx()
 }
 
-func GetUnallowedMsgXfer(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.MsgXfer {
+func GetUnallowedMsgMicrotx(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.MsgMicrotx {
 	fromAddr := "0x1111111111111111111111111111111111111111"
 	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
 	if _, ok := exemptSet[fromAddr]; ok {
@@ -404,7 +404,7 @@ func GetUnallowedMsgXfer(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.Msg
 	// nolint: goconst
 	toAddr := "0x0000000000000000000000000000000000000000"
 	amounts := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
-	return microtxtypes.MsgXfer{
+	return microtxtypes.MsgMicrotx{
 		Sender:   fromAddr,
 		Receiver: toAddr,
 		Amounts:  amounts,

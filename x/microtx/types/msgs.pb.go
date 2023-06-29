@@ -30,30 +30,32 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgXfer A Msg meant to send funds from one Althea network wallet to another,
-// via an automated device.
+// MsgMicrotx A Msg used to send funds from one Althea network wallet to another,
+// via an automated device. Facilitates Liquid Infrastructure by automatically
+// redirecting funds received by Tokenized Accounts beyond configured amounts to the EVM.
 // SENDER The account sending funds to receiver, must also be the signer of the
 // message
 // RECEIVER The account receiving funds from sender
-// AMOUNTS The tokens and their quantities which should be transferred
-type MsgXfer struct {
+// AMOUNTS The tokens and their quantities which should be transferred, these
+// must be Cosmos coins registered as ERC20s, or the Cosmos representation of ERC20s
+type MsgMicrotx struct {
 	Sender   string       `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
 	Receiver string       `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
 	Amounts  []types.Coin `protobuf:"bytes,3,rep,name=amounts,proto3" json:"amounts"`
 }
 
-func (m *MsgXfer) Reset()         { *m = MsgXfer{} }
-func (m *MsgXfer) String() string { return proto.CompactTextString(m) }
-func (*MsgXfer) ProtoMessage()    {}
-func (*MsgXfer) Descriptor() ([]byte, []int) {
+func (m *MsgMicrotx) Reset()         { *m = MsgMicrotx{} }
+func (m *MsgMicrotx) String() string { return proto.CompactTextString(m) }
+func (*MsgMicrotx) ProtoMessage()    {}
+func (*MsgMicrotx) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4ddee508b32d6f4e, []int{0}
 }
-func (m *MsgXfer) XXX_Unmarshal(b []byte) error {
+func (m *MsgMicrotx) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgXfer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgMicrotx) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgXfer.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgMicrotx.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -63,54 +65,54 @@ func (m *MsgXfer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *MsgXfer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgXfer.Merge(m, src)
+func (m *MsgMicrotx) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgMicrotx.Merge(m, src)
 }
-func (m *MsgXfer) XXX_Size() int {
+func (m *MsgMicrotx) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgXfer) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgXfer.DiscardUnknown(m)
+func (m *MsgMicrotx) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgMicrotx.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgXfer proto.InternalMessageInfo
+var xxx_messageInfo_MsgMicrotx proto.InternalMessageInfo
 
-func (m *MsgXfer) GetSender() string {
+func (m *MsgMicrotx) GetSender() string {
 	if m != nil {
 		return m.Sender
 	}
 	return ""
 }
 
-func (m *MsgXfer) GetReceiver() string {
+func (m *MsgMicrotx) GetReceiver() string {
 	if m != nil {
 		return m.Receiver
 	}
 	return ""
 }
 
-func (m *MsgXfer) GetAmounts() []types.Coin {
+func (m *MsgMicrotx) GetAmounts() []types.Coin {
 	if m != nil {
 		return m.Amounts
 	}
 	return nil
 }
 
-type MsgXferResponse struct {
+type MsgMicrotxResponse struct {
 }
 
-func (m *MsgXferResponse) Reset()         { *m = MsgXferResponse{} }
-func (m *MsgXferResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgXferResponse) ProtoMessage()    {}
-func (*MsgXferResponse) Descriptor() ([]byte, []int) {
+func (m *MsgMicrotxResponse) Reset()         { *m = MsgMicrotxResponse{} }
+func (m *MsgMicrotxResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgMicrotxResponse) ProtoMessage()    {}
+func (*MsgMicrotxResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4ddee508b32d6f4e, []int{1}
 }
-func (m *MsgXferResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgMicrotxResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgXferResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgMicrotxResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgXferResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgMicrotxResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -120,39 +122,39 @@ func (m *MsgXferResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *MsgXferResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgXferResponse.Merge(m, src)
+func (m *MsgMicrotxResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgMicrotxResponse.Merge(m, src)
 }
-func (m *MsgXferResponse) XXX_Size() int {
+func (m *MsgMicrotxResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgXferResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgXferResponse.DiscardUnknown(m)
+func (m *MsgMicrotxResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgMicrotxResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgXferResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgMicrotxResponse proto.InternalMessageInfo
 
-// A type for the block's event log, every successful Xfer must create one of
+// A type for the block's event log, every successful Microtx must create one of
 // these in the event log
-type EventXfer struct {
+type EventMicrotx struct {
 	Sender   string       `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
 	Receiver string       `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
 	Amounts  []types.Coin `protobuf:"bytes,3,rep,name=amounts,proto3" json:"amounts"`
 	Fee      []types.Coin `protobuf:"bytes,4,rep,name=fee,proto3" json:"fee"`
 }
 
-func (m *EventXfer) Reset()         { *m = EventXfer{} }
-func (m *EventXfer) String() string { return proto.CompactTextString(m) }
-func (*EventXfer) ProtoMessage()    {}
-func (*EventXfer) Descriptor() ([]byte, []int) {
+func (m *EventMicrotx) Reset()         { *m = EventMicrotx{} }
+func (m *EventMicrotx) String() string { return proto.CompactTextString(m) }
+func (*EventMicrotx) ProtoMessage()    {}
+func (*EventMicrotx) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4ddee508b32d6f4e, []int{2}
 }
-func (m *EventXfer) XXX_Unmarshal(b []byte) error {
+func (m *EventMicrotx) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *EventXfer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *EventMicrotx) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_EventXfer.Marshal(b, m, deterministic)
+		return xxx_messageInfo_EventMicrotx.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -162,40 +164,40 @@ func (m *EventXfer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *EventXfer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EventXfer.Merge(m, src)
+func (m *EventMicrotx) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EventMicrotx.Merge(m, src)
 }
-func (m *EventXfer) XXX_Size() int {
+func (m *EventMicrotx) XXX_Size() int {
 	return m.Size()
 }
-func (m *EventXfer) XXX_DiscardUnknown() {
-	xxx_messageInfo_EventXfer.DiscardUnknown(m)
+func (m *EventMicrotx) XXX_DiscardUnknown() {
+	xxx_messageInfo_EventMicrotx.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_EventXfer proto.InternalMessageInfo
+var xxx_messageInfo_EventMicrotx proto.InternalMessageInfo
 
-func (m *EventXfer) GetSender() string {
+func (m *EventMicrotx) GetSender() string {
 	if m != nil {
 		return m.Sender
 	}
 	return ""
 }
 
-func (m *EventXfer) GetReceiver() string {
+func (m *EventMicrotx) GetReceiver() string {
 	if m != nil {
 		return m.Receiver
 	}
 	return ""
 }
 
-func (m *EventXfer) GetAmounts() []types.Coin {
+func (m *EventMicrotx) GetAmounts() []types.Coin {
 	if m != nil {
 		return m.Amounts
 	}
 	return nil
 }
 
-func (m *EventXfer) GetFee() []types.Coin {
+func (m *EventMicrotx) GetFee() []types.Coin {
 	if m != nil {
 		return m.Fee
 	}
@@ -469,9 +471,9 @@ func (m *EventAccountTokenized) GetNftAddress() string {
 }
 
 func init() {
-	proto.RegisterType((*MsgXfer)(nil), "microtx.v1.MsgXfer")
-	proto.RegisterType((*MsgXferResponse)(nil), "microtx.v1.MsgXferResponse")
-	proto.RegisterType((*EventXfer)(nil), "microtx.v1.EventXfer")
+	proto.RegisterType((*MsgMicrotx)(nil), "microtx.v1.MsgMicrotx")
+	proto.RegisterType((*MsgMicrotxResponse)(nil), "microtx.v1.MsgMicrotxResponse")
+	proto.RegisterType((*EventMicrotx)(nil), "microtx.v1.EventMicrotx")
 	proto.RegisterType((*EventBalanceRedirect)(nil), "microtx.v1.EventBalanceRedirect")
 	proto.RegisterType((*TokenizedAccount)(nil), "microtx.v1.TokenizedAccount")
 	proto.RegisterType((*MsgTokenizeAccount)(nil), "microtx.v1.MsgTokenizeAccount")
@@ -482,41 +484,41 @@ func init() {
 func init() { proto.RegisterFile("microtx/v1/msgs.proto", fileDescriptor_4ddee508b32d6f4e) }
 
 var fileDescriptor_4ddee508b32d6f4e = []byte{
-	// 534 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
-	0x10, 0x8e, 0x93, 0xd2, 0xd0, 0xc9, 0xa1, 0xe9, 0x92, 0x22, 0x63, 0x22, 0xb7, 0xb2, 0x10, 0xaa,
-	0x04, 0x78, 0x95, 0x20, 0x21, 0x71, 0x6c, 0x10, 0x37, 0xc2, 0x21, 0xea, 0x01, 0x71, 0xa9, 0x36,
-	0xf6, 0xc4, 0xb1, 0x9a, 0xec, 0x46, 0xde, 0xad, 0x09, 0x5c, 0x90, 0x78, 0x02, 0x24, 0x9e, 0x83,
-	0xf7, 0xe8, 0xb1, 0x12, 0x17, 0xc4, 0x01, 0xa1, 0x84, 0x07, 0x41, 0x76, 0x76, 0x8d, 0x31, 0x3f,
-	0x82, 0x13, 0xb7, 0x9d, 0x99, 0x6f, 0xbf, 0xf9, 0xf6, 0x9b, 0xb1, 0x61, 0x7f, 0x1e, 0x07, 0x89,
-	0x50, 0x4b, 0x9a, 0xf6, 0xe8, 0x5c, 0x46, 0xd2, 0x5f, 0x24, 0x42, 0x09, 0x02, 0x3a, 0xed, 0xa7,
-	0x3d, 0xc7, 0x0d, 0x84, 0x9c, 0x0b, 0x49, 0xc7, 0x4c, 0x22, 0x4d, 0x7b, 0x63, 0x54, 0xac, 0x47,
-	0x03, 0x11, 0xf3, 0x0d, 0xd6, 0xe9, 0x44, 0x22, 0x12, 0xf9, 0x91, 0x66, 0x27, 0x9d, 0xed, 0x46,
-	0x42, 0x44, 0x33, 0xa4, 0x6c, 0x11, 0x53, 0xc6, 0xb9, 0x50, 0x4c, 0xc5, 0x82, 0x6b, 0x7e, 0x6f,
-	0x09, 0xcd, 0xa1, 0x8c, 0x9e, 0x4d, 0x30, 0x21, 0xd7, 0x61, 0x5b, 0x22, 0x0f, 0x31, 0xb1, 0xad,
-	0x43, 0xeb, 0x68, 0x67, 0xa4, 0x23, 0xe2, 0xc0, 0xd5, 0x04, 0x03, 0x8c, 0x53, 0x4c, 0xec, 0x7a,
-	0x5e, 0x29, 0x62, 0xf2, 0x10, 0x9a, 0x6c, 0x2e, 0xce, 0xb9, 0x92, 0x76, 0xe3, 0xb0, 0x71, 0xd4,
-	0xea, 0xdf, 0xf0, 0x37, 0x22, 0xfd, 0x4c, 0xa4, 0xaf, 0x45, 0xfa, 0x8f, 0x44, 0xcc, 0x07, 0x5b,
-	0x17, 0x9f, 0x0f, 0x6a, 0x23, 0x83, 0xf7, 0xf6, 0x60, 0x57, 0x77, 0x1e, 0xa1, 0x5c, 0x08, 0x2e,
-	0xd1, 0x7b, 0x6f, 0xc1, 0xce, 0xe3, 0x14, 0xb9, 0xfa, 0x0f, 0x7a, 0x48, 0x0f, 0x1a, 0x13, 0x44,
-	0x7b, 0xeb, 0xef, 0xae, 0x65, 0x58, 0xef, 0x0c, 0x3a, 0xb9, 0xdc, 0x01, 0x9b, 0x31, 0x1e, 0xe0,
-	0x08, 0xc3, 0x38, 0xc1, 0x40, 0x11, 0x1b, 0x9a, 0x2c, 0x08, 0x32, 0x5a, 0x2d, 0xdd, 0x84, 0x65,
-	0x7d, 0xf5, 0x7f, 0xf4, 0x2b, 0x85, 0xf6, 0x89, 0x38, 0x43, 0x1e, 0xbf, 0xc2, 0xf0, 0x58, 0xd3,
-	0x75, 0xe0, 0x8a, 0x78, 0xc1, 0x0b, 0x87, 0x36, 0x01, 0xb9, 0x03, 0x7b, 0xca, 0x20, 0x4f, 0x8d,
-	0x90, 0x8d, 0x53, 0x6d, 0x55, 0xa5, 0x38, 0x80, 0x16, 0x9f, 0xa8, 0x53, 0x16, 0x86, 0x09, 0xca,
-	0xcc, 0xb5, 0x0c, 0x06, 0x7c, 0xa2, 0x8e, 0x37, 0x19, 0xef, 0x2e, 0x90, 0xa1, 0x8c, 0x4c, 0x6b,
-	0x73, 0xed, 0x37, 0xc3, 0xf1, 0x4e, 0xc0, 0xf9, 0x19, 0x6d, 0x06, 0x4c, 0x1e, 0xfc, 0x68, 0x4c,
-	0xab, 0xdf, 0xf5, 0xbf, 0xef, 0xb7, 0x5f, 0x7d, 0x5e, 0x61, 0x9b, 0xf7, 0x14, 0xf6, 0x73, 0xa3,
-	0x75, 0xa1, 0x00, 0x1a, 0x03, 0xc2, 0xb2, 0x01, 0x61, 0xf5, 0x4d, 0xf5, 0xea, 0x9b, 0xfa, 0x9f,
-	0x2c, 0x68, 0x0c, 0x65, 0x44, 0x46, 0xb0, 0x95, 0xaf, 0xda, 0xb5, 0xb2, 0x0c, 0xbd, 0x95, 0xce,
-	0xcd, 0x5f, 0x24, 0x8b, 0x55, 0xb5, 0xdf, 0x7c, 0xf8, 0xfa, 0xae, 0x4e, 0xbc, 0x36, 0x2d, 0x7d,
-	0xb7, 0xcb, 0x8c, 0xeb, 0x35, 0xec, 0x56, 0xcd, 0x72, 0x2b, 0x4c, 0x95, 0xba, 0x73, 0xfb, 0xcf,
-	0xf5, 0xa2, 0xe9, 0xad, 0xbc, 0xa9, 0xeb, 0x75, 0xcb, 0x4d, 0xcd, 0x44, 0xcd, 0xa4, 0x07, 0x4f,
-	0x2e, 0x56, 0xae, 0x75, 0xb9, 0x72, 0xad, 0x2f, 0x2b, 0xd7, 0x7a, 0xbb, 0x76, 0x6b, 0x97, 0x6b,
-	0xb7, 0xf6, 0x71, 0xed, 0xd6, 0x9e, 0xf7, 0xa3, 0x58, 0x4d, 0xcf, 0xc7, 0x7e, 0x20, 0xe6, 0x94,
-	0xcd, 0xd4, 0x14, 0xd9, 0x3d, 0x8e, 0xca, 0x1c, 0x83, 0x29, 0x8b, 0x39, 0x5d, 0x16, 0xdc, 0xea,
-	0xe5, 0x02, 0xe5, 0x78, 0x3b, 0xff, 0x4f, 0xdc, 0xff, 0x16, 0x00, 0x00, 0xff, 0xff, 0xc1, 0x76,
-	0xfb, 0xcb, 0xa0, 0x04, 0x00, 0x00,
+	// 530 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x54, 0xcd, 0x8a, 0x13, 0x41,
+	0x10, 0xce, 0x24, 0xeb, 0x46, 0x2b, 0x82, 0xeb, 0x98, 0x48, 0x1c, 0xc3, 0xec, 0x32, 0x88, 0x2c,
+	0xa8, 0xd3, 0x24, 0x82, 0xe0, 0x71, 0x23, 0xde, 0x8c, 0x87, 0xb0, 0x27, 0x0f, 0x2e, 0x9d, 0x9e,
+	0xca, 0xa4, 0xd9, 0xa4, 0x3b, 0x4c, 0xf7, 0x8e, 0xab, 0x1e, 0x04, 0x9f, 0x40, 0xf0, 0x45, 0x7c,
+	0x8c, 0x3d, 0x2e, 0x78, 0xf1, 0x24, 0x92, 0x88, 0xcf, 0x21, 0xf3, 0xd3, 0x93, 0x71, 0xfc, 0x41,
+	0x4f, 0xde, 0xba, 0xaa, 0xbe, 0xfe, 0xea, 0xeb, 0xaf, 0x6a, 0x06, 0x3a, 0x0b, 0xce, 0x22, 0xa9,
+	0x4f, 0x49, 0xdc, 0x27, 0x0b, 0x15, 0x2a, 0x7f, 0x19, 0x49, 0x2d, 0x6d, 0xc8, 0xd3, 0x7e, 0xdc,
+	0x77, 0x5c, 0x26, 0xd5, 0x42, 0x2a, 0x32, 0xa1, 0x0a, 0x49, 0xdc, 0x9f, 0xa0, 0xa6, 0x7d, 0xc2,
+	0x24, 0x17, 0x19, 0xd6, 0x69, 0x87, 0x32, 0x94, 0xe9, 0x91, 0x24, 0xa7, 0x3c, 0xdb, 0x0b, 0xa5,
+	0x0c, 0xe7, 0x48, 0xe8, 0x92, 0x13, 0x2a, 0x84, 0xd4, 0x54, 0x73, 0x29, 0x72, 0x7e, 0xef, 0x35,
+	0xc0, 0x48, 0x85, 0xa3, 0xac, 0x89, 0x7d, 0x1d, 0xb6, 0x15, 0x8a, 0x00, 0xa3, 0xae, 0xb5, 0x67,
+	0xed, 0x5f, 0x1a, 0xe7, 0x91, 0xed, 0xc0, 0xc5, 0x08, 0x19, 0xf2, 0x18, 0xa3, 0x6e, 0x3d, 0xad,
+	0x14, 0xb1, 0xfd, 0x10, 0x9a, 0x74, 0x21, 0x4f, 0x84, 0x56, 0xdd, 0xc6, 0x5e, 0x63, 0xbf, 0x35,
+	0xb8, 0xe1, 0x67, 0x3a, 0xfd, 0x44, 0xa7, 0x9f, 0xeb, 0xf4, 0x1f, 0x49, 0x2e, 0x86, 0x5b, 0x67,
+	0x9f, 0x77, 0x6b, 0x63, 0x83, 0xf7, 0xda, 0x60, 0x6f, 0x9a, 0x8f, 0x51, 0x2d, 0xa5, 0x50, 0xe8,
+	0x7d, 0xb0, 0xe0, 0xf2, 0xe3, 0x18, 0x85, 0xfe, 0x3f, 0xaa, 0xec, 0x3e, 0x34, 0xa6, 0x88, 0xdd,
+	0xad, 0xbf, 0xbb, 0x96, 0x60, 0xbd, 0x63, 0x68, 0xa7, 0x8a, 0x87, 0x74, 0x4e, 0x05, 0xc3, 0x31,
+	0x06, 0x3c, 0x42, 0xa6, 0xed, 0x2e, 0x34, 0x29, 0x63, 0x09, 0x6d, 0x2e, 0xdd, 0x84, 0x65, 0x7d,
+	0xf5, 0x7f, 0x74, 0x2d, 0x86, 0x9d, 0x43, 0x79, 0x8c, 0x82, 0xbf, 0xc2, 0xe0, 0x20, 0xa7, 0x6b,
+	0xc3, 0x05, 0xf9, 0x42, 0x14, 0x0e, 0x65, 0x81, 0x7d, 0x07, 0xae, 0x6a, 0x83, 0x3c, 0x32, 0x42,
+	0x32, 0xa7, 0x76, 0x74, 0x95, 0x62, 0x17, 0x5a, 0x62, 0xaa, 0x8f, 0x68, 0x10, 0x44, 0xa8, 0x12,
+	0xd7, 0x12, 0x18, 0x88, 0xa9, 0x3e, 0xc8, 0x32, 0xde, 0xdd, 0x74, 0x5a, 0xa6, 0xb5, 0xb9, 0xf6,
+	0x9b, 0xe1, 0x78, 0x87, 0xe0, 0xfc, 0x8c, 0x36, 0x33, 0xb6, 0x1f, 0xfc, 0x68, 0x4c, 0x6b, 0xd0,
+	0xf3, 0x37, 0x8b, 0xee, 0x57, 0x9f, 0x57, 0xd8, 0xe6, 0x3d, 0x85, 0x4e, 0x6a, 0x74, 0x5e, 0x28,
+	0x80, 0xc6, 0x80, 0xa0, 0x6c, 0x40, 0x50, 0x7d, 0x53, 0xbd, 0xfa, 0xa6, 0xc1, 0x37, 0x0b, 0x1a,
+	0x23, 0x15, 0xda, 0xcf, 0xa1, 0x59, 0x6c, 0x5b, 0x59, 0xc9, 0x66, 0x3d, 0x1d, 0xf7, 0xd7, 0xf9,
+	0x62, 0x6d, 0x6f, 0xbe, 0xfd, 0xf8, 0xf5, 0x7d, 0xbd, 0xe3, 0x5d, 0x23, 0xe5, 0x2f, 0x39, 0x27,
+	0x7d, 0x03, 0x57, 0xaa, 0xc6, 0x55, 0xf9, 0x2a, 0x75, 0xe7, 0xf6, 0x9f, 0xeb, 0x45, 0xdf, 0x5b,
+	0x69, 0x5f, 0xd7, 0xeb, 0x95, 0xfb, 0x9a, 0xe9, 0x9a, 0xa9, 0x0f, 0x9f, 0x9c, 0xad, 0x5c, 0xeb,
+	0x7c, 0xe5, 0x5a, 0x5f, 0x56, 0xae, 0xf5, 0x6e, 0xed, 0xd6, 0xce, 0xd7, 0x6e, 0xed, 0xd3, 0xda,
+	0xad, 0x3d, 0x1b, 0x84, 0x5c, 0xcf, 0x4e, 0x26, 0x3e, 0x93, 0x0b, 0x42, 0xe7, 0x7a, 0x86, 0xf4,
+	0x9e, 0x40, 0x6d, 0x8e, 0x6c, 0x46, 0xb9, 0x20, 0xa7, 0x05, 0xb7, 0x7e, 0xb9, 0x44, 0x35, 0xd9,
+	0x4e, 0x7f, 0x1e, 0xf7, 0xbf, 0x07, 0x00, 0x00, 0xff, 0xff, 0xb2, 0xe3, 0x2c, 0x8f, 0xb5, 0x04,
+	0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -531,8 +533,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// The Xfer service is a customizeable version of the bank module's Send
-	Xfer(ctx context.Context, in *MsgXfer, opts ...grpc.CallOption) (*MsgXferResponse, error)
+	// The Microtx service handles payments to Althea accounts
+	Microtx(ctx context.Context, in *MsgMicrotx, opts ...grpc.CallOption) (*MsgMicrotxResponse, error)
 	// The TokenizeAccount service converts a wallet into a piece of Liquid Infrastructure
 	TokenizeAccount(ctx context.Context, in *MsgTokenizeAccount, opts ...grpc.CallOption) (*MsgTokenizeAccountResponse, error)
 }
@@ -545,9 +547,9 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) Xfer(ctx context.Context, in *MsgXfer, opts ...grpc.CallOption) (*MsgXferResponse, error) {
-	out := new(MsgXferResponse)
-	err := c.cc.Invoke(ctx, "/microtx.v1.Msg/Xfer", in, out, opts...)
+func (c *msgClient) Microtx(ctx context.Context, in *MsgMicrotx, opts ...grpc.CallOption) (*MsgMicrotxResponse, error) {
+	out := new(MsgMicrotxResponse)
+	err := c.cc.Invoke(ctx, "/microtx.v1.Msg/Microtx", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -565,8 +567,8 @@ func (c *msgClient) TokenizeAccount(ctx context.Context, in *MsgTokenizeAccount,
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// The Xfer service is a customizeable version of the bank module's Send
-	Xfer(context.Context, *MsgXfer) (*MsgXferResponse, error)
+	// The Microtx service handles payments to Althea accounts
+	Microtx(context.Context, *MsgMicrotx) (*MsgMicrotxResponse, error)
 	// The TokenizeAccount service converts a wallet into a piece of Liquid Infrastructure
 	TokenizeAccount(context.Context, *MsgTokenizeAccount) (*MsgTokenizeAccountResponse, error)
 }
@@ -575,8 +577,8 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) Xfer(ctx context.Context, req *MsgXfer) (*MsgXferResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Xfer not implemented")
+func (*UnimplementedMsgServer) Microtx(ctx context.Context, req *MsgMicrotx) (*MsgMicrotxResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Microtx not implemented")
 }
 func (*UnimplementedMsgServer) TokenizeAccount(ctx context.Context, req *MsgTokenizeAccount) (*MsgTokenizeAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TokenizeAccount not implemented")
@@ -586,20 +588,20 @@ func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
-func _Msg_Xfer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgXfer)
+func _Msg_Microtx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgMicrotx)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).Xfer(ctx, in)
+		return srv.(MsgServer).Microtx(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/microtx.v1.Msg/Xfer",
+		FullMethod: "/microtx.v1.Msg/Microtx",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).Xfer(ctx, req.(*MsgXfer))
+		return srv.(MsgServer).Microtx(ctx, req.(*MsgMicrotx))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -627,8 +629,8 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Xfer",
-			Handler:    _Msg_Xfer_Handler,
+			MethodName: "Microtx",
+			Handler:    _Msg_Microtx_Handler,
 		},
 		{
 			MethodName: "TokenizeAccount",
@@ -639,7 +641,7 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	Metadata: "microtx/v1/msgs.proto",
 }
 
-func (m *MsgXfer) Marshal() (dAtA []byte, err error) {
+func (m *MsgMicrotx) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -649,12 +651,12 @@ func (m *MsgXfer) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgXfer) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgMicrotx) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgXfer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgMicrotx) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -690,7 +692,7 @@ func (m *MsgXfer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgXferResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgMicrotxResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -700,12 +702,12 @@ func (m *MsgXferResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgXferResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgMicrotxResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgXferResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgMicrotxResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -713,7 +715,7 @@ func (m *MsgXferResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *EventXfer) Marshal() (dAtA []byte, err error) {
+func (m *EventMicrotx) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -723,12 +725,12 @@ func (m *EventXfer) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EventXfer) MarshalTo(dAtA []byte) (int, error) {
+func (m *EventMicrotx) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *EventXfer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *EventMicrotx) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -979,7 +981,7 @@ func encodeVarintMsgs(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgXfer) Size() (n int) {
+func (m *MsgMicrotx) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1002,7 +1004,7 @@ func (m *MsgXfer) Size() (n int) {
 	return n
 }
 
-func (m *MsgXferResponse) Size() (n int) {
+func (m *MsgMicrotxResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1011,7 +1013,7 @@ func (m *MsgXferResponse) Size() (n int) {
 	return n
 }
 
-func (m *EventXfer) Size() (n int) {
+func (m *EventMicrotx) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1129,7 +1131,7 @@ func sovMsgs(x uint64) (n int) {
 func sozMsgs(x uint64) (n int) {
 	return sovMsgs(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgXfer) Unmarshal(dAtA []byte) error {
+func (m *MsgMicrotx) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1152,10 +1154,10 @@ func (m *MsgXfer) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgXfer: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgMicrotx: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgXfer: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgMicrotx: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1277,7 +1279,7 @@ func (m *MsgXfer) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgXferResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgMicrotxResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1300,10 +1302,10 @@ func (m *MsgXferResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgXferResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgMicrotxResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgXferResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgMicrotxResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -1327,7 +1329,7 @@ func (m *MsgXferResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EventXfer) Unmarshal(dAtA []byte) error {
+func (m *EventMicrotx) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1350,10 +1352,10 @@ func (m *EventXfer) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EventXfer: wiretype end group for non-group")
+			return fmt.Errorf("proto: EventMicrotx: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EventXfer: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EventMicrotx: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
