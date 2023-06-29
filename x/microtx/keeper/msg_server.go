@@ -2,12 +2,13 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	sdkante "github.com/cosmos/cosmos-sdk/x/auth/ante"
+	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/althea-net/althea-chain/config"
 	"github.com/althea-net/althea-chain/x/microtx/types"
 )
 
@@ -23,6 +24,10 @@ type msgServer struct {
 func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
+
+// ========================================================================================================
+// 												XFER
+// ========================================================================================================
 
 // Xfer delegates the msg server's call to the keeper
 func (m msgServer) Xfer(c context.Context, msg *types.MsgXfer) (*types.MsgXferResponse, error) {
@@ -55,7 +60,28 @@ func (m msgServer) Xfer(c context.Context, msg *types.MsgXfer) (*types.MsgXferRe
 }
 
 // Xfer implements the transfer of funds from sender to receiver
+// Due to the function of Tokenized Accounts, any Xfer must contain solely EVM compatible bank coins
 func (k Keeper) Xfer(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAddress, amounts sdk.Coins) error {
+	var erc20Amounts []*common.Address // Denoms of `amounts` converted to ERC20 addresses
+	for _, amount := range amounts {
+		// The native token is automatically usable within the EVM
+		if amount.Denom == config.BaseDenom {
+			continue
+		}
+
+		// Ensure the input tokens are actively registered as an ERC20-convertible token
+		pair, found := k.erc20Keeper.GetTokenPair(ctx, k.erc20Keeper.GetTokenPairID(ctx, amount.Denom))
+		if !found {
+			return sdkerrors.Wrapf(types.ErrInvalidMicrotx, "token %v is not registered as an erc20, only evm-compatible tokens may be used", amount.Denom)
+		}
+		if !pair.Enabled {
+			return sdkerrors.Wrapf(types.ErrInvalidMicrotx, "token %v is registered as an erc20 (%v), but the pair is not enabled", amount.Denom, pair.Erc20Address)
+		}
+		// Collect the ERC20s for later use in funneling
+		erc20Address := common.HexToAddress(pair.Erc20Address)
+		erc20Amounts = append(erc20Amounts, &erc20Address)
+	}
+
 	feesCollected, err := k.DeductXferFee(ctx, sender, amounts)
 
 	if err != nil {
@@ -69,15 +95,14 @@ func (k Keeper) Xfer(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAdd
 	}
 
 	// Emit an event for the block's event log
-	if err = ctx.EventManager().EmitTypedEvent(
-		&types.EventXfer{
-			Sender:   sender.String(),
-			Receiver: receiver.String(),
-			Amounts:  amounts,
-			Fee:      feesCollected,
-		},
-	); err != nil {
-		panic(fmt.Sprintf("Unable to emit event with error %v", err))
+	ctx.EventManager().EmitEvent(
+		types.NewEventXfer(sender.String(), receiver.String(), amounts, feesCollected),
+	)
+
+	// Migrate balances to the NFT if the amounts are in excess of any configured threshold
+	k.Logger(ctx).Debug("Detecting and funneling excess balances for tokenized accounts")
+	if err := k.RedirectTokenizedAccountExcessBalances(ctx, receiver, erc20Amounts); err != nil {
+		return sdkerrors.Wrapf(err, "failed to redirect excess balances")
 	}
 
 	return nil
@@ -129,4 +154,37 @@ func (k Keeper) getXferFeeForAmount(amount sdk.Int, basisPoints uint64) sdk.Int 
 		QuoInt64(int64(BasisPointDivisor)).
 		MulInt64(int64(basisPoints)).
 		TruncateInt()
+}
+
+// ========================================================================================================
+// 												TOKENIZE ACCOUNT
+// ========================================================================================================
+
+// TokenizeAccount delegates the tokenize request to the keeper, with stateful validation
+func (m *msgServer) TokenizeAccount(c context.Context, msg *types.MsgTokenizeAccount) (*types.MsgTokenizeAccountResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+
+	// The following validation logic has been copied from x/bank in the sdk
+	sender, err := sdk.AccAddressFromBech32(msg.Sender)
+	if err != nil {
+		return nil, err
+	}
+	senderAcc := m.accountKeeper.GetAccount(ctx, sender)
+	if !IsEthermintAccount(senderAcc) {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrorInvalidSigner, "tokenized accounts must use ethermint keys, perhaps this is the first message the sender has sent?")
+	}
+
+	// Call the actual tokenize implementation
+	nft, err := m.Keeper.DoTokenizeAccount(ctx, sender)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "failed to tokenize account")
+	}
+
+	return &types.MsgTokenizeAccountResponse{
+		Account: &types.TokenizedAccount{
+			Owner:            sender.String(),
+			TokenizedAccount: sender.String(),
+			NftAddress:       nft.Hex(),
+		},
+	}, err
 }

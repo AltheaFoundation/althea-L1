@@ -11,6 +11,10 @@ service Msg {
   rpc Xfer(MsgXfer) returns (MsgXferResponse) {
     option (google.api.http).post = "/microtx/v1/xfer";
   }
+  // The TokenizeAccount service converts a wallet into a piece of Liquid Infrastructure
+  rpc TokenizeAccount(MsgTokenizeAccount) returns (MsgTokenizeAccountResponse) {
+    option (google.api.http).post = "/microtx/v1/tokenize_account";
+  }
 }
 
 // MsgXfer A Msg meant to send funds from one Althea network wallet to another,
@@ -36,4 +40,43 @@ message EventXfer {
   repeated cosmos.base.v1beta1.Coin amounts = 3
       [ (gogoproto.nullable) = false ];
   repeated cosmos.base.v1beta1.Coin fee = 4 [ (gogoproto.nullable) = false ];
+}
+
+// A type for the block's event log recording when a TokenizedAccount has a received balance redirected to
+// its registered TokenizedAccountNFT
+message EventBalanceRedirect {
+  string account = 1;
+  repeated cosmos.base.v1beta1.Coin amounts = 2
+      [ (gogoproto.nullable) = false ];
+}
+
+// Records critical information about a Tokenized Account
+// TOKENIZED_ACCOUNT The bech32 address of the tokenized account
+// OWNER The bech32 address of the account now in control of the token
+// NFT_ADDRESS The EVM address of the token contract in control of the tokenized account's excess profits
+message TokenizedAccount {
+  string owner = 1;
+  string tokenized_account = 2;
+  string nft_address = 3;
+}
+
+// MsgTokenizeAccount A Msg meant to convert a wallet into a piece of Liquid Infrastructure,
+// by creating a NonFungibleToken within the Althea L1 EVM which will control all balances
+// held by the Tokenized Account (beyond a configurable threshold). The tokenized account itself
+// will be the initial owner of the NFT, and must transfer control through the EVM NFT contract
+// SENDER The bech32 address of the account to tokenize, must also be the signer of the message
+message MsgTokenizeAccount {
+  string sender = 1;
+}
+
+// MsgTokenizeAccountResponse potentially returns useful information from the tokenization of an account
+message MsgTokenizeAccountResponse {
+  TokenizedAccount account = 1;
+}
+
+// A type for the block's event log, every successful TokenizeAccount must create one of
+// these in the event log
+message EventAccountTokenized {
+  string owned = 1;
+  string nft_address = 2;
 }

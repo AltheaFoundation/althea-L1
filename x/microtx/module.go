@@ -17,6 +17,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -28,11 +29,8 @@ import (
 
 // type check to ensure the interface is properly implemented
 var (
-	_ module.AppModule = AppModule{
-		AppModuleBasic: AppModuleBasic{},
-		keeper:         keeper.Keeper{},
-		bankKeeper:     nil,
-	}
+	// nolint: exhaustruct
+	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
@@ -98,8 +96,9 @@ func (b AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry
 // AppModule object for module implementation
 type AppModule struct {
 	AppModuleBasic
-	keeper     keeper.Keeper
-	bankKeeper bankkeeper.Keeper
+	keeper        keeper.Keeper
+	accountKeeper authkeeper.AccountKeeper
+	bankKeeper    bankkeeper.Keeper
 }
 
 func (am AppModule) ConsensusVersion() uint64 {
@@ -107,10 +106,11 @@ func (am AppModule) ConsensusVersion() uint64 {
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k keeper.Keeper, bankKeeper bankkeeper.Keeper) AppModule {
+func NewAppModule(k keeper.Keeper, accountKeeper authkeeper.AccountKeeper, bankKeeper bankkeeper.Keeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
+		accountKeeper:  accountKeeper,
 		bankKeeper:     bankKeeper,
 	}
 }
@@ -118,6 +118,16 @@ func NewAppModule(k keeper.Keeper, bankKeeper bankkeeper.Keeper) AppModule {
 // Name implements app module
 func (AppModule) Name() string {
 	return types.ModuleName
+}
+
+// CreateModuleAccount creates an account for the module, which will be used for populating the nonce on any EVM transactions the module initiates
+// This is necessary because the module account does not have minter or burner permissions (it should not have these) so no initialization
+// is handled by the auth module
+func (am AppModule) CreateModuleAccount(ctx sdk.Context) {
+	modAcc := am.accountKeeper.GetModuleAccount(ctx, types.ModuleName)
+	if modAcc.GetName() != types.ModuleName {
+		panic("Created account for microtx module does not have the right module name!")
+	}
 }
 
 // RegisterInvariants implements app module
@@ -153,6 +163,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	keeper.InitGenesis(ctx, am.keeper, genesisState)
+	am.CreateModuleAccount(ctx)
 	return []abci.ValidatorUpdate{}
 }
 
