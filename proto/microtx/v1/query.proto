@@ -12,9 +12,9 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/microtx/v1/params";
   }
-  // Get an authoritative fee amount which must be paid on Xfer
-  rpc XferFee(QueryXferFeeRequest) returns (QueryXferFeeResponse) {
-    option (google.api.http).get = "/microtx/v1/xfer_fee";
+  // Get an authoritative fee amount which must be paid on Microtx
+  rpc MicrotxFee(QueryMicrotxFeeRequest) returns (QueryMicrotxFeeResponse) {
+    option (google.api.http).get = "/microtx/v1/microtx_fee";
   }
   // Get all of the tokenized accounts known to the module
   rpc TokenizedAccounts(QueryTokenizedAccountsRequest) returns (QueryTokenizedAccountsResponse) {
@@ -33,11 +33,11 @@ message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
-// Query the additional fee paid on MsgXfer, determined by governance
-message QueryXferFeeRequest {
+// Query the additional fee paid on MsgMicrotx, determined by governance
+message QueryMicrotxFeeRequest {
   uint64 amount = 1;
 }
-message QueryXferFeeResponse {
+message QueryMicrotxFeeResponse {
   uint64 fee_amount = 1;
 }
 

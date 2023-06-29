@@ -12,7 +12,7 @@ import (
 	"github.com/althea-net/althea-chain/x/microtx/types"
 )
 
-// BasisPointDivisor used in calculating the MsgXfer fee amount to deduct
+// BasisPointDivisor used in calculating the MsgMicrotx fee amount to deduct
 const BasisPointDivisor uint64 = 10000
 
 type msgServer struct {
@@ -26,11 +26,11 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 }
 
 // ========================================================================================================
-// 												XFER
+// 												MICROTX
 // ========================================================================================================
 
-// Xfer delegates the msg server's call to the keeper
-func (m msgServer) Xfer(c context.Context, msg *types.MsgXfer) (*types.MsgXferResponse, error) {
+// Microtx delegates the msg server's call to the keeper
+func (m msgServer) Microtx(c context.Context, msg *types.MsgMicrotx) (*types.MsgMicrotxResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	// The following validation logic has been copied from x/bank in the sdk
@@ -52,16 +52,16 @@ func (m msgServer) Xfer(c context.Context, msg *types.MsgXfer) (*types.MsgXferRe
 	}
 
 	// Call the actual transfer implementation
-	if err := m.Keeper.Xfer(ctx, sender, receiver, msg.Amounts); err != nil {
+	if err := m.Keeper.Microtx(ctx, sender, receiver, msg.Amounts); err != nil {
 		return nil, sdkerrors.Wrap(err, "unable to complete the transfer")
 	}
 
-	return &types.MsgXferResponse{}, err
+	return &types.MsgMicrotxResponse{}, err
 }
 
-// Xfer implements the transfer of funds from sender to receiver
-// Due to the function of Tokenized Accounts, any Xfer must contain solely EVM compatible bank coins
-func (k Keeper) Xfer(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAddress, amounts sdk.Coins) error {
+// Microtx implements the transfer of funds from sender to receiver
+// Due to the function of Tokenized Accounts, any Microtx must contain solely EVM compatible bank coins
+func (k Keeper) Microtx(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAddress, amounts sdk.Coins) error {
 	var erc20Amounts []*common.Address // Denoms of `amounts` converted to ERC20 addresses
 	for _, amount := range amounts {
 		// The native token is automatically usable within the EVM
@@ -82,7 +82,7 @@ func (k Keeper) Xfer(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAdd
 		erc20Amounts = append(erc20Amounts, &erc20Address)
 	}
 
-	feesCollected, err := k.DeductXferFee(ctx, sender, amounts)
+	feesCollected, err := k.DeductMicrotxFee(ctx, sender, amounts)
 
 	if err != nil {
 		return sdkerrors.Wrap(err, "unable to collect fees")
@@ -96,7 +96,7 @@ func (k Keeper) Xfer(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAdd
 
 	// Emit an event for the block's event log
 	ctx.EventManager().EmitEvent(
-		types.NewEventXfer(sender.String(), receiver.String(), amounts, feesCollected),
+		types.NewEventMicrotx(sender.String(), receiver.String(), amounts, feesCollected),
 	)
 
 	// Migrate balances to the NFT if the amounts are in excess of any configured threshold
@@ -109,27 +109,27 @@ func (k Keeper) Xfer(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAdd
 }
 
 // checkAndDeductSendToEthFees asserts that the minimum chainFee has been met for the given sendAmount
-func (k Keeper) DeductXferFee(ctx sdk.Context, sender sdk.AccAddress, sendAmounts sdk.Coins) (feeCollected sdk.Coins, err error) {
+func (k Keeper) DeductMicrotxFee(ctx sdk.Context, sender sdk.AccAddress, sendAmounts sdk.Coins) (feeCollected sdk.Coins, err error) {
 	// Compute the minimum fees which must be paid
-	xferFeeBasisPoints, err := k.GetXferFeeBasisPoints(ctx)
+	microtxFeeBasisPoints, err := k.GetMicrotxFeeBasisPoints(ctx)
 	if err != nil {
-		xferFeeBasisPoints = 0
+		microtxFeeBasisPoints = 0
 	}
-	var xferFees sdk.Coins
+	var microtxFees sdk.Coins
 	for _, sendAmount := range sendAmounts {
-		xferFee := k.getXferFeeForAmount(sendAmount.Amount, xferFeeBasisPoints)
-		xferFeeCoin := sdk.NewCoin(sendAmount.Denom, xferFee)
-		xferFees = xferFees.Add(xferFeeCoin)
+		microtxFee := k.getMicrotxFeeForAmount(sendAmount.Amount, microtxFeeBasisPoints)
+		microtxFeeCoin := sdk.NewCoin(sendAmount.Denom, microtxFee)
+		microtxFees = microtxFees.Add(microtxFeeCoin)
 	}
 
 	// Require that the minimum has been met
-	if !xferFees.IsZero() { // Ignore fees too low to collect
+	if !microtxFees.IsZero() { // Ignore fees too low to collect
 		balances := k.bankKeeper.GetAllBalances(ctx, sender)
-		if xferFees.IsAnyGT(balances) {
+		if microtxFees.IsAnyGT(balances) {
 			err := sdkerrors.Wrapf(
 				sdkerrors.ErrInsufficientFee,
 				"balances are insufficient, one of the needed fees are larger (%v > %v)",
-				xferFees,
+				microtxFees,
 				balances,
 			)
 			return nil, err
@@ -138,18 +138,18 @@ func (k Keeper) DeductXferFee(ctx sdk.Context, sender sdk.AccAddress, sendAmount
 		// Finally, collect the necessary fee
 		senderAcc := k.accountKeeper.GetAccount(ctx, sender)
 
-		err = sdkante.DeductFees(k.bankKeeper, ctx, senderAcc, xferFees)
+		err = sdkante.DeductFees(k.bankKeeper, ctx, senderAcc, microtxFees)
 		if err != nil {
-			ctx.Logger().Error("Could not deduct MsgXfer fee!", "error", err, "account", senderAcc, "fees", xferFees)
+			ctx.Logger().Error("Could not deduct MsgMicrotx fee!", "error", err, "account", senderAcc, "fees", microtxFees)
 			return nil, err
 		}
 	}
 
-	return xferFees, nil
+	return microtxFees, nil
 }
 
-// getXferFeeForAmount Computes the fee a user must pay for any input `amount`, given the current `basisPoints`
-func (k Keeper) getXferFeeForAmount(amount sdk.Int, basisPoints uint64) sdk.Int {
+// getMicrotxFeeForAmount Computes the fee a user must pay for any input `amount`, given the current `basisPoints`
+func (k Keeper) getMicrotxFeeForAmount(amount sdk.Int, basisPoints uint64) sdk.Int {
 	return sdk.NewDecFromInt(amount).
 		QuoInt64(int64(BasisPointDivisor)).
 		MulInt64(int64(basisPoints)).

@@ -32,7 +32,7 @@ func NewTokenizedAccountThresholds(tokens []common.Address, amounts []big.Int) (
 // FindThresholdIntersection determines which configured threshold ERC20s exist in `changedErc20s` for the purpose of
 // funneling erc20 tokens to the TokenizedAccountNFT contract
 // TODO: Consider a more efficient implementation based on use, this is a simple O(n^2) approach
-// or consider restricting the number of tokens transferrable in a single MsgXfer
+// or consider restricting the number of tokens transferrable in a single MsgMicrotx
 func FindThresholdIntersection(thresholds []TokenizedAccountThreshold, changedErc20s []*common.Address) []TokenizedAccountThreshold {
 	var ret []TokenizedAccountThreshold
 	for _, threshold := range thresholds {

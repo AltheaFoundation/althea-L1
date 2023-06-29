@@ -1,10 +1,10 @@
-use crate::type_urls::MSG_XFER_TYPE_URL;
+use crate::type_urls::MSG_MICROTX_TYPE_URL;
 use crate::utils::{
     bulk_get_user_keys, get_test_token_name, one_atom_128, send_funds_bulk, EthermintUserKey,
     ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
-use althea_proto::microtx::v1::MsgXfer;
+use althea_proto::microtx::v1::MsgMicrotx;
 use clarity::Uint256;
 use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
 use rand::distributions::Uniform;
@@ -13,7 +13,7 @@ use rand::{thread_rng, Rng};
 pub const BASIS_POINTS_DIVISOR: u128 = 10_000;
 pub const MICROTX_SUBSPACE: &str = "microtx";
 /// This PARAM_KEY constant is defined in x/microtx/types/genesis.go and must match exactly
-pub const XFER_FEE_BASIS_POINTS_PARAM_KEY: &str = "XferFeeBasisPoints";
+pub const MICROTX_FEE_BASIS_POINTS_PARAM_KEY: &str = "MicrotxFeeBasisPoints";
 
 /// Simulates activity of automated peer-to-peer transactions on Althea networks,
 /// asserting that the correct fees are deducted and transfers succeed
@@ -22,7 +22,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
     // Make users who will send tokens
     let senders = bulk_get_user_keys(None, num_users);
 
-    // Make users who will receive tokens via MsgXfer
+    // Make users who will receive tokens via MsgMicrotx
     let receivers = bulk_get_user_keys(None, num_users);
 
     // Send one footoken to each sender
@@ -62,27 +62,27 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
     info!("Microtx res {res:?}");
 
     let param = contact
-        .get_param(MICROTX_SUBSPACE, XFER_FEE_BASIS_POINTS_PARAM_KEY)
+        .get_param(MICROTX_SUBSPACE, MICROTX_FEE_BASIS_POINTS_PARAM_KEY)
         .await
-        .expect("Unable to get XferFeeBasisPoints from microtx module");
+        .expect("Unable to get MicrotxFeeBasisPoints from microtx module");
     let param = param.param.unwrap().value;
-    let xfer_fee_basis_points = param.trim_matches('"');
+    let microtx_fee_basis_points = param.trim_matches('"');
     info!(
-        "Got xfer_fee_basis_points: [{}]",
-        xfer_fee_basis_points
+        "Got microtx_fee_basis_points: [{}]",
+        microtx_fee_basis_points
     );
 
-    let xfer_fee_basis_points: u128 = serde_json::from_str(xfer_fee_basis_points).unwrap();
-    let (xfers, amounts, fees) = generate_msg_xfers(
+    let microtx_fee_basis_points: u128 = serde_json::from_str(microtx_fee_basis_points).unwrap();
+    let (microtxs, amounts, fees) = generate_msg_microtxs(
         &senders,
         &receivers,
         &foo_denom,
         foo_balance,
-        xfer_fee_basis_points,
+        microtx_fee_basis_points,
     );
 
-    // Send the MsgXfers, check their execution, assert the balances have changed
-    exec_and_check(contact, &senders, &xfers, &amounts, &fees, foo_balance).await;
+    // Send the MsgMicrotxs, check their execution, assert the balances have changed
+    exec_and_check(contact, &senders, &microtxs, &amounts, &fees, foo_balance).await;
 
     // Check that the senders and receivers have the expected balance
     assert_balance_changes(
@@ -97,15 +97,15 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
     .await;
 }
 
-/// Creates 3 Vec's: MsgXfer's, transfer amounts, and expected fees
-/// The generated MsgXfer's will have a randomized transfer amount and a derived associated fee
+/// Creates 3 Vec's: MsgMicrotx's, transfer amounts, and expected fees
+/// The generated MsgMicrotx's will have a randomized transfer amount and a derived associated fee
 /// Order is preserved so the i-th Msg corresponds to the i-th amount and the i-th fee
-pub fn generate_msg_xfers(
+pub fn generate_msg_microtxs(
     senders: &[EthermintUserKey],
     receivers: &[EthermintUserKey],
     denom: &str,
     sender_balance: u128,
-    xfer_fee_basis_points: u128,
+    microtx_fee_basis_points: u128,
 ) -> (Vec<Msg>, Vec<Uint256>, Vec<Uint256>) {
     let mut msgs = Vec::with_capacity(senders.len());
     let mut amounts = Vec::with_capacity(senders.len());
@@ -115,24 +115,24 @@ pub fn generate_msg_xfers(
     let amount_range = Uniform::new(0u128, sender_balance);
     for (i, (sender, receiver)) in senders.iter().zip(receivers.iter()).enumerate() {
         let amount: u128 = if i == 0 {
-            // Guarantee one MsgXfer failure
+            // Guarantee one MsgMicrotx failure
             sender_balance
         } else {
             rng.sample(amount_range)
         };
-        let expected_fee: u128 = amount * xfer_fee_basis_points / BASIS_POINTS_DIVISOR;
+        let expected_fee: u128 = amount * microtx_fee_basis_points / BASIS_POINTS_DIVISOR;
         let amount_coin = ProtoCoin {
             denom: denom.to_string(),
             amount: amount.to_string(),
         };
         let amount_coins = vec![amount_coin];
 
-        let msg_xfer = MsgXfer {
+        let msg_microtx = MsgMicrotx {
             receiver: receiver.ethermint_address.to_string(),
             sender: sender.ethermint_address.to_string(),
             amounts: amount_coins,
         };
-        let msg = Msg::new(MSG_XFER_TYPE_URL, msg_xfer);
+        let msg = Msg::new(MSG_MICROTX_TYPE_URL, msg_microtx);
 
         msgs.push(msg);
         amounts.push(amount.into());
@@ -202,7 +202,7 @@ pub async fn exec_and_check(
                 res,
             );
         }
-        debug!("Sent MsgXfer with response {:?}", res);
+        debug!("Sent MsgMicrotx with response {:?}", res);
     }
 }
 

@@ -32,7 +32,7 @@ func DefaultParams() *Params {
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&ibctransfertypes.MsgTransfer{}),
 			// nolint: exhaustruct
-			sdk.MsgTypeURL(&microtxtypes.MsgXfer{}),
+			sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}),
 		},
 		/* Note: The authoritative way to get the native token of the chain is by calling
 		   mintKeeper.GetParams(ctx).MintDenom, but the context is not available yet

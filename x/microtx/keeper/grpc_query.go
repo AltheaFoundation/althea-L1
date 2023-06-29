@@ -24,15 +24,15 @@ func (k Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types
 	return &types.QueryParamsResponse{Params: p}, nil
 }
 
-// XferFee computes the amount which will be charged in fees for a given Xfer amount
-func (k Keeper) XferFee(c context.Context, req *types.QueryXferFeeRequest) (*types.QueryXferFeeResponse, error) {
+// MicrotxFee computes the amount which will be charged in fees for a given Microtx amount
+func (k Keeper) MicrotxFee(c context.Context, req *types.QueryMicrotxFeeRequest) (*types.QueryMicrotxFeeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	xferFeeBasisPoints, err := k.GetXferFeeBasisPoints(ctx)
+	microtxFeeBasisPoints, err := k.GetMicrotxFeeBasisPoints(ctx)
 	if err != nil {
 		return nil, err
 	}
-	fee := k.getXferFeeForAmount(sdk.NewIntFromUint64(req.Amount), xferFeeBasisPoints)
-	return &types.QueryXferFeeResponse{FeeAmount: fee.Uint64()}, nil
+	fee := k.getMicrotxFeeForAmount(sdk.NewIntFromUint64(req.Amount), microtxFeeBasisPoints)
+	return &types.QueryMicrotxFeeResponse{FeeAmount: fee.Uint64()}, nil
 }
 
 // TokenizedAccount implements types.QueryServer.
