@@ -379,8 +379,9 @@ func NewAltheaApp(
 		stakingtypes.StoreKey, minttypes.StoreKey, distrtypes.StoreKey,
 		slashingtypes.StoreKey, govtypes.StoreKey, paramstypes.StoreKey,
 		ibchost.StoreKey, upgradetypes.StoreKey, evidencetypes.StoreKey,
-		ibctransfertypes.StoreKey, capabilitytypes.StoreKey, lockuptypes.StoreKey,
+		ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		erc20types.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey,
+		lockuptypes.StoreKey, microtxtypes.StoreKey,
 	)
 	// Transient keys which only last for a block before being wiped
 	// Params uses thsi to track whether some parameter changed this block or not
