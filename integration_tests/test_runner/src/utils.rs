@@ -3,6 +3,7 @@ use althea_proto::{
     canto::erc20::v1::{RegisterCoinProposal, RegisterErc20Proposal},
     cosmos_sdk_proto::cosmos::{
         bank::v1beta1::Metadata,
+        bank::v1beta1::{query_client::QueryClient as BankQueryClient, QueryDenomMetadataRequest},
         gov::v1beta1::VoteOption,
         params::v1beta1::{ParamChange, ParameterChangeProposal},
         staking::v1beta1::{DelegationResponse, QueryValidatorsRequest},
@@ -337,7 +338,7 @@ pub async fn create_parameter_change_proposal(
         )
         .await
         .unwrap();
-    trace!("Gov proposal executed with {:?}", res);
+    trace!("Gov proposal executed with {:?}", res.raw_log);
 }
 
 // Prints out current stake to the console
@@ -389,7 +390,7 @@ pub async fn execute_register_erc20_proposal(
         )
         .await
         .unwrap();
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {:?}", res.raw_log);
 
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
@@ -430,7 +431,7 @@ pub async fn execute_register_coin_proposal(
         )
         .await
         .unwrap();
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {:?}", res.raw_log);
 
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
@@ -480,7 +481,7 @@ pub async fn execute_upgrade_proposal(
         )
         .await
         .unwrap();
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {:?}", res.raw_log);
 
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
@@ -939,4 +940,45 @@ async fn wait_for_txids(txids: Vec<Result<Uint256, Web3Error>>, web3: &Web3) {
         wait_for_txid.push(wait);
     }
     join_all(wait_for_txid).await;
+}
+
+// Fetches a coin which has been registered with the ERC20 module, and thus has an Althea L1 EVM representation
+pub async fn get_convertible_coin(contact: &Contact, validator_keys: &[ValidatorKeys]) -> String {
+    let coin = COINS_FOR_REGISTERING.get(0).unwrap();
+    let mut erc20_qc = Erc20QueryClient::connect(contact.get_url())
+        .await
+        .expect("Unable to connect to ERC20 query client");
+    let pair = erc20_qc
+        .token_pair(QueryTokenPairRequest {
+            token: coin.clone(),
+        })
+        .await;
+    if pair.is_ok() {
+        let pair = pair.unwrap().into_inner().token_pair;
+        if pair.is_some() {
+            return coin.clone();
+        }
+    };
+
+    let mut bank_qc = BankQueryClient::connect(contact.get_url())
+        .await
+        .expect("Unable to connect to bank query client");
+    let metadata = bank_qc
+        .denom_metadata(QueryDenomMetadataRequest {
+            denom: coin.clone(),
+        })
+        .await
+        .expect("Unable to query denom metadata")
+        .into_inner()
+        .metadata
+        .expect("No metadata for erc20 coin");
+
+    let coin_params = RegisterCoinProposalParams {
+        coin_metadata: metadata.clone(),
+        proposal_desc: "Register Coin Proposal Description".to_string(),
+        proposal_title: "Register Coin Proposal Title".to_string(),
+    };
+    execute_register_coin_proposal(contact, validator_keys, Some(TOTAL_TIMEOUT), coin_params).await;
+
+    coin.clone()
 }
