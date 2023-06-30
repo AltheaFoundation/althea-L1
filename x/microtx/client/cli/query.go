@@ -68,7 +68,7 @@ func CmdQueryParams() *cobra.Command {
 func CmdQueryMicrotxFee() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
-		Use:   "Microtx-fee amount",
+		Use:   "microtx-fee amount",
 		Args:  cobra.ExactArgs(1),
 		Short: "Query the fee needed to Microtx amount to another wallet",
 		RunE: func(cmd *cobra.Command, args []string) error {
