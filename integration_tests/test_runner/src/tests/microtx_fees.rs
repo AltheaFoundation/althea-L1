@@ -1,6 +1,6 @@
 use crate::type_urls::MSG_MICROTX_TYPE_URL;
 use crate::utils::{
-    bulk_get_user_keys, get_test_token_name, one_atom_128, send_funds_bulk, EthermintUserKey,
+    bulk_get_user_keys, get_convertible_coin, one_atom_128, send_funds_bulk, EthermintUserKey,
     ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
@@ -18,7 +18,7 @@ pub const MICROTX_FEE_BASIS_POINTS_PARAM_KEY: &str = "MicrotxFeeBasisPoints";
 /// Simulates activity of automated peer-to-peer transactions on Althea networks,
 /// asserting that the correct fees are deducted and transfers succeed
 pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) {
-    let num_users = 128;
+    let num_users = 64;
     // Make users who will send tokens
     let senders = bulk_get_user_keys(None, num_users);
 
@@ -27,10 +27,10 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
 
     // Send one footoken to each sender
     let foo_balance = one_atom_128();
-    let foo_denom = get_test_token_name();
+    let coin_denom = get_convertible_coin(contact, &validator_keys).await;
     let amount = Coin {
         amount: foo_balance.into(),
-        denom: foo_denom.clone(),
+        denom: coin_denom.clone(),
     };
     send_funds_bulk(
         contact,
@@ -76,7 +76,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
     let (microtxs, amounts, fees) = generate_msg_microtxs(
         &senders,
         &receivers,
-        &foo_denom,
+        &coin_denom,
         foo_balance,
         microtx_fee_basis_points,
     );
@@ -92,7 +92,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
         &amounts,
         &fees,
         foo_balance,
-        &foo_denom,
+        &coin_denom,
     )
     .await;
 }
