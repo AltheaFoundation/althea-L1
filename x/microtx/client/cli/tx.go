@@ -25,6 +25,7 @@ func GetTxCmd(storeKey string) *cobra.Command {
 
 	microtxTxCmd.AddCommand([]*cobra.Command{
 		CmdMicrotx(),
+		CmdTokenizeAccount(),
 	}...)
 
 	return microtxTxCmd
@@ -67,6 +68,38 @@ func CmdMicrotx() *cobra.Command {
 			msg := types.NewMsgMicrotx(sender.String(), receiver.String(), amounts)
 			if err := msg.ValidateBasic(); err != nil {
 				return sdkerrors.Wrap(err, "invalid argument provided")
+			}
+
+			// Send it
+			return tx.GenerateOrBroadcastTxCLI(cliCtx, cmd.Flags(), msg)
+		},
+	}
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+// CmdTokenizeAccount crafts and submits a MsgTokenizeAccount to the chain
+func CmdTokenizeAccount() *cobra.Command {
+	// nolint: exhaustruct
+	cmd := &cobra.Command{
+		Use:   "tokenize-account --from <account>",
+		Short: "tokenize-account will convert the account to Liquid Infrastructure",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			if _, err := cmd.Flags().GetString(flags.FlagFrom); err != nil {
+				return sdkerrors.Wrap(err, "--from value missing or incorrect")
+			}
+			from := cliCtx.GetFromAddress().String()
+
+			// Make the message
+			msg := types.NewMsgTokenizeAccount(from)
+			if err := msg.ValidateBasic(); err != nil {
+				return sdkerrors.Wrap(err, "invalid --from value provided")
 			}
 
 			// Send it
