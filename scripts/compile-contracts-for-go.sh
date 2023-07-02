@@ -4,6 +4,8 @@ FULL_CONTRACTS_ROOT="${ROOT}/solidity"
 FULL_CONTRACTS_ARTIFACTS="${FULL_CONTRACTS_ROOT}/artifacts/contracts"
 FULL_CONTRACTS_SOURCE="${FULL_CONTRACTS_ROOT}/contracts"
 
+mkdir -p $CONTRACTS_GO_OUTPUT
+
 for f in $(ls ${FULL_CONTRACTS_ARTIFACTS}/ | awk '!/Test/') ; do
     # Uncomment to copy the source file to the contracts directory
     # sourceFile="${FULL_CONTRACTS_SOURCE}/$f"
@@ -11,7 +13,6 @@ for f in $(ls ${FULL_CONTRACTS_ARTIFACTS}/ | awk '!/Test/') ; do
     # cp $sourceFile $sourceCopy
 
     # Make the contracts/compiled directory
-    mkdir -p $CONTRACTS_GO_OUTPUT
 
     # Get the compiled JSON in solidity/artifacts/contracts/*.sol/*.json, format and output at contracts/compiled/
     compiledFile="${FULL_CONTRACTS_ARTIFACTS}/$f/${f%.sol}.json"

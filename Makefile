@@ -57,13 +57,7 @@ all: install
 install: go.sum install-core
 
 # does not run go mod verify
-install-core:
-ifeq ("$(ls contracts/compiled)", "")
-		@echo "Compiled contracts folder is empty, compiling now"
-		@scripts/compile-contracts-for-go.sh
-else
-		@echo "Detected compiled contract interfaces for Go"
-endif
+install-core: contracts-auto
 		export GOFLAGS='-buildmode=pie'
 		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
@@ -73,11 +67,11 @@ go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
 		GO111MODULE=on go mod verify
 
-test:
+test: contracts-auto
 	@go test -mod=readonly $(PACKAGES)
 
 # look into .golangci.yml for enabling / disabling linters
-lint:
+lint: contracts-auto
 	@echo "--> Running linter"
 	@golangci-lint run
 	@go mod verify
@@ -240,6 +234,19 @@ contracts-clean:
 contracts-go:
 	@echo "Formatting compiled contracts and placing in compiled-contracts"
 	@scripts/compile-contracts-for-go.sh
+
+# Detects if the contracts must be compiled for Go, and potentially does so
+# If you need to overwrite the compiled-for-go contracts, use contracts instead
+# since that will clean then compile
+# Note that this depends on the solidity contracts being compiled already via hardhat
+contracts-auto:
+ifeq ("$(ls ${COMPILED_CONTRACTS_GO_OUTPUT})", "")
+		@echo "Compiled contracts folder is empty, compiling now"
+		@scripts/compile-contracts-for-go.sh
+else
+		@echo "Detected compiled contract interfaces for Go"
+endif
+
 
 ###############################################################################
 ###                           MISC DIRECTIVES                               ###
