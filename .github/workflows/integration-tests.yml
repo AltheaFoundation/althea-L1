@@ -76,7 +76,7 @@ jobs:
         run: tests/all-up-test.sh ERC20_CONVERSION
         env:
           NO_IMAGE_BUILD: True
-  tokenized_accounts:
+  liquid_accounts:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
@@ -86,7 +86,7 @@ jobs:
           key: integration-test-cache-{hash}
           restore-keys: |
             integration-test-cache-
-      - name: Test the microtx module's tokenized accounts functions
-        run: tests/all-up-test.sh TOKENIZED_ACCOUNTS
+      - name: Test the microtx module's liquid infrastructure accounts functions
+        run: tests/all-up-test.sh LIQUID_ACCOUNTS
         env:
           NO_IMAGE_BUILD: True

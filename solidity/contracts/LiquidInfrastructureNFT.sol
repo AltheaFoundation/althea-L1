@@ -6,30 +6,30 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./OwnableApprovableERC721.sol";
 
 /**
- * @title Tokenized Account NFT
+ * @title Liquid Infrastructure NFT
  * @author Christian Borst <christian@althea.systems>
  *
- * @dev An NFT contract used to control a TokenizedAccount - a Cosmos Bank module account intrinsically connected to the EVM
+ * @dev An NFT contract used to control a Liquid Infrastructure Account - a Cosmos Bank module account intrinsically connected to the EVM
  * through Althea's x/microtx module.
  *
- * A TokenizedAccount typically represents some form of infrastructure involved in an Althea pay-per-forward network
+ * A Liquid Infrastructure Account typically represents some form of infrastructure involved in an Althea pay-per-forward network
  * which frequently receives payments from peers on the network for performing an automated service (e.g. providing internet).
- * Each instance of this TokenizedAccountNFT contract represents one x/bank module account, the address of which is a part of
+ * Each instance of this LiquidInfrastructureNFT contract represents one x/bank module account, the address of which is a part of
  * the ERC1155 URI.
  *
  * As the x/microtx module is used to conduct microtransactions (the payment layer for Althea networks), receiving accounts
- * will accrue Cosmos Coins and likely spend these same tokens to pay their upstream costs. If any such account has been
- * Tokenized (see x/microtx documentation), the x/microtx module will query this TokenizedAccountNFT's BalanceThresholds
+ * will accrue Cosmos Coins and likely spend these same tokens to pay their upstream costs. If any such account is a Liquid
+ * account (see x/microtx documentation), the x/microtx module will query this LiquidInfrastructureNFT's BalanceThresholds
  * values to determine how much of which tokens to leave in the x/bank account. All excess amounts will be converted
- * from Cosmos Coins to ERC20s and deposited here. The owner of the TokenizedAccount may later withdraw the balances
+ * from Cosmos Coins to ERC20s and deposited here. The owner of the Liquid Account may later withdraw the balances
  * this NFT holds via the withdrawBalances() function.
  *
  * Occassionally devices and wallets can be lost, in which case the owner of this contract can call recoverAccount()
  * to begin a recovery process which will finish after the transaction completes. Asynchronously the x/microtx module
- * will ignore thresholds and transfer all of the TokenizedAccount's balances to this NFT, which may be withdrawn
+ * will ignore thresholds and transfer all of the Liquid Account's balances to this NFT, which may be withdrawn
  * normally with withdrawBalances().
  */
-contract TokenizedAccountNFT is ERC721, OwnableApprovableERC721 {
+contract LiquidInfrastructureNFT is ERC721, OwnableApprovableERC721 {
     event SuccessfulWithdrawal(address[] erc20s);
     event TryRecover();
     event SuccessfulRecovery(address[] erc20s, uint256[] amounts);
@@ -46,14 +46,14 @@ contract TokenizedAccountNFT is ERC721, OwnableApprovableERC721 {
     uint256 public constant AccountId = 1;
 
     /**
-     * Constructs the underlying ERC721 with a URI like "althea://tokenized-account/{accountName}", and
+     * Constructs the underlying ERC721 with a URI like "althea://liquid-infrastructure-account/{accountName}", and
      * a symbol like "TA:{accountName}".
      * Mints the Account token (ID=1), the only token held in this NFT.
      *
      * @param accountName The bech32 address of the controlled x/bank account
      */
     constructor(string memory accountName)
-        ERC721(string.concat("althea://tokenized-account/", accountName), string.concat("TA:", accountName)) {
+        ERC721(string.concat("althea://liquid-infrastructure-account/", accountName), string.concat("LIA:", accountName)) {
 
         _mint(msg.sender, AccountId);
     }
@@ -61,7 +61,7 @@ contract TokenizedAccountNFT is ERC721, OwnableApprovableERC721 {
     /**
      * @dev Returns the current thresholds as a collection of ERC20 addresses and a collection of balance thresholds.
      * These thresholds will be used by the x/microtx module to control the operating balances that the
-     * tokenized account is allowed to hold. Anything in excess of these balances are transferred to this contract.
+     * liquid account is allowed to hold. Anything in excess of these balances are transferred to this contract.
      *
      * @return address[]: The ERC20 balances to control
      * @return uint256[]: The maximum operating amount of the associated ERC20
@@ -72,7 +72,7 @@ contract TokenizedAccountNFT is ERC721, OwnableApprovableERC721 {
 
     /**
      * @dev Updates the threshold values used by the x/microtx module which determine precisely how much
-     * of each token should be left in the TokenizedAccount's x/bank account.
+     * of each token should be left in the Liquid Account's x/bank account.
      *
      * Any excess balances will accumulate here, and may be retrieved by the owner with
      * the withdrawBalances(erc20s) method
@@ -143,9 +143,9 @@ contract TokenizedAccountNFT is ERC721, OwnableApprovableERC721 {
     }
 
     /**
-     * @dev Begins the TokenizedAccount recovery process, which must be detected by the x/microtx module.
+     * @dev Begins the Liquid Infrastructure Account recovery process, which must be detected by the x/microtx module.
      * Emits a {TryRecover} event which must be detected by the x/microtx module.
-     * Expected behavior is that all tokens held in the x/bank account of the TokenizedAccount will be
+     * Expected behavior is that all tokens held in the x/bank account of the Liquid Account will be
      * converted to ERC20s and transferred to the control of this contract. If the recovery is successful
      * then the x/microtx module will append a {SuccessfulRecovery} event with the ERC20 addresses and amounts
      * sent to this contract.

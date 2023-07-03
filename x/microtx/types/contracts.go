@@ -5,4 +5,4 @@ import (
 )
 
 // Redeclare the contract for package use
-var TokenizedAccountNFT = contracts.TokenizedAccountNFTContract
+var LiquidInfrastructureNFT = contracts.LiquidInfrastructureNFTContract

@@ -25,7 +25,7 @@ func GetTxCmd(storeKey string) *cobra.Command {
 
 	microtxTxCmd.AddCommand([]*cobra.Command{
 		CmdMicrotx(),
-		CmdTokenizeAccount(),
+		CmdLiquify(),
 	}...)
 
 	return microtxTxCmd
@@ -35,8 +35,9 @@ func GetTxCmd(storeKey string) *cobra.Command {
 func CmdMicrotx() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
-		Use:   "microtx [sender] [receiver] [amount1] [[amount2] [amount3] ...]",
-		Short: "microtx sends all provided amounts from sender to receiver",
+		Use:   "microtx [sender] [receiver] [amount]",
+		Short: "microtx sends the provided amount from sender to receiver",
+		Long:  "microtx will send amount (e.g. 1althea) from the bech32 address specified for `sender` to the bech32 address specified for `receiver`",
 		Args:  cobra.MinimumNArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx, err := client.GetClientTxContext(cmd)
@@ -54,18 +55,14 @@ func CmdMicrotx() *cobra.Command {
 				return sdkerrors.Wrapf(err, "provided receiver address is invalid: %v", args[1])
 			}
 
-			var amounts sdk.Coins
-			for i := 2; i < len(args); i++ {
-				amount := args[i]
-				coin, err := sdk.ParseCoinNormalized(amount)
-				if err != nil {
-					return sdkerrors.Wrapf(err, "invalid amount provided: %v", amount)
-				}
-				amounts = amounts.Add(coin)
+			amount := args[2]
+			coin, err := sdk.ParseCoinNormalized(amount)
+			if err != nil {
+				return sdkerrors.Wrapf(err, "invalid amount provided: %v", amount)
 			}
 
 			// Make the message
-			msg := types.NewMsgMicrotx(sender.String(), receiver.String(), amounts)
+			msg := types.NewMsgMicrotx(sender.String(), receiver.String(), coin)
 			if err := msg.ValidateBasic(); err != nil {
 				return sdkerrors.Wrap(err, "invalid argument provided")
 			}
@@ -78,12 +75,12 @@ func CmdMicrotx() *cobra.Command {
 	return cmd
 }
 
-// CmdTokenizeAccount crafts and submits a MsgTokenizeAccount to the chain
-func CmdTokenizeAccount() *cobra.Command {
+// CmdLiquify crafts and submits a MsgLiquify to the chain
+func CmdLiquify() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
-		Use:   "tokenize-account --from <account>",
-		Short: "tokenize-account will convert the account to Liquid Infrastructure",
+		Use:   "liquify --from <account>",
+		Short: "liquify will convert the account to a Liquid Infrastructure Account",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx, err := client.GetClientTxContext(cmd)
@@ -97,7 +94,7 @@ func CmdTokenizeAccount() *cobra.Command {
 			from := cliCtx.GetFromAddress().String()
 
 			// Make the message
-			msg := types.NewMsgTokenizeAccount(from)
+			msg := types.NewMsgLiquify(from)
 			if err := msg.ValidateBasic(); err != nil {
 				return sdkerrors.Wrap(err, "invalid --from value provided")
 			}

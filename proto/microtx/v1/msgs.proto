@@ -11,15 +11,15 @@ service Msg {
   rpc Microtx(MsgMicrotx) returns (MsgMicrotxResponse) {
     option (google.api.http).post = "/microtx/v1/microtx";
   }
-  // The TokenizeAccount service converts a wallet into a piece of Liquid Infrastructure
-  rpc TokenizeAccount(MsgTokenizeAccount) returns (MsgTokenizeAccountResponse) {
-    option (google.api.http).post = "/microtx/v1/tokenize_account";
+  // The Liquify service converts an account into a piece of Liquid Infrastructure
+  rpc Liquify(MsgLiquify) returns (MsgLiquifyResponse) {
+    option (google.api.http).post = "/microtx/v1/liquify";
   }
 }
 
 // MsgMicrotx A Msg used to send funds from one Althea network wallet to another,
 // via an automated device. Facilitates Liquid Infrastructure by automatically
-// redirecting funds received by Tokenized Accounts beyond configured amounts to the EVM.
+// redirecting funds received by Liquid Infrastructure beyond configured amounts to the EVM.
 // SENDER The account sending funds to receiver, must also be the signer of the
 // message
 // RECEIVER The account receiving funds from sender
@@ -28,7 +28,7 @@ service Msg {
 message MsgMicrotx {
   string sender = 1;
   string receiver = 2;
-  repeated cosmos.base.v1beta1.Coin amounts = 3
+  cosmos.base.v1beta1.Coin amount = 3
       [ (gogoproto.nullable) = false ];
 }
 
@@ -44,41 +44,42 @@ message EventMicrotx {
   repeated cosmos.base.v1beta1.Coin fee = 4 [ (gogoproto.nullable) = false ];
 }
 
-// A type for the block's event log recording when a TokenizedAccount has a received balance redirected to
-// its registered TokenizedAccountNFT
+// A type for the block's event log recording when a Liquid Infrastructure account
+// has a received balance redirected to its registered LiquidInfrastructureNFT
 message EventBalanceRedirect {
   string account = 1;
-  repeated cosmos.base.v1beta1.Coin amounts = 2
+  cosmos.base.v1beta1.Coin amount = 2
       [ (gogoproto.nullable) = false ];
 }
 
-// Records critical information about a Tokenized Account
-// TOKENIZED_ACCOUNT The bech32 address of the tokenized account
-// OWNER The bech32 address of the account now in control of the token
-// NFT_ADDRESS The EVM address of the token contract in control of the tokenized account's excess profits
-message TokenizedAccount {
+// Records critical information about a Liquid Infrastructure Account
+// ACCOUNT The bech32 address of the liquid infrastructure account
+// OWNER The bech32 address of the account now in control of the liquid infrastructure
+// NFT_ADDRESS The EVM address of the token contract in control of the liquid infrastructure account's accrued profits
+message LiquidInfrastructureAccount {
   string owner = 1;
-  string tokenized_account = 2;
+  string account = 2;
   string nft_address = 3;
 }
 
-// MsgTokenizeAccount A Msg meant to convert a wallet into a piece of Liquid Infrastructure,
-// by creating a NonFungibleToken within the Althea L1 EVM which will control all balances
-// held by the Tokenized Account (beyond a configurable threshold). The tokenized account itself
-// will be the initial owner of the NFT, and must transfer control through the EVM NFT contract
-// SENDER The bech32 address of the account to tokenize, must also be the signer of the message
-message MsgTokenizeAccount {
+// MsgLiquify Converts the sender's account into a piece of Liquid Infrastructure,
+// by creating a Non-fungible Token (NFT) within the Althea L1 EVM which will control all balances
+// held by the Liquid Infrastructure Account (beyond a configurable threshold).
+// The liquid infrastructure account itself will be the initial owner of the NFT,
+// and must transfer control through the EVM NFT contract
+// SENDER The bech32 address of the account to liquify, must also be the signer of the message
+message MsgLiquify {
   string sender = 1;
 }
 
-// MsgTokenizeAccountResponse potentially returns useful information from the tokenization of an account
-message MsgTokenizeAccountResponse {
-  TokenizedAccount account = 1;
+// MsgLiquifyResponse potentially returns useful information from the liquification of an account
+message MsgLiquifyResponse {
+  LiquidInfrastructureAccount account = 1;
 }
 
-// A type for the block's event log, every successful TokenizeAccount must create one of
+// A type for the block's event log, every successful MsgLiquify must create one of
 // these in the event log
-message EventAccountTokenized {
+message EventAccountLiquified {
   string owned = 1;
   string nft_address = 2;
 }

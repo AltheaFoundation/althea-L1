@@ -16,14 +16,18 @@ service Query {
   rpc MicrotxFee(QueryMicrotxFeeRequest) returns (QueryMicrotxFeeResponse) {
     option (google.api.http).get = "/microtx/v1/microtx_fee";
   }
-  // Get all of the tokenized accounts known to the module
-  rpc TokenizedAccounts(QueryTokenizedAccountsRequest) returns (QueryTokenizedAccountsResponse) {
-    option (google.api.http).get = "/microtx/v1/tokenized_accounts";
+  // Get all of the Liquid Infrastructure accounts known to the module
+  rpc LiquidAccounts(QueryLiquidAccountsRequest) returns (QueryLiquidAccountsResponse) {
+    option (google.api.http).get = "/microtx/v1/liquid_accounts";
   }
-  // Get info about one particular tokenized account by owner, bech32 address, or nft address
-  // TODO: Investigate the http API and what we might need to put into this URL
-  rpc TokenizedAccount(QueryTokenizedAccountRequest) returns (QueryTokenizedAccountResponse) {
-    option (google.api.http).get = "/microtx/v1/tokenized_account";
+  // Get info about one particular Liquid Infrastructure account by owner, bech32 address, or nft address
+  // Make HTTP GET requests like:
+  // * `GET /microtx/v1/liquid_account?owner=althea1...`
+  // * `GET /microtx/v1/liquid_account?owner=0xABCDE...`
+  // * `GET /microtx/v1/liquid_account?account=althea1...`
+  // * `GET /microtx/v1/liquid_account?nft=0xABCDE...`
+  rpc LiquidAccount(QueryLiquidAccountRequest) returns (QueryLiquidAccountResponse) {
+    option (google.api.http).get = "/microtx/v1/liquid_account";
   }
 }
 
@@ -42,22 +46,22 @@ message QueryMicrotxFeeResponse {
 }
 
 
-// Query the tokenized accounts known to the module
-message QueryTokenizedAccountsRequest {
+// Query the Liquid Infrastructure accounts known to the module
+message QueryLiquidAccountsRequest {
 }
-message QueryTokenizedAccountsResponse {
-  repeated TokenizedAccount accounts = 1;
+message QueryLiquidAccountsResponse {
+  repeated LiquidInfrastructureAccount accounts = 1;
 }
 
-// Query for info about one particular Tokenized Account
+// Query for info about one particular Liquid Infrastructure account
 // OWNER if a bech32 address is provided, potenitally many accounts will be returned
-// TOKENIZED_ACCOUNT if a bech32 address is provided, the owner and nft contract address will be returned
-// NFT_ADDRESS if a EVM address is provided and happens to be a TokenizedAccountNFT contract, the owner and tokenized_account will be returned
-message QueryTokenizedAccountRequest {
+// ACCOUNT if a bech32 address is provided, the owner and nft contract address will be returned
+// NFT if a EVM address is provided and happens to be a LiquidInfrastructureNFT contract, the owner and account will be returned
+message QueryLiquidAccountRequest {
   string owner = 1;
-  string tokenized_account = 2;
-  string nft_address = 3;
+  string account = 2;
+  string nft = 3;
 }
-message QueryTokenizedAccountResponse {
-  repeated TokenizedAccount accounts = 1;
+message QueryLiquidAccountResponse {
+  repeated LiquidInfrastructureAccount accounts = 1;
 }

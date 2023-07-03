@@ -23,42 +23,42 @@ import (
 // Default gas limit for eth txs from the module account
 var DefaultGasLimit uint64 = 30000000
 
-// The ID for the Account token, the only token controlled by a TokenizedAccountNFT
+// The ID for the Account token, the only token controlled by a LiquidInfrastructureNFT
 // Note when using this value as an argument, the EVM requires it to be a *big.Int, the non-pointer
 // type will cause execution failure
 var AccountId *big.Int = big.NewInt(1)
 
-// DoTokenizedAccount will deploy a TokenizedAccountNFT smart contract for the given account.
+// DoLiquify will deploy a LiquidInfrastructureNFT smart contract for the given account.
 // The token will then be transferred to the given account and live under its control.
 // Transfer to another owner requires interacting with the EVM
-func (k Keeper) DoTokenizeAccount(
+func (k Keeper) DoLiquify(
 	ctx sdk.Context,
 	account sdk.AccAddress,
 ) (common.Address, error) {
-	nftAddr, err := k.deployTokenizedAccountContract(ctx, account)
+	nftAddr, err := k.deployLiquidInfrastructureNFTContract(ctx, account)
 	if err != nil {
 		return common.Address{}, sdkerrors.Wrapf(types.ErrContractDeployment,
-			"EVM::TokenizeAccount error deploying TokenizedAccountNFT: %s", err.Error())
+			"EVM::Liquify error deploying LiquidInfrastructureNFT: %s", err.Error())
 	}
-	if err := k.addTokenizedAccountEntry(ctx, account, nftAddr); err != nil {
+	if err := k.addLiquidInfrastructureEntry(ctx, account, nftAddr); err != nil {
 		return common.Address{}, sdkerrors.Wrapf(err, "unable to map bech32 -> NFT address")
 	}
 
-	ctx.EventManager().EmitEvent(types.NewEventTokenizedAccount(account.String(), nftAddr))
-	k.Logger(ctx).Info("Account Tokenized", "account", account.String(), "owner", account.String(), "nft", nftAddr.Hex())
+	ctx.EventManager().EmitEvent(types.NewEventLiquify(account.String(), nftAddr))
+	k.Logger(ctx).Info("Account Liquified", "account", account.String(), "owner", account.String(), "nft", nftAddr.Hex())
 
 	return nftAddr, nil
 }
 
-// deployTokenizedAccountContract deploys an NFT contract for the given `account` and then transfers ownership of the
+// deployLiquidInfrastructureNFTContract deploys an NFT contract for the given `account` and then transfers ownership of the
 // underlying NFT to the given `account`
-func (k Keeper) deployTokenizedAccountContract(ctx sdk.Context, account sdk.AccAddress) (common.Address, error) {
-	contract, err := k.DeployContract(ctx, types.TokenizedAccountNFT, account.String())
+func (k Keeper) deployLiquidInfrastructureNFTContract(ctx sdk.Context, account sdk.AccAddress) (common.Address, error) {
+	contract, err := k.DeployContract(ctx, types.LiquidInfrastructureNFT, account.String())
 	if err != nil {
-		return common.Address{}, sdkerrors.Wrap(err, "tokenized account contract deployment failed")
+		return common.Address{}, sdkerrors.Wrap(err, "liquid infrastructure account contract deployment failed")
 	}
 
-	_, err = k.transferTokenizedAccountNFTFromModuleToAddress(ctx, contract, account)
+	_, err = k.transferLiquidInfrastructureNFTFromModuleToAddress(ctx, contract, account)
 	if err != nil {
 		return common.Address{}, sdkerrors.Wrapf(err, "could not transfer nft from %v to %v", types.ModuleEVMAddress.Hex(), SDKToEVMAddress(account).Hex())
 	}
@@ -66,36 +66,36 @@ func (k Keeper) deployTokenizedAccountContract(ctx sdk.Context, account sdk.AccA
 	return contract, nil
 }
 
-// transferTokenizedAccountNFTFromModuleToAddress calls the ERC721 "transferFrom" method on `contract`,
-// passing the arguments needed to transfer the TokenizedAccountNFT Account token
+// transferLiquidInfrastructureNFTFromModuleToAddress calls the ERC721 "transferFrom" method on `contract`,
+// passing the arguments needed to transfer the LiquidInfrastructureNFT Account token
 // from the x/microtx module account to to the `newOwner`
-func (k Keeper) transferTokenizedAccountNFTFromModuleToAddress(ctx sdk.Context, contract common.Address, newOwner sdk.AccAddress) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k Keeper) transferLiquidInfrastructureNFTFromModuleToAddress(ctx sdk.Context, contract common.Address, newOwner sdk.AccAddress) (*evmtypes.MsgEthereumTxResponse, error) {
 	// ABI: transferFrom(   address from,           address to,                uint256 tokenId)
 	var args = ToMethodArgs(types.ModuleEVMAddress, SDKToEVMAddress(newOwner), &AccountId)
-	return k.CallMethod(ctx, "transferFrom", types.TokenizedAccountNFT, types.ModuleEVMAddress, &contract, &big.Int{}, args...)
+	return k.CallMethod(ctx, "transferFrom", types.LiquidInfrastructureNFT, types.ModuleEVMAddress, &contract, &big.Int{}, args...)
 }
 
-// addTokenizedAccountEntry Sets a new TokenizedAccount entry in the bech32 -> EVM NFT address mapping
-// accAddress - The account to Tokenize
-// nftAddress - The deployed TokenizedAccountNFT contract address
-func (k Keeper) addTokenizedAccountEntry(ctx sdk.Context, accAddress sdk.AccAddress, nftAddress common.Address) error {
+// addLiquidInfrastructureEntry Sets a new Liquid Infrastructure Account entry in the bech32 -> EVM NFT address mapping
+// accAddress - The account to Liquify
+// nftAddress - The deployed LiquidInfrastructureNFT contract address
+func (k Keeper) addLiquidInfrastructureEntry(ctx sdk.Context, accAddress sdk.AccAddress, nftAddress common.Address) error {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetTokenizedAccountKey(accAddress)
+	key := types.GetLiquidAccountKey(accAddress)
 
 	if store.Has(key) {
-		return sdkerrors.Wrapf(types.ErrContractDeployment, "account %v already tokenized", accAddress.String())
+		return sdkerrors.Wrapf(types.ErrContractDeployment, "account %v already liquified", accAddress.String())
 	}
 
 	store.Set(key, nftAddress.Bytes())
 	return nil
 }
 
-// queryTokenizedAccountOwner is used by the module to provide a convenient query interface, it calls the ERC721 ownerOf() function
-// with the only token used by TokenizedAccountNFTs (0x1) and returns the owner's eth address
-func (k Keeper) queryTokenizedAccountOwner(ctx sdk.Context, nftAddress common.Address) (*common.Address, error) {
+// queryLiquidInfrastructureOwner is used by the module to provide a convenient query interface, it calls the ERC721 ownerOf() function
+// with the only token used by LiquidInfrastructureNFTs (0x1) and returns the owner's eth address
+func (k Keeper) queryLiquidInfrastructureOwner(ctx sdk.Context, nftAddress common.Address) (*common.Address, error) {
 	// ABI: ownerOf(uint256 tokenId) public view virtual override returns (address)
 	var args = ToMethodArgs(&AccountId)
-	res, err := k.QueryEVM(ctx, "ownerOf", types.TokenizedAccountNFT, types.ModuleEVMAddress, &nftAddress, args...)
+	res, err := k.QueryEVM(ctx, "ownerOf", types.LiquidInfrastructureNFT, types.ModuleEVMAddress, &nftAddress, args...)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "unable to call ownerOf with arg0=1")
 	}
@@ -103,17 +103,17 @@ func (k Keeper) queryTokenizedAccountOwner(ctx sdk.Context, nftAddress common.Ad
 	return &owner, nil
 }
 
-// queryTokenizedAccountThresholds is used by the module to control tokenized account balances, it calls the
-// TokenizedAccountNFT getThresholds() function and formats the output into a useable type
-func (k Keeper) queryTokenizedAccountThresholds(ctx sdk.Context, nftAddress common.Address) ([]types.TokenizedAccountThreshold, error) {
+// queryLiquidInfrastructureThresholds is used by the module to control liquid infrastructure account balances, it calls the
+// LiquidInfrastructureNFT getThresholds() function and formats the output into a useable type
+func (k Keeper) queryLiquidInfrastructureThresholds(ctx sdk.Context, nftAddress common.Address) ([]types.LiquidAccountThreshold, error) {
 	// ABI: getThresholds() public virtual view returns (address[] memory, uint256[] memory)
-	res, err := k.QueryEVM(ctx, "getThresholds", types.TokenizedAccountNFT, types.ModuleEVMAddress, &nftAddress)
+	res, err := k.QueryEVM(ctx, "getThresholds", types.LiquidInfrastructureNFT, types.ModuleEVMAddress, &nftAddress)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "unable to call getThresholds with no arguments")
 	}
 
 	// Use the ABI to unpack values. Expecting ([addr, ...], [uint256, ...])
-	values, err := types.TokenizedAccountNFT.ABI.Unpack("getThresholds", res.Ret)
+	values, err := types.LiquidInfrastructureNFT.ABI.Unpack("getThresholds", res.Ret)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "Unable to unpack the getThresholds() response")
 	}
@@ -134,80 +134,80 @@ func (k Keeper) queryTokenizedAccountThresholds(ctx sdk.Context, nftAddress comm
 		return nil, fmt.Errorf("go-ethereum ABI decoder read incorrect number of values (%d addresses vs %d amounts)", len(addresses), len(amounts))
 	}
 
-	var output []types.TokenizedAccountThreshold
+	var output []types.LiquidAccountThreshold
 	for i := 0; i < len(addresses); i++ {
 		amount := amounts[i]
 		if amount == nil {
 			return nil, fmt.Errorf("discovered invalid amount at %d -th location in thresholds result", i)
 		}
-		output = append(output, types.NewTokenizedAccountThreshold(addresses[i], *amount))
+		output = append(output, types.NewLiquidAccountThreshold(addresses[i], *amount))
 	}
 
 	return output, nil
 }
 
-// GetTokenizedAccountEntry fetches the TokenizedAccountNFT contract address for the given `accAddress`
-// returns nil, ErrNoTokenizedAccount if `accAddress` has not been tokenized (no record found)
-func (k Keeper) GetTokenizedAccountEntry(ctx sdk.Context, accAddress sdk.AccAddress) (*common.Address, error) {
+// GetLiquidAccountEntry fetches the LiquidInfrastructureNFT contract address for the given `accAddress`
+// returns nil, ErrNoLiquidAccount if `accAddress` has not been liquified (no record found)
+func (k Keeper) GetLiquidAccountEntry(ctx sdk.Context, accAddress sdk.AccAddress) (*common.Address, error) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetTokenizedAccountKey(accAddress)
+	key := types.GetLiquidAccountKey(accAddress)
 
 	contractAddressBz := store.Get(key)
 	if len(contractAddressBz) == 0 {
-		return nil, types.ErrNoTokenizedAccount
+		return nil, types.ErrNoLiquidAccount
 	}
 
 	contractAddress := common.BytesToAddress(contractAddressBz)
 	return &contractAddress, nil
 }
 
-// GetTokenizedAccount fetches info about a TokenizedAccount
-// returns nil, ErrNoTokenizedAccount if `accAddress` has not been tokenized (no record found)
-func (k Keeper) GetTokenizedAccount(ctx sdk.Context, accAddress sdk.AccAddress) (*types.TokenizedAccount, error) {
-	contractAddress, err := k.GetTokenizedAccountEntry(ctx, accAddress)
+// GetLiquidAccount fetches info about a Liquid Infrastructure Account
+// returns nil, ErrNoLiquidAccount if `accAddress` has not been liquified (no record found)
+func (k Keeper) GetLiquidAccount(ctx sdk.Context, accAddress sdk.AccAddress) (*types.LiquidInfrastructureAccount, error) {
+	contractAddress, err := k.GetLiquidAccountEntry(ctx, accAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	owner, err := k.queryTokenizedAccountOwner(ctx, *contractAddress)
+	owner, err := k.queryLiquidInfrastructureOwner(ctx, *contractAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.TokenizedAccount{
-		Owner:            EVMToSDKAddress(*owner).String(),
-		TokenizedAccount: accAddress.String(),
-		NftAddress:       contractAddress.Hex(),
+	return &types.LiquidInfrastructureAccount{
+		Owner:      EVMToSDKAddress(*owner).String(),
+		Account:    accAddress.String(),
+		NftAddress: contractAddress.Hex(),
 	}, nil
 }
 
-// IsTokenizedAccount checks if the input account is a Tokenized Account
-func (k Keeper) IsTokenizedAccount(ctx sdk.Context, account sdk.AccAddress) bool {
-	isTokenized, _ := k.IsTokenizedAccountWithValue(ctx, account)
-	return isTokenized
+// IsLiquidAccount checks if the input account is a Liquid Infrastructure Account
+func (k Keeper) IsLiquidAccount(ctx sdk.Context, account sdk.AccAddress) bool {
+	isLiquidAccount, _ := k.IsLiquidAccountWithValue(ctx, account)
+	return isLiquidAccount
 }
 
-// IsTokenizedAccountWithValue checks if the input account is a Tokenized Account and returns the account's nft contract
-func (k Keeper) IsTokenizedAccountWithValue(ctx sdk.Context, account sdk.AccAddress) (bool, *common.Address) {
-	taEntry, err := k.GetTokenizedAccountEntry(ctx, account)
-	k.Logger(ctx).Debug("IsTokenizedAccount", "taEntry", taEntry)
+// IsLiquidAccountWithValue checks if the input account is a Liquid Infrastructure Account and returns the account's nft contract
+func (k Keeper) IsLiquidAccountWithValue(ctx sdk.Context, account sdk.AccAddress) (bool, *common.Address) {
+	taEntry, err := k.GetLiquidAccountEntry(ctx, account)
+	k.Logger(ctx).Debug("IsLiquidAccount", "taEntry", taEntry)
 	return err == nil && taEntry != nil, taEntry
 }
 
-// GetTokenizedAccountByNFTAddress fetches info about a TokenizedAccount given the address of the TokenizedAccountNFT in the EVM
-// returns nil, ErrNoTokenizedAccount if `nftAddress` has not been tokenized (no record found)
-func (k Keeper) GetTokenizedAccountByNFTAddress(ctx sdk.Context, nftAddress common.Address) (*types.TokenizedAccount, error) {
-	var tokenizedAccount *types.TokenizedAccount = nil
+// GetLiquidAccountByNFTAddress fetches info about a LiquidAccount given the address of the LiquidInfrastructureNFT in the EVM
+// returns nil, ErrNoLiquidAccount if `nftAddress` is not a record for any Liquid Infrastructure Account
+func (k Keeper) GetLiquidAccountByNFTAddress(ctx sdk.Context, nftAddress common.Address) (*types.LiquidInfrastructureAccount, error) {
+	var liquidAccount *types.LiquidInfrastructureAccount = nil
 	var err error = nil
 
-	k.IterateTokenizedAccounts(
+	k.IterateLiquidAccounts(
 		ctx,
 		func(_ []byte, accAddress sdk.AccAddress, owner common.Address, nftAddr common.Address) (stop bool) {
 			if nftAddr == nftAddress {
-				tokenizedAccount = &types.TokenizedAccount{
-					Owner:            EVMToSDKAddress(owner).String(),
-					TokenizedAccount: accAddress.String(),
-					NftAddress:       nftAddr.Hex(),
+				liquidAccount = &types.LiquidInfrastructureAccount{
+					Owner:      EVMToSDKAddress(owner).String(),
+					Account:    accAddress.String(),
+					NftAddress: nftAddr.Hex(),
 				}
 				return true
 			}
@@ -216,79 +216,78 @@ func (k Keeper) GetTokenizedAccountByNFTAddress(ctx sdk.Context, nftAddress comm
 	)
 
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to find tokenized account by NFT")
+		return nil, sdkerrors.Wrap(err, "failed to find liquid account by NFT")
 	}
 
-	return tokenizedAccount, nil
+	return liquidAccount, nil
 }
 
-// GetTokenizedAccountsByCosmosOwner fetches info about a TokenizedAccount given the bech32 address of the TokenizedAccountNFT holder
-// returns nil, ErrNoTokenizedAccount if `nftAddress` has not been tokenized (no record found)
-func (k Keeper) GetTokenizedAccountsByCosmosOwner(ctx sdk.Context, ownerAddress sdk.AccAddress) ([]*types.TokenizedAccount, error) {
+// GetLiquidAccountsByCosmosOwner fetches info about a Liquid Infrastructure Account given the bech32 address of the LiquidInfrastructureNFT holder
+// returns nil, ErrNoLiquidAccount if `ownerAddress` has no LiquidInfrastructureNFTs (no record found)
+func (k Keeper) GetLiquidAccountsByCosmosOwner(ctx sdk.Context, ownerAddress sdk.AccAddress) ([]*types.LiquidInfrastructureAccount, error) {
 	owner := SDKToEVMAddress(ownerAddress)
-	return k.GetTokenizedAccountsByEVMOwner(ctx, owner)
+	return k.GetLiquidAccountsByEVMOwner(ctx, owner)
 }
 
-// GetTokenizedAccountsByEVMOwner fetches info about a TokenizedAccount given the EVM address of the TokenizedAccountNFT holder
-// returns nil, ErrNoTokenizedAccount if `nftAddress` has not been tokenized (no record found)
-func (k Keeper) GetTokenizedAccountsByEVMOwner(ctx sdk.Context, ownerAddress common.Address) ([]*types.TokenizedAccount, error) {
-	var tokenizedAccounts []*types.TokenizedAccount
+// GetLiquidAccountsByEVMOwner fetches info about a Liquid Infrastructure Account given the EVM address of the LiquidInfrastructureNFT holder
+// returns nil, ErrNoLiquidAccount if `ownerAddress` has no LiquidInfrastructureNFTs (no record found)
+func (k Keeper) GetLiquidAccountsByEVMOwner(ctx sdk.Context, ownerAddress common.Address) ([]*types.LiquidInfrastructureAccount, error) {
+	var liquidAccounts []*types.LiquidInfrastructureAccount
 
-	k.IterateTokenizedAccounts(
+	k.IterateLiquidAccounts(
 		ctx,
 		func(_ []byte, accAddress sdk.AccAddress, owner common.Address, nftAddr common.Address) (stop bool) {
 			if owner == ownerAddress {
-				tokenizedAccounts = append(tokenizedAccounts, &types.TokenizedAccount{
-					Owner:            EVMToSDKAddress(owner).String(),
-					TokenizedAccount: accAddress.String(),
-					NftAddress:       nftAddr.Hex(),
+				liquidAccounts = append(liquidAccounts, &types.LiquidInfrastructureAccount{
+					Owner:      EVMToSDKAddress(owner).String(),
+					Account:    accAddress.String(),
+					NftAddress: nftAddr.Hex(),
 				})
 			}
 			return true
 		},
 	)
 
-	return tokenizedAccounts, nil
+	return liquidAccounts, nil
 }
 
-// GetTokenizedAccountByNFTAddress fetches info about a TokenizedAccount given the address of the TokenizedAccountNFT in the EVM
-// returns nil, ErrNoTokenizedAccount if `nftAddress` has not been tokenized (no record found)
-func (k Keeper) CollectTokenizedAccounts(ctx sdk.Context) ([]*types.TokenizedAccount, error) {
-	var tokenizedAccounts []*types.TokenizedAccount
+// GetLiquidAccountByNFTAddress fetches info about a Liquid Infrastructure Account given the address of the LiquidInfrastructureNFT in the EVM
+func (k Keeper) CollectLiquidAccounts(ctx sdk.Context) ([]*types.LiquidInfrastructureAccount, error) {
+	var liquidAccounts []*types.LiquidInfrastructureAccount
 	var err error = nil
 
-	k.IterateTokenizedAccounts(
+	k.IterateLiquidAccounts(
 		ctx,
 		func(_ []byte, accAddress sdk.AccAddress, owner common.Address, nftAddr common.Address) (stop bool) {
-			tokenizedAccounts = append(tokenizedAccounts, &types.TokenizedAccount{
-				Owner:            EVMToSDKAddress(owner).String(),
-				TokenizedAccount: accAddress.String(),
-				NftAddress:       nftAddr.Hex(),
+			liquidAccounts = append(liquidAccounts, &types.LiquidInfrastructureAccount{
+				Owner:      EVMToSDKAddress(owner).String(),
+				Account:    accAddress.String(),
+				NftAddress: nftAddr.Hex(),
 			})
 			return false
 		},
 	)
 
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to collect tokenized accounts")
+		return nil, sdkerrors.Wrap(err, "unable to collect liquid accounts")
 	}
 
-	return tokenizedAccounts, nil
+	return liquidAccounts, nil
 }
 
-// IterateTokenizedAccounts calls the provided callback `cb` on every discovered TokenizedAccount entry. Return stop=true to end iteration early.
-func (k Keeper) IterateTokenizedAccounts(ctx sdk.Context, cb func(key []byte, accAddress sdk.AccAddress, owner common.Address, nftAddress common.Address) (stop bool)) {
-	pStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.TokenizedAccountsKey)
+// IterateLiquidAccounts calls the provided callback `cb` on every discovered Liquid Infrastructure Account entry. Return stop=true to end iteration early.
+func (k Keeper) IterateLiquidAccounts(ctx sdk.Context, cb func(key []byte, accAddress sdk.AccAddress, owner common.Address, nftAddress common.Address) (stop bool)) {
+	pStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.LiquidAccountKey)
 	iterator := pStore.Iterator(nil, nil) // Iterate through all entries
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
-		accAddressBz := key[len(types.TokenizedAccountsKey):]
+		accAddressBz := key[len(types.LiquidAccountKey):]
 		accAddress := sdk.AccAddress(accAddressBz)
 		nftAddressBz := iterator.Value()
 		nftAddress := common.BytesToAddress(nftAddressBz)
-		owner, err := k.queryTokenizedAccountOwner(ctx, nftAddress)
+		owner, err := k.queryLiquidInfrastructureOwner(ctx, nftAddress)
 		if err != nil {
 			break
 		}
@@ -299,58 +298,57 @@ func (k Keeper) IterateTokenizedAccounts(ctx sdk.Context, cb func(key []byte, ac
 	}
 }
 
-// RedirectTokenizedAccountExcessBalances will check if this account is a TokenizedAccount,
-// then may funnel any excess balances to the registered TokenizedAccountNFT depending on the set thresholds
-// If no threshold is set for any coin in `changedAmounts`, its balance WILL NOT be sent to the NFT
-func (k Keeper) RedirectTokenizedAccountExcessBalances(ctx sdk.Context, account sdk.AccAddress, changedErc20s []*common.Address) error {
+// RedirectLiquidAccountExcessBalance will check if this account is a Liquid Infrastructure Account,
+// then may funnel any excess balance to the registered LiquidInfrastructureNFT depending on the set thresholds
+// If no threshold is set for `changedErc20`, its balance WILL NOT be sent to the NFT
+func (k Keeper) RedirectLiquidAccountExcessBalance(ctx sdk.Context, account sdk.AccAddress, changedErc20 common.Address) error {
 	logger := k.Logger(ctx)
-	logger.Debug("Enter RedirectTokenizedAccountExcessBalances", "receiver", account.String(), "changedBalances", changedErc20s)
-	isTokenized, nft := k.IsTokenizedAccountWithValue(ctx, account)
-	if !isTokenized {
-		logger.Debug("receiver not tokenized")
-		return nil // Do nothing for non-Tokenized Accounts
+	logger.Debug("Enter RedirectLiquidAccountExcessBalances", "receiver", account.String(), "changedBalance", changedErc20)
+	isLiquidAccount, nft := k.IsLiquidAccountWithValue(ctx, account)
+	if !isLiquidAccount {
+		logger.Debug("receiver not liquified")
+		return nil // Do nothing for non-Liquid Infrastructure Accounts
 	}
-	// If the account IS tokenized, it MUST have its NFT registered
+	// If the account IS liquified, it MUST have its NFT registered
 	if nft == nil {
-		panic("discovered nil nft address in tokenized account entry")
+		panic("discovered nil nft address in liquid account entry")
 	}
-	logger.Debug("Discovered TokenizedAccount->NFT entry", "account", account.String(), "nft", nft.Hex())
+	logger.Debug("Discovered Liquid Infrastructure Account->NFT entry", "account", account.String(), "nft", nft.Hex())
 
-	thresholds, err := k.queryTokenizedAccountThresholds(ctx, *nft)
+	thresholds, err := k.queryLiquidInfrastructureThresholds(ctx, *nft)
 	if err != nil {
-		panic(fmt.Errorf("failed to query evm for tokenized account thresholds: %s", err.Error()))
+		panic(fmt.Errorf("failed to query evm for liquid account thresholds: %s", err.Error()))
 	}
 
-	changedThresholdedErc20s := types.FindThresholdIntersection(thresholds, changedErc20s)
-	logger.Debug("Found thresholds + modified balances intersection", "thresholds", thresholds, "changedBalances", changedErc20s, "intersection", changedThresholdedErc20s)
-	var funneledAmounts []sdk.Coin
-	for _, toRedirect := range changedThresholdedErc20s {
-		pair, found := k.erc20Keeper.GetTokenPair(ctx, k.erc20Keeper.GetTokenPairID(ctx, toRedirect.Token.Hex()))
-		if !found || !pair.Enabled {
-			// This should've been checked earlier in msg_server.go
-			panic("threshold token pair does not exist or is inactive, should have been caught earlier")
-		}
-		logger.Debug("Found no pair for threshold token", "token", toRedirect.Token.Hex())
-		balance := k.bankKeeper.GetBalance(ctx, account, pair.Denom)
-		logger.Debug("Found new balance of token", "balance", balance.String())
+	var redirectedAmount sdk.Coin
+	threshold := types.FindThresholdForERC20(thresholds, changedErc20)
+	logger.Debug("Found threshold for modified balance", "threshold", threshold, "changedBalance", changedErc20)
 
-		balanceInExcess := balance.Amount.BigInt().Cmp(&toRedirect.Amount) > 0
-		logger.Debug("Checking if balance is in excess of threshold", "balance", balance.String(), "threshold", toRedirect.Amount.String(), "exceeded", balanceInExcess)
-		if balanceInExcess {
-			logger.Debug("Redirecting balance to nft", "account", account.String(), "nft", nft.Hex(), "exceeded", balanceInExcess)
-			funneled, err := k.RedirectBalanceToToken(ctx, account, *nft, balance, toRedirect.Amount)
-			if err != nil {
-				return err
-			}
-			logger.Debug("Redirected to nft", "amount", funneled.String())
-			funneledAmounts = append(funneledAmounts, *funneled)
+	pair, found := k.erc20Keeper.GetTokenPair(ctx, k.erc20Keeper.GetTokenPairID(ctx, threshold.Token.Hex()))
+	if !found || !pair.Enabled {
+		// This should've been checked earlier in msg_server.go
+		panic("threshold token pair does not exist or is inactive, should have been caught earlier")
+	}
+	logger.Debug("Found pair for threshold token", "token", threshold.Token.Hex())
+	balance := k.bankKeeper.GetBalance(ctx, account, pair.Denom)
+	logger.Debug("Found new balance of token", "balance", balance.String())
+
+	balanceInExcess := balance.Amount.BigInt().Cmp(&threshold.Amount) > 0
+	logger.Debug("Checking if balance is in excess of threshold", "balance", balance.String(), "threshold", threshold.Amount.String(), "exceeded", balanceInExcess)
+	if balanceInExcess {
+		logger.Debug("Redirecting balance to nft", "account", account.String(), "nft", nft.Hex(), "exceeded", balanceInExcess)
+		redirected, err := k.RedirectBalanceToToken(ctx, account, *nft, balance, threshold.Amount)
+		if err != nil {
+			return err
 		}
+		logger.Debug("Redirected to nft", "amount", redirected.String())
+		redirectedAmount = *redirected
 	}
 
 	logger.Debug("Emitting balance redirect event to log")
 	// Emit an event for the block's event log
 	ctx.EventManager().EmitEvent(
-		types.NewEventBalanceRedirect(account.String(), sdk.Coins(funneledAmounts)),
+		types.NewEventBalanceRedirect(account.String(), redirectedAmount),
 	)
 
 	return nil

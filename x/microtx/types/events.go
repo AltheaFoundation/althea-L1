@@ -15,41 +15,41 @@ const (
 
 	MicrotxKeySender   = "sender"
 	MicrotxKeyReceiver = "receiver"
-	MicrotxKeyAmounts  = "amounts"
+	MicrotxKeyAmount   = "amount"
 	MicrotxKeyFee      = "fee"
 
 	EventTypeBalanceRedirect = "balance-redirect"
 	RedirectKeyReceiver      = "receiver"
-	RedirectKeyAmounts       = "amounts"
+	RedirectKeyAmount        = "amount"
 
-	EventTypeTokenizedAccount = "tokenized-account"
+	EventTypeLiquify = "liquify"
 
-	TokenizedAccountKeyAccount    = "account"
-	TokenizedAccountKeyNFTAddress = "nft-address"
+	LiquifyKeyAccount    = "account"
+	LiquifyKeyNFTAddress = "nft-address"
 )
 
-func NewEventMicrotx(sender string, receiver string, amounts sdk.Coins, fees sdk.Coins) sdk.Event {
+func NewEventMicrotx(sender string, receiver string, amount sdk.Coin, fee sdk.Coin) sdk.Event {
 	return sdk.NewEvent(
 		EventTypeMicrotx,
 		sdk.NewAttribute(MicrotxKeySender, sender),
 		sdk.NewAttribute(MicrotxKeyReceiver, receiver),
-		sdk.NewAttribute(MicrotxKeyAmounts, amounts.String()),
-		sdk.NewAttribute(MicrotxKeyFee, fees.String()),
+		sdk.NewAttribute(MicrotxKeyAmount, amount.String()),
+		sdk.NewAttribute(MicrotxKeyFee, fee.String()),
 	)
 }
 
-func NewEventBalanceRedirect(receiver string, amounts sdk.Coins) sdk.Event {
+func NewEventBalanceRedirect(receiver string, amount sdk.Coin) sdk.Event {
 	return sdk.NewEvent(
 		EventTypeBalanceRedirect,
 		sdk.NewAttribute(RedirectKeyReceiver, receiver),
-		sdk.NewAttribute(RedirectKeyAmounts, amounts.String()),
+		sdk.NewAttribute(RedirectKeyAmount, amount.String()),
 	)
 }
 
-func NewEventTokenizedAccount(account string, nftAddress common.Address) sdk.Event {
+func NewEventLiquify(account string, nftAddress common.Address) sdk.Event {
 	return sdk.NewEvent(
-		EventTypeTokenizedAccount,
-		sdk.NewAttribute(TokenizedAccountKeyAccount, account),
-		sdk.NewAttribute(TokenizedAccountKeyNFTAddress, nftAddress.Hex()),
+		EventTypeLiquify,
+		sdk.NewAttribute(LiquifyKeyAccount, account),
+		sdk.NewAttribute(LiquifyKeyNFTAddress, nftAddress.Hex()),
 	)
 }

@@ -35,14 +35,14 @@ func (k Keeper) MicrotxFee(c context.Context, req *types.QueryMicrotxFeeRequest)
 	return &types.QueryMicrotxFeeResponse{FeeAmount: fee.Uint64()}, nil
 }
 
-// TokenizedAccount implements types.QueryServer.
-func (k Keeper) TokenizedAccount(c context.Context, req *types.QueryTokenizedAccountRequest) (*types.QueryTokenizedAccountResponse, error) {
+// LiquidAccount implements types.QueryServer.
+func (k Keeper) LiquidAccount(c context.Context, req *types.QueryLiquidAccountRequest) (*types.QueryLiquidAccountResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	byOwner := len(req.Owner) > 0
-	byTokenizedAccount := len(req.TokenizedAccount) > 0
-	byNFTAddress := len(req.NftAddress) > 0
+	byLiquidAccount := len(req.Account) > 0
+	byNFTAddress := len(req.Nft) > 0
 
-	if byOwner && byTokenizedAccount && byNFTAddress {
+	if byOwner && byLiquidAccount && byNFTAddress {
 		return nil, fmt.Errorf("all details already provided, not searching for account")
 	}
 
@@ -53,58 +53,58 @@ func (k Keeper) TokenizedAccount(c context.Context, req *types.QueryTokenizedAcc
 		cosmosOwner := strings.HasPrefix(req.Owner, cosmosPrefix)
 		if ethOwner && !cosmosOwner {
 			ethOwnerAddr := common.HexToAddress(req.Owner)
-			accs, err := k.GetTokenizedAccountsByEVMOwner(ctx, ethOwnerAddr)
+			accs, err := k.GetLiquidAccountsByEVMOwner(ctx, ethOwnerAddr)
 			if err != nil {
 				return nil, err
 			}
 
-			return &types.QueryTokenizedAccountResponse{Accounts: accs}, nil
+			return &types.QueryLiquidAccountResponse{Accounts: accs}, nil
 		} else if cosmosOwner && !ethOwner {
 			reqAcc, err := sdk.AccAddressFromBech32(req.Owner)
 			if err != nil {
 				return nil, err
 			}
 
-			accs, err := k.GetTokenizedAccountsByCosmosOwner(ctx, reqAcc)
+			accs, err := k.GetLiquidAccountsByCosmosOwner(ctx, reqAcc)
 			if err != nil {
 				return nil, err
 			}
 
-			return &types.QueryTokenizedAccountResponse{Accounts: accs}, nil
+			return &types.QueryLiquidAccountResponse{Accounts: accs}, nil
 		} else {
 			return nil, sdkerror.Wrapf(sdkerror.ErrInvalidAddress, "owner must start with 0x (eip-55) or %v (bech32)", cosmosPrefix)
 		}
 	}
 
-	if byTokenizedAccount {
-		reqAcc, err := sdk.AccAddressFromBech32(req.TokenizedAccount)
+	if byLiquidAccount {
+		reqAcc, err := sdk.AccAddressFromBech32(req.Account)
 		if err != nil {
 			return nil, err
 		}
-		acc, err := k.GetTokenizedAccount(ctx, reqAcc)
+		acc, err := k.GetLiquidAccount(ctx, reqAcc)
 		if err != nil {
 			return nil, err
 		}
-		return &types.QueryTokenizedAccountResponse{Accounts: []*types.TokenizedAccount{acc}}, nil
+		return &types.QueryLiquidAccountResponse{Accounts: []*types.LiquidInfrastructureAccount{acc}}, nil
 	}
 
 	if byNFTAddress {
-		nftEVMAddr := common.HexToAddress(req.NftAddress)
-		acc, err := k.GetTokenizedAccountByNFTAddress(ctx, nftEVMAddr)
+		nftEVMAddr := common.HexToAddress(req.Nft)
+		acc, err := k.GetLiquidAccountByNFTAddress(ctx, nftEVMAddr)
 		if err != nil {
 			return nil, err
 		}
-		return &types.QueryTokenizedAccountResponse{Accounts: []*types.TokenizedAccount{acc}}, nil
+		return &types.QueryLiquidAccountResponse{Accounts: []*types.LiquidInfrastructureAccount{acc}}, nil
 	}
 
 	return nil, sdkerror.ErrInvalidRequest
 }
 
-// TokenizedAccounts fetches all of the known tokenized accounts
+// LiquidAccounts fetches all of the known liquid infrastructure accounts
 // TODO: Implement pagination
-func (k Keeper) TokenizedAccounts(c context.Context, req *types.QueryTokenizedAccountsRequest) (*types.QueryTokenizedAccountsResponse, error) {
+func (k Keeper) LiquidAccounts(c context.Context, req *types.QueryLiquidAccountsRequest) (*types.QueryLiquidAccountsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	accounts, err := k.CollectTokenizedAccounts(ctx)
+	accounts, err := k.CollectLiquidAccounts(ctx)
 
-	return &types.QueryTokenizedAccountsResponse{Accounts: accounts}, err
+	return &types.QueryLiquidAccountsResponse{Accounts: accounts}, err
 }
