@@ -14,42 +14,42 @@ use web30::{
 use crate::utils::OPERATION_TIMEOUT;
 
 lazy_static! {
-    pub static ref TOKENIZED_ACCOUNT_TOKEN_ID: Uint256 = 1u8.into();
+    pub static ref LIQUID_ACCOUNT_TOKEN_ID: Uint256 = 1u8.into();
 }
 
 // ==========================================================================================================================================
-//                                                  TOKENIZED ACCOUNT CONVENIENCE FUNCTIONS
+//                                             LIQUID INFRASTRUCTURE ACCOUNT CONVENIENCE FUNCTIONS
 // ==========================================================================================================================================
 
-/// Queries the given `tokenized_account_contract` for the owner of the NFT (token id = 1), optionally querying as a given `querier` address
-/// Note: Provide a querier if the tokenized account nft contract does not have any native token, since simulated calls require gas
-pub async fn get_tokenized_account_owner(
+/// Queries the given `liquid_account_contract` for the owner of the NFT (token id = 1), optionally querying as a given `querier` address
+/// Note: Provide a querier if the liquid infrastructure account nft contract does not have any native token, since simulated calls require gas
+pub async fn get_liquid_account_owner(
     web30: &Web3,
-    tokenized_account_contract: EthAddress,
+    liquid_account_contract: EthAddress,
     querier: Option<EthAddress>,
 ) -> Result<EthAddress, Web3Error> {
     get_erc721_owner(
         web30,
-        tokenized_account_contract,
-        *TOKENIZED_ACCOUNT_TOKEN_ID,
+        liquid_account_contract,
+        *LIQUID_ACCOUNT_TOKEN_ID,
         querier,
     )
     .await
 }
 
-/// Approves `to_approve` to transfer ownership of the tokenized account at `tokenized_account_contract` controlled by `approver`
+/// Approves `to_approve` to transfer ownership of the liquid infrastructure account at `liquid_account_contract` controlled by `approver`
 /// Provide a custom timeout or None to wait ~30 seconds for the block
-pub async fn approve_tokenized_account(
+pub async fn approve_liquid_account(
     web30: &Web3,
-    tokenized_account_contract: EthAddress,
+    liquid_account_contract: EthAddress,
     approver: EthPrivateKey,
     to_approve: EthAddress,
     timeout: Option<Duration>,
 ) -> Result<TransactionResponse, Web3Error> {
     approve_erc721(
         web30,
-        tokenized_account_contract,
-        *TOKENIZED_ACCOUNT_TOKEN_ID,
+        liquid_account_contract,
+        *LIQUID_ACCOUNT_TOKEN_ID,
         approver,
         to_approve,
         timeout,
@@ -57,19 +57,19 @@ pub async fn approve_tokenized_account(
     .await
 }
 
-/// Transfers ownership of the tokenized account at `tokenized_account_contract` owned by `from` to `to`
+/// Transfers ownership of the liquid account at `liquid_account_contract` owned by `from` to `to`
 /// Provide a custom timeout or None to wait ~30 seconds for the block
-pub async fn send_tokenized_account(
+pub async fn send_liquid_account(
     web30: &Web3,
-    tokenized_account_contract: EthAddress,
+    liquid_account_contract: EthAddress,
     from: EthPrivateKey,
     to: EthAddress,
     timeout: Option<Duration>,
 ) -> Result<TransactionResponse, Web3Error> {
     send_erc721(
         web30,
-        tokenized_account_contract,
-        *TOKENIZED_ACCOUNT_TOKEN_ID,
+        liquid_account_contract,
+        *LIQUID_ACCOUNT_TOKEN_ID,
         from,
         to,
         timeout,
@@ -78,8 +78,8 @@ pub async fn send_tokenized_account(
 }
 
 #[derive(Clone, Copy, Debug)]
-// An individual threshold to control the operating balance of a single token of a tokenized account
-pub struct TokenizedAccountThreshold {
+// An individual threshold to control the operating balance of a single token of a liquid account
+pub struct LiquidInfrastructureThreshold {
     pub token: EthAddress,
     pub amount: Uint256,
 }
@@ -89,8 +89,8 @@ trait EthRepr<T> {
     fn to_eth_repr(&self) -> T;
 }
 
-// Convert a collection of TokenizedAccountThresholds into an EVM-compatible type
-impl EthRepr<(Vec<EthAddress>, Vec<Uint256>)> for Vec<TokenizedAccountThreshold> {
+// Convert a collection of LiquidAccountThresholds into an EVM-compatible type
+impl EthRepr<(Vec<EthAddress>, Vec<Uint256>)> for Vec<LiquidInfrastructureThreshold> {
     // Converts the collection of thresholds into the address[] and uint256[] collections the Ethereum ABI expects
     fn to_eth_repr(&self) -> (Vec<EthAddress>, Vec<Uint256>) {
         let mut tokens = vec![];
@@ -105,20 +105,20 @@ impl EthRepr<(Vec<EthAddress>, Vec<Uint256>)> for Vec<TokenizedAccountThreshold>
     }
 }
 
-/// Queries the given TokenizedAccountNFT's configured balance thresholds, which specify the maximum operating balance of a tokenized account
-/// Calls the TokenizedAccountNFT's `getThresholds` function
+/// Queries the given LiquidInfrastructureNFT's configured balance thresholds, which specify the maximum operating balance of a liquid account
+/// Calls the LiquidInfrastructureNFT's `getThresholds` function
 pub async fn get_thresholds(
     web30: &Web3,
-    tokenized_account_contract: EthAddress,
+    liquid_account_contract: EthAddress,
     querier: Option<EthAddress>,
-) -> Result<Vec<TokenizedAccountThreshold>, Web3Error> {
+) -> Result<Vec<LiquidInfrastructureThreshold>, Web3Error> {
     // ABI: getThresholds() public virtual view returns (address[] memory, uint256[] memory)
-    let caller = querier.unwrap_or(tokenized_account_contract);
+    let caller = querier.unwrap_or(liquid_account_contract);
 
     let payload = clarity::abi::encode_call("getThresholds()", &[])?;
     let thresholds_res = web30
         .simulate_transaction(
-            TransactionRequest::quick_tx(caller, tokenized_account_contract, payload),
+            TransactionRequest::quick_tx(caller, liquid_account_contract, payload),
             None,
         )
         .await?;
@@ -135,7 +135,7 @@ pub async fn get_thresholds(
     // 4. all elements of the address[], if any
     // 5. the length of the dynamic-encoded uint256[]
     // 6. all elements of the uint256[], if any
-    let mut decoded_thresholds: Vec<TokenizedAccountThreshold> = vec![];
+    let mut decoded_thresholds: Vec<LiquidInfrastructureThreshold> = vec![];
 
     let thresholds = thresholds_res.as_slice();
     let address_arr_head = &thresholds[0..32];
@@ -184,7 +184,7 @@ pub async fn get_thresholds(
 
         let address = EthAddress::from_slice(address_bytes).expect("Invalid address in thresholds");
         let uint256 = Uint256::from_be_bytes(uint256_bytes);
-        decoded_thresholds.push(TokenizedAccountThreshold {
+        decoded_thresholds.push(LiquidInfrastructureThreshold {
             token: address,
             amount: uint256,
         });
@@ -193,15 +193,15 @@ pub async fn get_thresholds(
     Ok(decoded_thresholds)
 }
 
-/// Specifies the given TokenizedAccountNFT's configured balance thresholds, which control the maximum operating balance of a tokenized account per token
-/// Calls the TokenizedAccountNFT's `setThresholds` function
+/// Specifies the given LiquidInfrastructureNFT's configured balance thresholds, which control the maximum operating balance of a liquid account per token
+/// Calls the LiquidInfrastructureNFT's `setThresholds` function
 /// This function is protected and only callable by the owner of the NFT or someone approved to control it
 /// Provide a custom timeout or None to wait ~30 seconds for the block
 pub async fn set_thresholds(
     web30: &Web3,
-    tokenized_account_contract: EthAddress,
+    liquid_account_contract: EthAddress,
     owner_or_approved: EthPrivateKey,
-    thresholds: Vec<TokenizedAccountThreshold>,
+    thresholds: Vec<LiquidInfrastructureThreshold>,
     timeout: Option<Duration>,
 ) -> Result<TransactionResponse, Web3Error> {
     let timeout = timeout.unwrap_or(OPERATION_TIMEOUT);
@@ -214,7 +214,7 @@ pub async fn set_thresholds(
 
     let transfer_res = web30
         .send_transaction(
-            tokenized_account_contract,
+            liquid_account_contract,
             payload,
             0u8.into(),
             owner_or_approved,
@@ -228,12 +228,12 @@ pub async fn set_thresholds(
 }
 
 /// Withdraws the redirected balances to the NFT owner
-/// Calls the TokenizedAccountNFT's `withdrawBalances` function, which will send all balances of the input ERC20 addresses to the owner of the NFT
+/// Calls the LiquidInfrastructureNFT's `withdrawBalances` function, which will send all balances of the input ERC20 addresses to the owner of the NFT
 /// This function is protected and only callable by the owner of the NFT or someone approved to control it
 /// Provide a custom timeout or None to wait ~30 seconds for the block
-pub async fn withdraw_tokenized_account_balances(
+pub async fn withdraw_liquid_account_balances(
     web30: &Web3,
-    tokenized_account_contract: EthAddress,
+    liquid_account_contract: EthAddress,
     owner_or_approved: EthPrivateKey,
     erc20s: Vec<EthAddress>,
     timeout: Option<Duration>,
@@ -244,7 +244,7 @@ pub async fn withdraw_tokenized_account_balances(
 
     let transfer_res = web30
         .send_transaction(
-            tokenized_account_contract,
+            liquid_account_contract,
             payload,
             0u8.into(),
             owner_or_approved,
@@ -258,12 +258,12 @@ pub async fn withdraw_tokenized_account_balances(
 }
 
 /// Withdraws the redirected balances to the specified address
-/// Calls the TokenizedAccountNFT's `withdrawBalancesTo` function, which will send all balances of the input ERC20 addresses to the specified address
+/// Calls the LiquidInfrastructureNFT's `withdrawBalancesTo` function, which will send all balances of the input ERC20 addresses to the specified address
 /// This function is protected and only callable by the owner of the NFT or someone approved to control it
 /// Provide a custom timeout or None to wait ~30 seconds for the block
-pub async fn withdraw_tokenized_account_balances_to(
+pub async fn withdraw_liquid_account_balances_to(
     web30: &Web3,
-    tokenized_account_contract: EthAddress,
+    liquid_account_contract: EthAddress,
     owner_or_approved: EthPrivateKey,
     withdraw_to: EthAddress,
     erc20s: Vec<EthAddress>,
@@ -278,7 +278,7 @@ pub async fn withdraw_tokenized_account_balances_to(
 
     let transfer_res = web30
         .send_transaction(
-            tokenized_account_contract,
+            liquid_account_contract,
             payload,
             0u8.into(),
             owner_or_approved,
@@ -297,7 +297,7 @@ pub async fn withdraw_tokenized_account_balances_to(
 
 /// Queries for the owner of `token_id` on the ERC721 contract at `contract_address`, optionally using a `querier` address to make the call
 /// If no querier is provided, then the `contract_address` will be used instead.
-// Note: Provide a querier if the tokenized account nft contract does not have any native token, since simulated calls require gas
+// Note: Provide a querier if the liquid account nft contract does not have any native token, since simulated calls require gas
 pub async fn get_erc721_owner(
     web30: &Web3,
     contract_address: EthAddress,

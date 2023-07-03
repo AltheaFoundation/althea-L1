@@ -309,7 +309,7 @@ pub fn create_microtx_msg_microtx(
     let send = MsgMicrotx {
         sender: sender.to_address(&ADDRESS_PREFIX).unwrap().to_string(),
         receiver: receiver.to_string(),
-        amounts: vec![amount],
+        amount: Some(amount),
     };
     Msg::new(MSG_MICROTX_TYPE_URL, send)
 }

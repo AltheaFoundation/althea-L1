@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use crate::evm_utils::{
-    get_thresholds, get_tokenized_account_owner, set_thresholds,
-    withdraw_tokenized_account_balances, TokenizedAccountThreshold,
+    get_liquid_account_owner, get_thresholds, set_thresholds, withdraw_liquid_account_balances,
+    LiquidInfrastructureThreshold,
 };
 use crate::utils::{
     execute_register_coin_proposal, get_fee, get_test_token_name, get_unregistered_coin_for_erc20,
@@ -17,7 +17,7 @@ use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::QueryDenomMetadataReq
 use althea_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
 use althea_proto::microtx::v1::query_client::QueryClient as MicrotxQueryClient;
 use althea_proto::microtx::v1::{
-    MsgTokenizeAccount, QueryTokenizedAccountRequest, TokenizedAccount,
+    LiquidInfrastructureAccount, MsgLiquify, QueryLiquidAccountRequest,
 };
 use clarity::{Address as EthAddress, Uint256};
 use deep_space::error::CosmosGrpcError;
@@ -25,19 +25,19 @@ use deep_space::{Address as CosmosAddress, Coin, Contact, Fee, Msg, PrivateKey};
 use tonic::transport::Channel;
 use web30::client::Web3;
 
-pub const MSG_TOKENIZE_ACCOUNT_TYPE_URL: &str = "/microtx.v1.MsgTokenizeAccount";
+pub const MSG_LIQUIFY_TYPE_URL: &str = "/microtx.v1.MsgLiquify";
 pub const SKIP_GOV: bool = false;
 
 /// Simulates activity of automated peer-to-peer transactions on Althea networks,
 /// asserting that the correct fees are deducted and transfers succeed
-pub async fn tokenized_accounts_test(
+pub async fn liquid_accounts_test(
     contact: &Contact,
     web3: &Web3,
     validator_keys: Vec<ValidatorKeys>,
     erc20s: Vec<EthAddress>,
     erc20_holders: Vec<EthermintUserKey>,
 ) {
-    info!("Start Tokenized Accounts test");
+    info!("Start liquid Accounts test");
     let mut bank_qc = BankQueryClient::connect(contact.get_url())
         .await
         .expect("Unable to create bank query client");
@@ -48,9 +48,9 @@ pub async fn tokenized_accounts_test(
         .await
         .expect("Unable to create microtx query client");
     let owner = get_user_key(None);
-    let to_tokenize = get_user_key(None);
+    let to_liquify = get_user_key(None);
 
-    // Fund the owner and account to tokenize
+    // Fund the owner and account to liquify
     let send_user = Coin {
         amount: one_eth() * 10u8.into(),
         denom: STAKING_TOKEN.to_string(),
@@ -58,30 +58,30 @@ pub async fn tokenized_accounts_test(
     send_funds_bulk(
         contact,
         validator_keys[0].validator_key,
-        &[to_tokenize.ethermint_address, owner.ethermint_address],
+        &[to_liquify.ethermint_address, owner.ethermint_address],
         send_user.clone(),
         Some(OPERATION_TIMEOUT),
     )
     .await
     .unwrap_or_else(|_| panic!("Could not fund test user {:?}", send_user));
 
-    let tokenize_res = tokenize_account(
+    let liquify_res = liquify_account(
         contact,
-        to_tokenize.ethermint_key,
-        to_tokenize.ethermint_address,
+        to_liquify.ethermint_key,
+        to_liquify.ethermint_address,
         None,
     )
     .await
-    .expect("Unable to tokenize account");
-    info!("Got tokenize account response:\n{}", tokenize_res.raw_log);
+    .expect("Unable to liquify account");
+    info!("Got liquify account response:\n{}", liquify_res.raw_log);
 
-    let (tokenized_account, _eth_owner) =
-        assert_correct_account(web3, &mut microtx_qc, to_tokenize.ethermint_address).await;
-    let tokenized_account_nft = EthAddress::from_str(&tokenized_account.nft_address)
+    let (liquid_account, _eth_owner) =
+        assert_correct_account(web3, &mut microtx_qc, to_liquify.ethermint_address).await;
+    let liquid_account_nft = EthAddress::from_str(&liquid_account.nft_address)
         .expect("Invalid NFT address returned from grpc");
 
     // Expect empty thresholds for the new account
-    check_thresholds(web3, tokenized_account_nft, to_tokenize.eth_address, vec![]).await;
+    check_thresholds(web3, liquid_account_nft, to_liquify.eth_address, vec![]).await;
 
     // Configure Coin -> ERC20 proposals, wait for their execution
     let registered_coin = if !SKIP_GOV {
@@ -143,30 +143,30 @@ pub async fn tokenized_accounts_test(
     let threshold_limit = 100u8.into();
     let mut new_thresholds = vec![];
     for erc20 in erc20s {
-        new_thresholds.push(TokenizedAccountThreshold {
+        new_thresholds.push(LiquidInfrastructureThreshold {
             token: erc20,
             amount: threshold_limit,
         });
     }
-    new_thresholds.push(TokenizedAccountThreshold {
+    new_thresholds.push(LiquidInfrastructureThreshold {
         token: registered_erc20,
         amount: threshold_limit,
     });
 
     set_thresholds(
         web3,
-        tokenized_account_nft,
-        to_tokenize.eth_privkey,
+        liquid_account_nft,
+        to_liquify.eth_privkey,
         new_thresholds.clone(),
         Some(OPERATION_TIMEOUT),
     )
     .await
-    .expect("Unable to set thresholds on Tokenized Account NFT");
+    .expect("Unable to set thresholds on liquid Account NFT");
 
     check_thresholds(
         web3,
-        tokenized_account_nft,
-        to_tokenize.eth_address,
+        liquid_account_nft,
+        to_liquify.eth_address,
         new_thresholds,
     )
     .await;
@@ -178,53 +178,53 @@ pub async fn tokenized_accounts_test(
         web3,
         &validator_keys,
         &erc20_holders,
-        tokenized_account,
+        liquid_account,
         registered_coin,
         registered_erc20,
         threshold_limit,
     )
     .await;
-    info!("Successfully redirected balances from a Tokenized Account to the registered NFT");
+    info!("Successfully redirected balances from a liquid Account to the registered NFT");
     // TODO: Further testing should include multiple tokens, including native EVM tokens which have become cosmos coins.
     // Thresholds should also be updated to either expand or reduce the allowable balances, excess balances would be funneled on microtx
 
     // TODO: Try calling with tokens not held by the NFT and assert transaction revert
-    // TODO: Try calling withdraw_tokenized_account_balances_to as well, make sure those balances end up in the right location
+    // TODO: Try calling withdraw_liquid_account_balances_to as well, make sure those balances end up in the right location
     let withdraw_erc20s: Vec<EthAddress> = redirected_balances.iter().map(|b| b.0).collect();
-    withdraw_tokenized_account_balances(
+    withdraw_liquid_account_balances(
         web3,
-        tokenized_account_nft,
-        to_tokenize.eth_privkey,
+        liquid_account_nft,
+        to_liquify.eth_privkey,
         withdraw_erc20s,
         None,
     )
     .await
     .expect("Unable to withdraw NFT balances");
-    assert_erc20_balances(web3, redirected_balances, to_tokenize.eth_address, None).await;
-    info!("Successfully withdrew balances from a Tokenized Account to the registered NFT");
+    assert_erc20_balances(web3, redirected_balances, to_liquify.eth_address, None).await;
+    info!("Successfully withdrew balances from a liquid Account to the registered NFT");
 
     // TODO: Change ownership of the NFT and assert the old owner has no authority, the new owner receives balances and can set thresholds
 }
 
-/// Submits a MsgTokenizeAccount which will tokenize the `to_tokenize` account
+/// Submits a MsgLiquify which will liquify the `to_liquify` account
 /// If fee is none, the minimum amount of the staking token will be used
-pub async fn tokenize_account(
+pub async fn liquify_account(
     contact: &Contact,
-    to_tokenize_key: impl PrivateKey,
-    to_tokenize: CosmosAddress,
+    to_liquify_key: impl PrivateKey,
+    to_liquify: CosmosAddress,
     fee: Option<Coin>,
 ) -> Result<TxResponse, CosmosGrpcError> {
     let fee = fee.unwrap_or_else(|| Coin {
         amount: MIN_GLOBAL_FEE_AMOUNT.into(),
         denom: STAKING_TOKEN.to_string(),
     });
-    let tokenize = MsgTokenizeAccount {
-        sender: to_tokenize.to_string(),
+    let liquify = MsgLiquify {
+        sender: to_liquify.to_string(),
     };
-    let msg = Msg::new(MSG_TOKENIZE_ACCOUNT_TYPE_URL, tokenize);
+    let msg = Msg::new(MSG_LIQUIFY_TYPE_URL, liquify);
     let msg_args = contact
         .get_message_args(
-            to_tokenize,
+            to_liquify,
             Fee {
                 amount: vec![fee],
                 gas_limit: 1_000_000,
@@ -239,7 +239,7 @@ pub async fn tokenize_account(
             None,
             msg_args,
             Some(OPERATION_TIMEOUT),
-            to_tokenize_key,
+            to_liquify_key,
         )
         .await
 }
@@ -249,28 +249,28 @@ pub async fn assert_correct_account(
     web3: &Web3,
     microtx_qc: &mut MicrotxQueryClient<Channel>,
     account_addr: CosmosAddress,
-) -> (TokenizedAccount, EthAddress) {
+) -> (LiquidInfrastructureAccount, EthAddress) {
     let ta = microtx_qc
-        .tokenized_account(QueryTokenizedAccountRequest {
-            tokenized_account: account_addr.to_string(),
+        .liquid_account(QueryLiquidAccountRequest {
+            account: account_addr.to_string(),
             ..Default::default()
         })
         .await;
-    info!("Got tokenized account: {ta:?}");
+    info!("Got liquid account: {ta:?}");
     let tas = ta.unwrap().into_inner().accounts;
     assert_eq!(tas.len(), 1);
-    let ta = tas.get(0).expect("No tokenized account?");
+    let ta = tas.get(0).expect("No liquid account?");
 
     info!("Checking owner of account: {ta:?}");
     let query_owner = CosmosAddress::from_bech32(ta.owner.clone())
-        .expect("Invalid owner address returned from Tokenized Account query");
+        .expect("Invalid owner address returned from liquid Account query");
     let reported_owner = deep_space::address::cosmos_address_to_eth_address(query_owner)
         .expect("Unable to convert owner to eip-55 address");
     let nft_address = EthAddress::from_str(&ta.nft_address)
-        .expect("Invalid nft-address returned from tokenized account query!");
-    let owner = get_tokenized_account_owner(web3, nft_address, Some(reported_owner))
+        .expect("Invalid nft-address returned from liquid account query!");
+    let owner = get_liquid_account_owner(web3, nft_address, Some(reported_owner))
         .await
-        .expect("Unable to query owner of Tokenized Account");
+        .expect("Unable to query owner of liquid Account");
     assert_eq!(owner, reported_owner);
 
     (ta.clone(), owner)
@@ -281,7 +281,7 @@ pub async fn check_thresholds(
     web3: &Web3,
     nft_address: EthAddress,
     querier: EthAddress,
-    expected_thresholds: Vec<TokenizedAccountThreshold>,
+    expected_thresholds: Vec<LiquidInfrastructureThreshold>,
 ) {
     let thresholds = get_thresholds(web3, nft_address, Some(querier))
         .await
@@ -295,7 +295,7 @@ pub async fn check_thresholds(
 }
 
 // Executes and checks the result of many microtxs, trying to accrue a balance up to and past the threshold value set earlier
-// Balances over the threshold must be sent to the nft, leaving precisely the threshold amount in the tokenized account
+// Balances over the threshold must be sent to the nft, leaving precisely the threshold amount in the liquid account
 // Received balances of tokens which are not convertible Cosmos<>EVM tokens should be rejected (we use footoken)
 // Returns the list of balances which have been redirected to the NFT
 #[allow(clippy::too_many_arguments)]
@@ -304,7 +304,7 @@ pub async fn execute_microtxs(
     web3: &Web3,
     keys: &[ValidatorKeys],
     erc20_holders: &[EthermintUserKey],
-    tokenized_account: TokenizedAccount,
+    liquid_account: LiquidInfrastructureAccount,
     registered_denom: String,
     registered_erc20: EthAddress,
     threshold_value: Uint256,
@@ -327,8 +327,8 @@ pub async fn execute_microtxs(
         denom: registered_denom.clone(),
         amount: (threshold_value - 5u8.into()),
     };
-    let destination = CosmosAddress::from_str(&tokenized_account.tokenized_account).unwrap();
-    let nft_address = EthAddress::from_str(&tokenized_account.nft_address).unwrap();
+    let destination = CosmosAddress::from_str(&liquid_account.account).unwrap();
+    let nft_address = EthAddress::from_str(&liquid_account.nft_address).unwrap();
     let querier = erc20_holders.get(0).unwrap().eth_address;
 
     // Send unregistered coin
@@ -350,7 +350,7 @@ pub async fn execute_microtxs(
         contact,
         web3,
         CosmEvmBalanceChange {
-            tokenized_account: destination,
+            liquid_account: destination,
             cosmos_denom: unregistered_coin.denom,
             cosmos_amount: zero_coin.amount,
             nft_address,
@@ -379,7 +379,7 @@ pub async fn execute_microtxs(
         contact,
         web3,
         CosmEvmBalanceChange {
-            tokenized_account: destination,
+            liquid_account: destination,
             cosmos_denom: registered_denom.clone(),
             cosmos_amount: zero_coin.amount,
             nft_address,
@@ -408,7 +408,7 @@ pub async fn execute_microtxs(
         contact,
         web3,
         CosmEvmBalanceChange {
-            tokenized_account: destination,
+            liquid_account: destination,
             cosmos_denom: registered_denom.clone(),
             cosmos_amount: min_coin.amount,
             nft_address,
@@ -437,7 +437,7 @@ pub async fn execute_microtxs(
         contact,
         web3,
         CosmEvmBalanceChange {
-            tokenized_account: destination,
+            liquid_account: destination,
             cosmos_denom: registered_denom.clone(),
             cosmos_amount: 96u32.into(),
             nft_address,
@@ -466,7 +466,7 @@ pub async fn execute_microtxs(
         contact,
         web3,
         CosmEvmBalanceChange {
-            tokenized_account: destination,
+            liquid_account: destination,
             cosmos_denom: registered_denom.clone(),
             cosmos_amount: 100u32.into(),
             nft_address,
@@ -484,7 +484,7 @@ pub async fn execute_microtxs(
 // A struct used to simplify parameters to `expect_cosmos_evm_balances()`
 #[derive(Clone, Debug)]
 struct CosmEvmBalanceChange {
-    pub tokenized_account: CosmosAddress,
+    pub liquid_account: CosmosAddress,
     pub cosmos_denom: String,
     pub cosmos_amount: Uint256,
     pub nft_address: EthAddress,
@@ -499,7 +499,7 @@ async fn expect_cosmos_evm_balances(
     querier: EthAddress,
 ) {
     let CosmEvmBalanceChange {
-        tokenized_account,
+        liquid_account,
         cosmos_denom,
         cosmos_amount,
         nft_address,
@@ -507,7 +507,7 @@ async fn expect_cosmos_evm_balances(
         erc20_amount,
     } = input;
     let cosmos_actual = contact
-        .get_balance(tokenized_account, cosmos_denom.clone())
+        .get_balance(liquid_account, cosmos_denom.clone())
         .await
         .expect("Could not get cosmos balance of token");
     assert_eq!(
