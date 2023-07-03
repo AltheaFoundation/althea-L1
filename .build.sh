@@ -38,6 +38,7 @@ for platform in ${TARGET_PLATFORMS} ; do
     fi
 
     make clean
+    make contracts
     echo Building for $(go env GOOS)/$(go env GOARCH) >&2
     GOROOT_FINAL="$(go env GOROOT)" \
     make build \

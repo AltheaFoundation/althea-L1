@@ -233,6 +233,8 @@ contracts-clean:
 
 contracts-go:
 	@echo "Formatting compiled contracts and placing in compiled-contracts"
+	@cd solidity; npm install
+	@cd solidity; npm run typechain
 	@scripts/compile-contracts-for-go.sh
 
 # Detects if the contracts must be compiled for Go, and potentially does so
@@ -242,6 +244,8 @@ contracts-go:
 contracts-auto:
 ifeq ("$(ls ${COMPILED_CONTRACTS_GO_OUTPUT})", "")
 		@echo "Compiled contracts folder is empty, compiling now"
+	    @cd solidity; npm install
+	    @cd solidity; npm run typechain
 		@scripts/compile-contracts-for-go.sh
 else
 		@echo "Detected compiled contract interfaces for Go"
