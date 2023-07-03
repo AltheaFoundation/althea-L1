@@ -28,19 +28,19 @@ var (
 	// The Microtx Module's EVM address
 	ModuleEVMAddress = common.BytesToAddress(ModuleAddress.Bytes())
 
-	// TokenizedAccountsKey is the index for all TokenizedAccounts, whose keys contain
-	// a bech32 x/auth account address and values are EVM TokenizedAccountNFT contract addresses
-	TokenizedAccountsKey = HashString("TokenizedAccounts")
+	// LiquidAccountKey is the index for all Liquid Infrastructure Accounts, whose keys contain
+	// a bech32 x/auth account address and values are EVM LiquidInfrastructureNFT contract addresses
+	LiquidAccountKey = HashString("LiquidAccount")
 )
 
-// GetTokenizedAccountKey returns the TokenizedAccount key for the given bech32 address,
-// the key's format is [ TokenizedAccountsKey | bech32 address ]
-func GetTokenizedAccountKey(address sdk.AccAddress) []byte {
-	return AppendBytes(TokenizedAccountsKey, []byte(address.String()))
+// GetLiquidAccountKey returns the LiquidAccount key for the given bech32 address,
+// the key's format is [ LiquidAccountKey | bech32 address ]
+func GetLiquidAccountKey(address sdk.AccAddress) []byte {
+	return AppendBytes(LiquidAccountKey, []byte(address.String()))
 }
 
-func GetAccountFromTokenizedAccountKey(key []byte) sdk.AccAddress {
-	accountBz := key[len(TokenizedAccountsKey):]
+func GetAccountFromLiquidAccountKey(key []byte) sdk.AccAddress {
+	accountBz := key[len(LiquidAccountKey):]
 	return sdk.AccAddress(accountBz)
 }
 

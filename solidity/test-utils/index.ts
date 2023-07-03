@@ -2,7 +2,7 @@ import { TestERC20A } from "../typechain/TestERC20A";
 import { TestERC20B } from "../typechain/TestERC20B";
 import { TestERC20C } from "../typechain/TestERC20C";
 import { ethers } from "hardhat";
-import { TokenizedAccountNFT } from "../typechain/TokenizedAccountNFT";
+import { LiquidInfrastructureNFT } from "../typechain/LiquidInfrastructureNFT";
 import { Signer } from "ethers";
 
 type DeployContractsOptions = {
@@ -23,11 +23,11 @@ export async function deployContracts(signer?: Signer | undefined) {
   return { testERC20A, testERC20B, testERC20C };
 }
 
-export async function deployTokenizedAccount(account: string) {
-  const TokenizedAccount = await ethers.getContractFactory("TokenizedAccountNFT");
-  return (await TokenizedAccount.deploy(account)) as TokenizedAccountNFT;
+export async function deployLiquidAccount(account: string) {
+  const LiquidAccount = await ethers.getContractFactory("LiquidInfrastructureNFT");
+  return (await LiquidAccount.deploy(account)) as LiquidInfrastructureNFT;
 }
 
-export async function tokenizedAccountAsNewOwner(nftAddress: string, newOwner: Signer) {
-  return await ethers.getContractAt("TokenizedAccountNFT", nftAddress, newOwner) as TokenizedAccountNFT;
+export async function liquidAccountAsNewOwner(nftAddress: string, newOwner: Signer) {
+  return await ethers.getContractAt("LiquidInfrastructureNFT", nftAddress, newOwner) as LiquidInfrastructureNFT;
 }

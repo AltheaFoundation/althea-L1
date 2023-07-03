@@ -2,15 +2,15 @@ import chai from "chai";
 import { ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
 
-import { deployContracts, deployTokenizedAccount, tokenizedAccountAsNewOwner } from "../test-utils";
+import { deployContracts, deployLiquidAccount, liquidAccountAsNewOwner } from "../test-utils";
 import { BigNumber, ContractTransaction } from "ethers";
-import { TestERC20A, TestERC20B, TestERC20C, TokenizedAccountNFT } from "../typechain";
+import { TestERC20A, TestERC20B, TestERC20C, LiquidInfrastructureNFT } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 chai.use(solidity);
 const { expect } = chai;
 
-// This test makes assertions about the TokenizedAccountNFT contract by running it on hardhat, this contract
+// This test makes assertions about the LiquidInfrastructureNFT contract by running it on hardhat, this contract
 // is part of a hybrid Cosmos implementation, so it is not possible to test the interactions with the x/microtx
 // module here. In particular, this test asserts the access control offered by OwnableApprovableERC721' modifiers
 //
@@ -25,13 +25,13 @@ async function runTest(opts: {}) {
   const toApprove = signers[2];
   console.log("deployer", deployer.address, "newOwner", newOwner.address);
 
-  // Deploy a TokenizedAccountNFT, subsequent function calls use the deployer as the message signer
+  // Deploy a LiquidInfrastructureNFT, subsequent function calls use the deployer as the message signer
   //////////////////
-  const accountAsDeployer = await deployTokenizedAccount(deployer.address);
-  // Enable calls on the TokenizedAccountNFT as the future owner
-  const accountAsNewOwner = await tokenizedAccountAsNewOwner(accountAsDeployer.address, newOwner);
+  const accountAsDeployer = await deployLiquidAccount(deployer.address);
+  // Enable calls on the LiquidInfrastructureNFT as the future owner
+  const accountAsNewOwner = await liquidAccountAsNewOwner(accountAsDeployer.address, newOwner);
   // Enable calls as an account which must be approved by the owner
-  const accountToApprove = await tokenizedAccountAsNewOwner(accountAsDeployer.address, toApprove);
+  const accountToApprove = await liquidAccountAsNewOwner(accountAsDeployer.address, toApprove);
 
   // Deploy several ERC20 tokens
   //////////////////
@@ -44,9 +44,9 @@ async function runTest(opts: {}) {
 
 // Test based on ownership changes
 async function runOwnerTests(
-  accountAsDeployer: TokenizedAccountNFT,
+  accountAsDeployer: LiquidInfrastructureNFT,
   deployer: SignerWithAddress,
-  accountAsNewOwner: TokenizedAccountNFT,
+  accountAsNewOwner: LiquidInfrastructureNFT,
   newOwner: SignerWithAddress,
   testERC20A: TestERC20A,
   testERC20B: TestERC20B,
@@ -109,11 +109,11 @@ async function runOwnerTests(
 
 // Test approving an account, along with ownership changes revoking an old approval
 async function runApprovalTests(
-  accountAsOwner: TokenizedAccountNFT, // Contract with current owner as signer
+  accountAsOwner: LiquidInfrastructureNFT, // Contract with current owner as signer
   owner: SignerWithAddress, // Current owner
-  accountAsNewOwner: TokenizedAccountNFT, // Contract with signer who will become owner
+  accountAsNewOwner: LiquidInfrastructureNFT, // Contract with signer who will become owner
   newOwner: SignerWithAddress, // Will become owner
-  accountAsToApprove: TokenizedAccountNFT, // Contract with account who will be approved by owner
+  accountAsToApprove: LiquidInfrastructureNFT, // Contract with account who will be approved by owner
   toApprove: SignerWithAddress, // Will become approved by owner
   testERC20A: TestERC20A,
   testERC20B: TestERC20B,
@@ -175,7 +175,7 @@ async function runApprovalTests(
 }
 
 // Checks that the result of setting the thresholds is successful and emits an event with the right array values in it
-// Call with the result of tokenizedaccount.setThresholds() and the passed threshold values
+// Call with the result of liquidaccount.setThresholds() and the passed threshold values
 async function checkThresholdsChangedEventArgs(tx: ContractTransaction, expectedErc20s: string[], expectedAmounts: BigNumber[]) {
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   const iface = new ethers.utils.Interface(["event ThresholdsChanged(address[] newErc20s,uint256[] newAmounts)"]);
@@ -210,12 +210,12 @@ async function sendTestERC20sToAccount(testERC20A: TestERC20A, testERC20B: TestE
   expect(await testERC20C.balanceOf(receiver)).to.equal(transferAmount.add(initialBalances.C));
 }
 
-// Withdraws `withdrawalAmount` of testERC20A and testERC20C from the TokenizedAccount to `withdrawalReceiver`,
+// Withdraws `withdrawalAmount` of testERC20A and testERC20C from the Liquid Infrastructure Account to `withdrawalReceiver`,
 // asserting events and balances change (or don't) as expected. accountBadSender is used to test access control
 // failure, while accountGoodSender is used for the happy path testing.
 async function withdrawSomeERC20sAndAssertBalances(
-  accountBadSender: TokenizedAccountNFT,
-  accountGoodSender: TokenizedAccountNFT,
+  accountBadSender: LiquidInfrastructureNFT,
+  accountGoodSender: LiquidInfrastructureNFT,
   withdrawalReceiver: string,
   withdrawalAmount: BigNumber,
   testERC20A: TestERC20A,
@@ -257,11 +257,11 @@ async function withdrawSomeERC20sAndAssertBalances(
   expect(resultantOwnerBalances.C).to.equal(initialOwnerBalances.C); // unchanged C
 }
 
-// Tests that accountBadSender is not allowed to init the recovery process for the TokenizedAccount, yet the 
+// Tests that accountBadSender is not allowed to init the recovery process for the Liquid Infrastructure Account, yet the 
 // accountGoodSender is and the correct event is emitted
 // Note that this will not trigger an actual recovery given that the ethereum provider is hardhat,
 // recovery requires EVM <-> Cosmos module interactions which happen separate from the EVM runtime
-async function testRecoveryProcessInit(accountBadSender: TokenizedAccountNFT, accountGoodSender: TokenizedAccountNFT) {
+async function testRecoveryProcessInit(accountBadSender: LiquidInfrastructureNFT, accountGoodSender: LiquidInfrastructureNFT) {
   // Reverted when not sent as current owner
   await expect(accountBadSender.recoverAccount()).to.be.reverted
 
@@ -271,7 +271,7 @@ async function testRecoveryProcessInit(accountBadSender: TokenizedAccountNFT, ac
   .emit(accountGoodSender, "TryRecover");
 }
 
-describe("TokenizedAccountNFT tests", function () {
+describe("LiquidInfrastructureNFT tests", function () {
   it("works right", async function () {
     await runTest({})
   });

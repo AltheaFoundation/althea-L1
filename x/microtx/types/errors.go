@@ -7,7 +7,7 @@ import (
 var (
 	ErrContractDeployment = sdkerrors.Register(ModuleName, 1, "contract deploy failed")
 	ErrContractCall       = sdkerrors.Register(ModuleName, 2, "contract call failed")
-	ErrNoTokenizedAccount = sdkerrors.Register(ModuleName, 3, "account is not tokenized")
-	ErrInvalidThresholds  = sdkerrors.Register(ModuleName, 4, "invalid tokenized account thresholds")
+	ErrNoLiquidAccount    = sdkerrors.Register(ModuleName, 3, "account is not a liquid infrastructure account")
+	ErrInvalidThresholds  = sdkerrors.Register(ModuleName, 4, "invalid liquid infrastructure account thresholds")
 	ErrInvalidMicrotx     = sdkerrors.Register(ModuleName, 5, "invalid microtx")
 )

@@ -11,11 +11,11 @@ var (
 )
 
 // NewMsgMicrotx returns a new MsgMicrotx
-func NewMsgMicrotx(sender string, reciever string, amounts sdk.Coins) *MsgMicrotx {
+func NewMsgMicrotx(sender string, reciever string, amount sdk.Coin) *MsgMicrotx {
 	return &MsgMicrotx{
 		sender,
 		reciever,
-		amounts,
+		amount,
 	}
 }
 
@@ -32,14 +32,12 @@ func (msg *MsgMicrotx) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.Wrap(err, "invalid receiver in microtx msg microtx")
 	}
-	for _, amt := range msg.Amounts {
-		if err := amt.Validate(); err != nil {
-			return sdkerrors.Wrap(err, "invalid coin in microtx msg microtx")
-		}
+	if err := msg.Amount.Validate(); err != nil {
+		return sdkerrors.Wrap(err, "invalid coin in microtx msg microtx")
+	}
 
-		if amt.Amount.Equal(sdk.ZeroInt()) {
-			return sdkerrors.Wrap(ErrInvalidMicrotx, "zero amount in microtx msg microtx")
-		}
+	if msg.Amount.Amount.Equal(sdk.ZeroInt()) {
+		return sdkerrors.Wrap(ErrInvalidMicrotx, "zero amount in microtx msg microtx")
 	}
 	return nil
 }
@@ -53,28 +51,28 @@ func (msg *MsgMicrotx) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{acc}
 }
 
-// NewMsgTokenizeAccount returns a new MsgTokenizeAccount
-func NewMsgTokenizeAccount(sender string) *MsgTokenizeAccount {
-	return &MsgTokenizeAccount{
+// NewMsgLiquify returns a new MsgLiquify
+func NewMsgLiquify(sender string) *MsgLiquify {
+	return &MsgLiquify{
 		sender,
 	}
 }
 
 // Route should return the name of the module
-func (msg *MsgTokenizeAccount) Route() string { return RouterKey }
+func (msg *MsgLiquify) Route() string { return RouterKey }
 
 // ValidateBasic checks for valid addresses
-func (msg *MsgTokenizeAccount) ValidateBasic() error {
+func (msg *MsgLiquify) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return sdkerrors.Wrap(err, "invalid sender in microtx msg tokenize account")
+		return sdkerrors.Wrap(err, "invalid sender in microtx msg liquify")
 	}
 
 	return nil
 }
 
 // GetSigners requires the Sender to be the signer
-func (msg *MsgTokenizeAccount) GetSigners() []sdk.AccAddress {
+func (msg *MsgLiquify) GetSigners() []sdk.AccAddress {
 	acc, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		panic(err)

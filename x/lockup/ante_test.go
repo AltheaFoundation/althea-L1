@@ -292,11 +292,11 @@ func GetAllowedMsgMicrotx(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.Ms
 	}
 	// nolint: goconst
 	toAddr := "0x1111111111111111111111111111111111111111"
-	amounts := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
+	amount := sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000))
 	return microtxtypes.MsgMicrotx{
 		Sender:   fromAddr,
 		Receiver: toAddr,
-		Amounts:  amounts,
+		Amount:   amount,
 	}
 }
 
@@ -403,10 +403,10 @@ func GetUnallowedMsgMicrotx(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.
 	}
 	// nolint: goconst
 	toAddr := "0x0000000000000000000000000000000000000000"
-	amounts := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
+	amount := sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000))
 	return microtxtypes.MsgMicrotx{
 		Sender:   fromAddr,
 		Receiver: toAddr,
-		Amounts:  amounts,
+		Amount:   amount,
 	}
 }

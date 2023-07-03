@@ -32,16 +32,16 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // MsgMicrotx A Msg used to send funds from one Althea network wallet to another,
 // via an automated device. Facilitates Liquid Infrastructure by automatically
-// redirecting funds received by Tokenized Accounts beyond configured amounts to the EVM.
+// redirecting funds received by Liquid Infrastructure beyond configured amounts to the EVM.
 // SENDER The account sending funds to receiver, must also be the signer of the
 // message
 // RECEIVER The account receiving funds from sender
 // AMOUNTS The tokens and their quantities which should be transferred, these
 // must be Cosmos coins registered as ERC20s, or the Cosmos representation of ERC20s
 type MsgMicrotx struct {
-	Sender   string       `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
-	Receiver string       `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
-	Amounts  []types.Coin `protobuf:"bytes,3,rep,name=amounts,proto3" json:"amounts"`
+	Sender   string     `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
+	Receiver string     `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
+	Amount   types.Coin `protobuf:"bytes,3,opt,name=amount,proto3" json:"amount"`
 }
 
 func (m *MsgMicrotx) Reset()         { *m = MsgMicrotx{} }
@@ -91,11 +91,11 @@ func (m *MsgMicrotx) GetReceiver() string {
 	return ""
 }
 
-func (m *MsgMicrotx) GetAmounts() []types.Coin {
+func (m *MsgMicrotx) GetAmount() types.Coin {
 	if m != nil {
-		return m.Amounts
+		return m.Amount
 	}
-	return nil
+	return types.Coin{}
 }
 
 type MsgMicrotxResponse struct {
@@ -204,11 +204,11 @@ func (m *EventMicrotx) GetFee() []types.Coin {
 	return nil
 }
 
-// A type for the block's event log recording when a TokenizedAccount has a received balance redirected to
-// its registered TokenizedAccountNFT
+// A type for the block's event log recording when a Liquid Infrastructure account
+// has a received balance redirected to its registered LiquidInfrastructureNFT
 type EventBalanceRedirect struct {
-	Account string       `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
-	Amounts []types.Coin `protobuf:"bytes,2,rep,name=amounts,proto3" json:"amounts"`
+	Account string     `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	Amount  types.Coin `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount"`
 }
 
 func (m *EventBalanceRedirect) Reset()         { *m = EventBalanceRedirect{} }
@@ -251,35 +251,35 @@ func (m *EventBalanceRedirect) GetAccount() string {
 	return ""
 }
 
-func (m *EventBalanceRedirect) GetAmounts() []types.Coin {
+func (m *EventBalanceRedirect) GetAmount() types.Coin {
 	if m != nil {
-		return m.Amounts
+		return m.Amount
 	}
-	return nil
+	return types.Coin{}
 }
 
-// Records critical information about a Tokenized Account
-// TOKENIZED_ACCOUNT The bech32 address of the tokenized account
-// OWNER The bech32 address of the account now in control of the token
-// NFT_ADDRESS The EVM address of the token contract in control of the tokenized account's excess profits
-type TokenizedAccount struct {
-	Owner            string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
-	TokenizedAccount string `protobuf:"bytes,2,opt,name=tokenized_account,json=tokenizedAccount,proto3" json:"tokenized_account,omitempty"`
-	NftAddress       string `protobuf:"bytes,3,opt,name=nft_address,json=nftAddress,proto3" json:"nft_address,omitempty"`
+// Records critical information about a Liquid Infrastructure Account
+// ACCOUNT The bech32 address of the liquid infrastructure account
+// OWNER The bech32 address of the account now in control of the liquid infrastructure
+// NFT_ADDRESS The EVM address of the token contract in control of the liquid infrastructure account's accrued profits
+type LiquidInfrastructureAccount struct {
+	Owner      string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	Account    string `protobuf:"bytes,2,opt,name=account,proto3" json:"account,omitempty"`
+	NftAddress string `protobuf:"bytes,3,opt,name=nft_address,json=nftAddress,proto3" json:"nft_address,omitempty"`
 }
 
-func (m *TokenizedAccount) Reset()         { *m = TokenizedAccount{} }
-func (m *TokenizedAccount) String() string { return proto.CompactTextString(m) }
-func (*TokenizedAccount) ProtoMessage()    {}
-func (*TokenizedAccount) Descriptor() ([]byte, []int) {
+func (m *LiquidInfrastructureAccount) Reset()         { *m = LiquidInfrastructureAccount{} }
+func (m *LiquidInfrastructureAccount) String() string { return proto.CompactTextString(m) }
+func (*LiquidInfrastructureAccount) ProtoMessage()    {}
+func (*LiquidInfrastructureAccount) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4ddee508b32d6f4e, []int{4}
 }
-func (m *TokenizedAccount) XXX_Unmarshal(b []byte) error {
+func (m *LiquidInfrastructureAccount) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *TokenizedAccount) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *LiquidInfrastructureAccount) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_TokenizedAccount.Marshal(b, m, deterministic)
+		return xxx_messageInfo_LiquidInfrastructureAccount.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -289,60 +289,61 @@ func (m *TokenizedAccount) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-func (m *TokenizedAccount) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TokenizedAccount.Merge(m, src)
+func (m *LiquidInfrastructureAccount) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LiquidInfrastructureAccount.Merge(m, src)
 }
-func (m *TokenizedAccount) XXX_Size() int {
+func (m *LiquidInfrastructureAccount) XXX_Size() int {
 	return m.Size()
 }
-func (m *TokenizedAccount) XXX_DiscardUnknown() {
-	xxx_messageInfo_TokenizedAccount.DiscardUnknown(m)
+func (m *LiquidInfrastructureAccount) XXX_DiscardUnknown() {
+	xxx_messageInfo_LiquidInfrastructureAccount.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_TokenizedAccount proto.InternalMessageInfo
+var xxx_messageInfo_LiquidInfrastructureAccount proto.InternalMessageInfo
 
-func (m *TokenizedAccount) GetOwner() string {
+func (m *LiquidInfrastructureAccount) GetOwner() string {
 	if m != nil {
 		return m.Owner
 	}
 	return ""
 }
 
-func (m *TokenizedAccount) GetTokenizedAccount() string {
+func (m *LiquidInfrastructureAccount) GetAccount() string {
 	if m != nil {
-		return m.TokenizedAccount
+		return m.Account
 	}
 	return ""
 }
 
-func (m *TokenizedAccount) GetNftAddress() string {
+func (m *LiquidInfrastructureAccount) GetNftAddress() string {
 	if m != nil {
 		return m.NftAddress
 	}
 	return ""
 }
 
-// MsgTokenizeAccount A Msg meant to convert a wallet into a piece of Liquid Infrastructure,
-// by creating a NonFungibleToken within the Althea L1 EVM which will control all balances
-// held by the Tokenized Account (beyond a configurable threshold). The tokenized account itself
-// will be the initial owner of the NFT, and must transfer control through the EVM NFT contract
-// SENDER The bech32 address of the account to tokenize, must also be the signer of the message
-type MsgTokenizeAccount struct {
+// MsgLiquify Converts the sender's account into a piece of Liquid Infrastructure,
+// by creating a Non-fungible Token (NFT) within the Althea L1 EVM which will control all balances
+// held by the Liquid Infrastructure Account (beyond a configurable threshold).
+// The liquid infrastructure account itself will be the initial owner of the NFT,
+// and must transfer control through the EVM NFT contract
+// SENDER The bech32 address of the account to liquify, must also be the signer of the message
+type MsgLiquify struct {
 	Sender string `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
 }
 
-func (m *MsgTokenizeAccount) Reset()         { *m = MsgTokenizeAccount{} }
-func (m *MsgTokenizeAccount) String() string { return proto.CompactTextString(m) }
-func (*MsgTokenizeAccount) ProtoMessage()    {}
-func (*MsgTokenizeAccount) Descriptor() ([]byte, []int) {
+func (m *MsgLiquify) Reset()         { *m = MsgLiquify{} }
+func (m *MsgLiquify) String() string { return proto.CompactTextString(m) }
+func (*MsgLiquify) ProtoMessage()    {}
+func (*MsgLiquify) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4ddee508b32d6f4e, []int{5}
 }
-func (m *MsgTokenizeAccount) XXX_Unmarshal(b []byte) error {
+func (m *MsgLiquify) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgTokenizeAccount) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgLiquify) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgTokenizeAccount.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgLiquify.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -352,42 +353,42 @@ func (m *MsgTokenizeAccount) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *MsgTokenizeAccount) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgTokenizeAccount.Merge(m, src)
+func (m *MsgLiquify) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgLiquify.Merge(m, src)
 }
-func (m *MsgTokenizeAccount) XXX_Size() int {
+func (m *MsgLiquify) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgTokenizeAccount) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgTokenizeAccount.DiscardUnknown(m)
+func (m *MsgLiquify) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgLiquify.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgTokenizeAccount proto.InternalMessageInfo
+var xxx_messageInfo_MsgLiquify proto.InternalMessageInfo
 
-func (m *MsgTokenizeAccount) GetSender() string {
+func (m *MsgLiquify) GetSender() string {
 	if m != nil {
 		return m.Sender
 	}
 	return ""
 }
 
-// MsgTokenizeAccountResponse potentially returns useful information from the tokenization of an account
-type MsgTokenizeAccountResponse struct {
-	Account *TokenizedAccount `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+// MsgLiquifyResponse potentially returns useful information from the liquification of an account
+type MsgLiquifyResponse struct {
+	Account *LiquidInfrastructureAccount `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
 }
 
-func (m *MsgTokenizeAccountResponse) Reset()         { *m = MsgTokenizeAccountResponse{} }
-func (m *MsgTokenizeAccountResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgTokenizeAccountResponse) ProtoMessage()    {}
-func (*MsgTokenizeAccountResponse) Descriptor() ([]byte, []int) {
+func (m *MsgLiquifyResponse) Reset()         { *m = MsgLiquifyResponse{} }
+func (m *MsgLiquifyResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgLiquifyResponse) ProtoMessage()    {}
+func (*MsgLiquifyResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4ddee508b32d6f4e, []int{6}
 }
-func (m *MsgTokenizeAccountResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgLiquifyResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgTokenizeAccountResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgLiquifyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgTokenizeAccountResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgLiquifyResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -397,44 +398,44 @@ func (m *MsgTokenizeAccountResponse) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *MsgTokenizeAccountResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgTokenizeAccountResponse.Merge(m, src)
+func (m *MsgLiquifyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgLiquifyResponse.Merge(m, src)
 }
-func (m *MsgTokenizeAccountResponse) XXX_Size() int {
+func (m *MsgLiquifyResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgTokenizeAccountResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgTokenizeAccountResponse.DiscardUnknown(m)
+func (m *MsgLiquifyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgLiquifyResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgTokenizeAccountResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgLiquifyResponse proto.InternalMessageInfo
 
-func (m *MsgTokenizeAccountResponse) GetAccount() *TokenizedAccount {
+func (m *MsgLiquifyResponse) GetAccount() *LiquidInfrastructureAccount {
 	if m != nil {
 		return m.Account
 	}
 	return nil
 }
 
-// A type for the block's event log, every successful TokenizeAccount must create one of
+// A type for the block's event log, every successful MsgLiquify must create one of
 // these in the event log
-type EventAccountTokenized struct {
+type EventAccountLiquified struct {
 	Owned      string `protobuf:"bytes,1,opt,name=owned,proto3" json:"owned,omitempty"`
 	NftAddress string `protobuf:"bytes,2,opt,name=nft_address,json=nftAddress,proto3" json:"nft_address,omitempty"`
 }
 
-func (m *EventAccountTokenized) Reset()         { *m = EventAccountTokenized{} }
-func (m *EventAccountTokenized) String() string { return proto.CompactTextString(m) }
-func (*EventAccountTokenized) ProtoMessage()    {}
-func (*EventAccountTokenized) Descriptor() ([]byte, []int) {
+func (m *EventAccountLiquified) Reset()         { *m = EventAccountLiquified{} }
+func (m *EventAccountLiquified) String() string { return proto.CompactTextString(m) }
+func (*EventAccountLiquified) ProtoMessage()    {}
+func (*EventAccountLiquified) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4ddee508b32d6f4e, []int{7}
 }
-func (m *EventAccountTokenized) XXX_Unmarshal(b []byte) error {
+func (m *EventAccountLiquified) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *EventAccountTokenized) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *EventAccountLiquified) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_EventAccountTokenized.Marshal(b, m, deterministic)
+		return xxx_messageInfo_EventAccountLiquified.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -444,26 +445,26 @@ func (m *EventAccountTokenized) XXX_Marshal(b []byte, deterministic bool) ([]byt
 		return b[:n], nil
 	}
 }
-func (m *EventAccountTokenized) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EventAccountTokenized.Merge(m, src)
+func (m *EventAccountLiquified) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EventAccountLiquified.Merge(m, src)
 }
-func (m *EventAccountTokenized) XXX_Size() int {
+func (m *EventAccountLiquified) XXX_Size() int {
 	return m.Size()
 }
-func (m *EventAccountTokenized) XXX_DiscardUnknown() {
-	xxx_messageInfo_EventAccountTokenized.DiscardUnknown(m)
+func (m *EventAccountLiquified) XXX_DiscardUnknown() {
+	xxx_messageInfo_EventAccountLiquified.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_EventAccountTokenized proto.InternalMessageInfo
+var xxx_messageInfo_EventAccountLiquified proto.InternalMessageInfo
 
-func (m *EventAccountTokenized) GetOwned() string {
+func (m *EventAccountLiquified) GetOwned() string {
 	if m != nil {
 		return m.Owned
 	}
 	return ""
 }
 
-func (m *EventAccountTokenized) GetNftAddress() string {
+func (m *EventAccountLiquified) GetNftAddress() string {
 	if m != nil {
 		return m.NftAddress
 	}
@@ -475,50 +476,50 @@ func init() {
 	proto.RegisterType((*MsgMicrotxResponse)(nil), "microtx.v1.MsgMicrotxResponse")
 	proto.RegisterType((*EventMicrotx)(nil), "microtx.v1.EventMicrotx")
 	proto.RegisterType((*EventBalanceRedirect)(nil), "microtx.v1.EventBalanceRedirect")
-	proto.RegisterType((*TokenizedAccount)(nil), "microtx.v1.TokenizedAccount")
-	proto.RegisterType((*MsgTokenizeAccount)(nil), "microtx.v1.MsgTokenizeAccount")
-	proto.RegisterType((*MsgTokenizeAccountResponse)(nil), "microtx.v1.MsgTokenizeAccountResponse")
-	proto.RegisterType((*EventAccountTokenized)(nil), "microtx.v1.EventAccountTokenized")
+	proto.RegisterType((*LiquidInfrastructureAccount)(nil), "microtx.v1.LiquidInfrastructureAccount")
+	proto.RegisterType((*MsgLiquify)(nil), "microtx.v1.MsgLiquify")
+	proto.RegisterType((*MsgLiquifyResponse)(nil), "microtx.v1.MsgLiquifyResponse")
+	proto.RegisterType((*EventAccountLiquified)(nil), "microtx.v1.EventAccountLiquified")
 }
 
 func init() { proto.RegisterFile("microtx/v1/msgs.proto", fileDescriptor_4ddee508b32d6f4e) }
 
 var fileDescriptor_4ddee508b32d6f4e = []byte{
-	// 530 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x54, 0xcd, 0x8a, 0x13, 0x41,
-	0x10, 0xce, 0x24, 0xeb, 0x46, 0x2b, 0x82, 0xeb, 0x98, 0x48, 0x1c, 0xc3, 0xec, 0x32, 0x88, 0x2c,
-	0xa8, 0xd3, 0x24, 0x82, 0xe0, 0x71, 0x23, 0xde, 0x8c, 0x87, 0xb0, 0x27, 0x0f, 0x2e, 0x9d, 0x9e,
-	0xca, 0xa4, 0xd9, 0xa4, 0x3b, 0x4c, 0xf7, 0x8e, 0xab, 0x1e, 0x04, 0x9f, 0x40, 0xf0, 0x45, 0x7c,
-	0x8c, 0x3d, 0x2e, 0x78, 0xf1, 0x24, 0x92, 0x88, 0xcf, 0x21, 0xf3, 0xd3, 0x93, 0x71, 0xfc, 0x41,
-	0x4f, 0xde, 0xba, 0xaa, 0xbe, 0xfe, 0xea, 0xeb, 0xaf, 0x6a, 0x06, 0x3a, 0x0b, 0xce, 0x22, 0xa9,
-	0x4f, 0x49, 0xdc, 0x27, 0x0b, 0x15, 0x2a, 0x7f, 0x19, 0x49, 0x2d, 0x6d, 0xc8, 0xd3, 0x7e, 0xdc,
-	0x77, 0x5c, 0x26, 0xd5, 0x42, 0x2a, 0x32, 0xa1, 0x0a, 0x49, 0xdc, 0x9f, 0xa0, 0xa6, 0x7d, 0xc2,
-	0x24, 0x17, 0x19, 0xd6, 0x69, 0x87, 0x32, 0x94, 0xe9, 0x91, 0x24, 0xa7, 0x3c, 0xdb, 0x0b, 0xa5,
-	0x0c, 0xe7, 0x48, 0xe8, 0x92, 0x13, 0x2a, 0x84, 0xd4, 0x54, 0x73, 0x29, 0x72, 0x7e, 0xef, 0x35,
-	0xc0, 0x48, 0x85, 0xa3, 0xac, 0x89, 0x7d, 0x1d, 0xb6, 0x15, 0x8a, 0x00, 0xa3, 0xae, 0xb5, 0x67,
-	0xed, 0x5f, 0x1a, 0xe7, 0x91, 0xed, 0xc0, 0xc5, 0x08, 0x19, 0xf2, 0x18, 0xa3, 0x6e, 0x3d, 0xad,
-	0x14, 0xb1, 0xfd, 0x10, 0x9a, 0x74, 0x21, 0x4f, 0x84, 0x56, 0xdd, 0xc6, 0x5e, 0x63, 0xbf, 0x35,
-	0xb8, 0xe1, 0x67, 0x3a, 0xfd, 0x44, 0xa7, 0x9f, 0xeb, 0xf4, 0x1f, 0x49, 0x2e, 0x86, 0x5b, 0x67,
-	0x9f, 0x77, 0x6b, 0x63, 0x83, 0xf7, 0xda, 0x60, 0x6f, 0x9a, 0x8f, 0x51, 0x2d, 0xa5, 0x50, 0xe8,
-	0x7d, 0xb0, 0xe0, 0xf2, 0xe3, 0x18, 0x85, 0xfe, 0x3f, 0xaa, 0xec, 0x3e, 0x34, 0xa6, 0x88, 0xdd,
-	0xad, 0xbf, 0xbb, 0x96, 0x60, 0xbd, 0x63, 0x68, 0xa7, 0x8a, 0x87, 0x74, 0x4e, 0x05, 0xc3, 0x31,
-	0x06, 0x3c, 0x42, 0xa6, 0xed, 0x2e, 0x34, 0x29, 0x63, 0x09, 0x6d, 0x2e, 0xdd, 0x84, 0x65, 0x7d,
-	0xf5, 0x7f, 0x74, 0x2d, 0x86, 0x9d, 0x43, 0x79, 0x8c, 0x82, 0xbf, 0xc2, 0xe0, 0x20, 0xa7, 0x6b,
-	0xc3, 0x05, 0xf9, 0x42, 0x14, 0x0e, 0x65, 0x81, 0x7d, 0x07, 0xae, 0x6a, 0x83, 0x3c, 0x32, 0x42,
-	0x32, 0xa7, 0x76, 0x74, 0x95, 0x62, 0x17, 0x5a, 0x62, 0xaa, 0x8f, 0x68, 0x10, 0x44, 0xa8, 0x12,
-	0xd7, 0x12, 0x18, 0x88, 0xa9, 0x3e, 0xc8, 0x32, 0xde, 0xdd, 0x74, 0x5a, 0xa6, 0xb5, 0xb9, 0xf6,
-	0x9b, 0xe1, 0x78, 0x87, 0xe0, 0xfc, 0x8c, 0x36, 0x33, 0xb6, 0x1f, 0xfc, 0x68, 0x4c, 0x6b, 0xd0,
-	0xf3, 0x37, 0x8b, 0xee, 0x57, 0x9f, 0x57, 0xd8, 0xe6, 0x3d, 0x85, 0x4e, 0x6a, 0x74, 0x5e, 0x28,
-	0x80, 0xc6, 0x80, 0xa0, 0x6c, 0x40, 0x50, 0x7d, 0x53, 0xbd, 0xfa, 0xa6, 0xc1, 0x37, 0x0b, 0x1a,
-	0x23, 0x15, 0xda, 0xcf, 0xa1, 0x59, 0x6c, 0x5b, 0x59, 0xc9, 0x66, 0x3d, 0x1d, 0xf7, 0xd7, 0xf9,
-	0x62, 0x6d, 0x6f, 0xbe, 0xfd, 0xf8, 0xf5, 0x7d, 0xbd, 0xe3, 0x5d, 0x23, 0xe5, 0x2f, 0x39, 0x27,
-	0x7d, 0x03, 0x57, 0xaa, 0xc6, 0x55, 0xf9, 0x2a, 0x75, 0xe7, 0xf6, 0x9f, 0xeb, 0x45, 0xdf, 0x5b,
-	0x69, 0x5f, 0xd7, 0xeb, 0x95, 0xfb, 0x9a, 0xe9, 0x9a, 0xa9, 0x0f, 0x9f, 0x9c, 0xad, 0x5c, 0xeb,
-	0x7c, 0xe5, 0x5a, 0x5f, 0x56, 0xae, 0xf5, 0x6e, 0xed, 0xd6, 0xce, 0xd7, 0x6e, 0xed, 0xd3, 0xda,
-	0xad, 0x3d, 0x1b, 0x84, 0x5c, 0xcf, 0x4e, 0x26, 0x3e, 0x93, 0x0b, 0x42, 0xe7, 0x7a, 0x86, 0xf4,
-	0x9e, 0x40, 0x6d, 0x8e, 0x6c, 0x46, 0xb9, 0x20, 0xa7, 0x05, 0xb7, 0x7e, 0xb9, 0x44, 0x35, 0xd9,
-	0x4e, 0x7f, 0x1e, 0xf7, 0xbf, 0x07, 0x00, 0x00, 0xff, 0xff, 0xb2, 0xe3, 0x2c, 0x8f, 0xb5, 0x04,
-	0x00, 0x00,
+	// 531 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0xc1, 0x8e, 0x12, 0x41,
+	0x10, 0x65, 0x60, 0x05, 0xb7, 0xf0, 0x34, 0x82, 0x19, 0x59, 0x33, 0x4b, 0x26, 0x26, 0xee, 0xc5,
+	0xe9, 0x80, 0x07, 0xe3, 0x11, 0x8c, 0x07, 0x93, 0xc5, 0x03, 0x17, 0x13, 0x0f, 0x6b, 0x9a, 0x9e,
+	0x62, 0xe8, 0x04, 0xba, 0xb1, 0xbb, 0xc1, 0xe5, 0xea, 0x17, 0x98, 0xf8, 0x23, 0xfe, 0x84, 0xc9,
+	0x1e, 0x37, 0xf1, 0xe2, 0xc9, 0x18, 0xf0, 0x43, 0x0c, 0x3d, 0xcd, 0xc0, 0xe2, 0x6a, 0xd6, 0x78,
+	0xab, 0xaa, 0x2e, 0x5e, 0xbd, 0xf7, 0xaa, 0x18, 0xa8, 0x4f, 0x38, 0x53, 0xd2, 0x9c, 0x93, 0x79,
+	0x8b, 0x4c, 0x74, 0xaa, 0xe3, 0xa9, 0x92, 0x46, 0xfa, 0xe0, 0xca, 0xf1, 0xbc, 0xd5, 0x08, 0x99,
+	0xd4, 0x13, 0xa9, 0xc9, 0x80, 0x6a, 0x24, 0xf3, 0xd6, 0x00, 0x0d, 0x6d, 0x11, 0x26, 0xb9, 0xc8,
+	0x7a, 0x1b, 0xb5, 0x54, 0xa6, 0xd2, 0x86, 0x64, 0x1d, 0xb9, 0xea, 0x83, 0x54, 0xca, 0x74, 0x8c,
+	0x84, 0x4e, 0x39, 0xa1, 0x42, 0x48, 0x43, 0x0d, 0x97, 0xc2, 0xe1, 0x47, 0x0b, 0x80, 0x9e, 0x4e,
+	0x7b, 0xd9, 0x10, 0xff, 0x1e, 0x94, 0x35, 0x8a, 0x04, 0x55, 0xe0, 0x35, 0xbd, 0x93, 0xc3, 0xbe,
+	0xcb, 0xfc, 0x06, 0xdc, 0x56, 0xc8, 0x90, 0xcf, 0x51, 0x05, 0x45, 0xfb, 0x92, 0xe7, 0xfe, 0x53,
+	0x28, 0xd3, 0x89, 0x9c, 0x09, 0x13, 0x94, 0x9a, 0xde, 0x49, 0xb5, 0x7d, 0x3f, 0xce, 0x68, 0xc6,
+	0x6b, 0x9a, 0xb1, 0xa3, 0x19, 0x3f, 0x97, 0x5c, 0x74, 0x0f, 0x2e, 0xbe, 0x1f, 0x17, 0xfa, 0xae,
+	0x3d, 0xaa, 0x81, 0xbf, 0x1d, 0xdd, 0x47, 0x3d, 0x95, 0x42, 0x63, 0xf4, 0xd9, 0x83, 0x3b, 0x2f,
+	0xe6, 0x28, 0xcc, 0xff, 0x70, 0x7a, 0x06, 0x95, 0x6c, 0x88, 0x0e, 0x4a, 0xcd, 0xd2, 0x4d, 0x48,
+	0x6d, 0xfa, 0xfd, 0x16, 0x94, 0x86, 0x88, 0xc1, 0xc1, 0xcd, 0x7e, 0xb6, 0xee, 0x8d, 0x38, 0xd4,
+	0x2c, 0xe3, 0x2e, 0x1d, 0x53, 0xc1, 0xb0, 0x8f, 0x09, 0x57, 0xc8, 0x8c, 0x1f, 0x40, 0x85, 0x32,
+	0x66, 0xad, 0xc9, 0xa8, 0x6f, 0xd2, 0x1d, 0xcf, 0x8a, 0xff, 0xe6, 0x99, 0x80, 0xa3, 0x53, 0xfe,
+	0x6e, 0xc6, 0x93, 0x97, 0x62, 0xa8, 0xa8, 0x36, 0x6a, 0xc6, 0xcc, 0x4c, 0x61, 0xc7, 0xe1, 0xd6,
+	0xe0, 0x96, 0x7c, 0x2f, 0x72, 0xab, 0xb2, 0x64, 0x97, 0x47, 0xf1, 0x2a, 0x8f, 0x63, 0xa8, 0x8a,
+	0xa1, 0x79, 0x4b, 0x93, 0x44, 0xa1, 0xd6, 0x76, 0x81, 0x87, 0x7d, 0x10, 0x43, 0xd3, 0xc9, 0x2a,
+	0xd1, 0x43, 0x7b, 0x1e, 0x76, 0xe4, 0x70, 0xf1, 0xa7, 0x55, 0x44, 0xaf, 0xed, 0x26, 0x5d, 0xd7,
+	0x66, 0x93, 0x7e, 0xe7, 0xaa, 0xfc, 0x6a, 0xfb, 0x51, 0xbc, 0x3d, 0xe6, 0xf8, 0x2f, 0x32, 0x72,
+	0x7e, 0xd1, 0x2b, 0xa8, 0x5b, 0x67, 0xdd, 0x43, 0x36, 0x81, 0x63, 0xb2, 0x11, 0x9a, 0xec, 0x0a,
+	0x4d, 0xf6, 0xe5, 0x14, 0xf7, 0xe5, 0xb4, 0xbf, 0x78, 0x50, 0xea, 0xe9, 0xd4, 0x3f, 0x83, 0x4a,
+	0x7e, 0x5e, 0xbb, 0xa4, 0xb6, 0xf7, 0xd8, 0x08, 0xaf, 0xaf, 0xe7, 0x77, 0x7a, 0xf4, 0xe1, 0xeb,
+	0xcf, 0x4f, 0xc5, 0x7a, 0x74, 0x97, 0xec, 0xfe, 0x71, 0x1d, 0xe8, 0x19, 0x54, 0x72, 0xcf, 0xf6,
+	0x70, 0x5c, 0xfd, 0x37, 0xfc, 0x3d, 0xf7, 0xae, 0xc7, 0x1f, 0x67, 0x4d, 0xdd, 0xd3, 0x8b, 0x65,
+	0xe8, 0x5d, 0x2e, 0x43, 0xef, 0xc7, 0x32, 0xf4, 0x3e, 0xae, 0xc2, 0xc2, 0xe5, 0x2a, 0x2c, 0x7c,
+	0x5b, 0x85, 0x85, 0x37, 0xed, 0x94, 0x9b, 0xd1, 0x6c, 0x10, 0x33, 0x39, 0x21, 0x74, 0x6c, 0x46,
+	0x48, 0x1f, 0x0b, 0x34, 0x9b, 0x90, 0x8d, 0x28, 0x17, 0xe4, 0x3c, 0x87, 0x34, 0x8b, 0x29, 0xea,
+	0x41, 0xd9, 0x7e, 0x0a, 0x9e, 0xfc, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x72, 0x3c, 0x9e, 0x70, 0x83,
+	0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -535,8 +536,8 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// The Microtx service handles payments to Althea accounts
 	Microtx(ctx context.Context, in *MsgMicrotx, opts ...grpc.CallOption) (*MsgMicrotxResponse, error)
-	// The TokenizeAccount service converts a wallet into a piece of Liquid Infrastructure
-	TokenizeAccount(ctx context.Context, in *MsgTokenizeAccount, opts ...grpc.CallOption) (*MsgTokenizeAccountResponse, error)
+	// The Liquify service converts an account into a piece of Liquid Infrastructure
+	Liquify(ctx context.Context, in *MsgLiquify, opts ...grpc.CallOption) (*MsgLiquifyResponse, error)
 }
 
 type msgClient struct {
@@ -556,9 +557,9 @@ func (c *msgClient) Microtx(ctx context.Context, in *MsgMicrotx, opts ...grpc.Ca
 	return out, nil
 }
 
-func (c *msgClient) TokenizeAccount(ctx context.Context, in *MsgTokenizeAccount, opts ...grpc.CallOption) (*MsgTokenizeAccountResponse, error) {
-	out := new(MsgTokenizeAccountResponse)
-	err := c.cc.Invoke(ctx, "/microtx.v1.Msg/TokenizeAccount", in, out, opts...)
+func (c *msgClient) Liquify(ctx context.Context, in *MsgLiquify, opts ...grpc.CallOption) (*MsgLiquifyResponse, error) {
+	out := new(MsgLiquifyResponse)
+	err := c.cc.Invoke(ctx, "/microtx.v1.Msg/Liquify", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -569,8 +570,8 @@ func (c *msgClient) TokenizeAccount(ctx context.Context, in *MsgTokenizeAccount,
 type MsgServer interface {
 	// The Microtx service handles payments to Althea accounts
 	Microtx(context.Context, *MsgMicrotx) (*MsgMicrotxResponse, error)
-	// The TokenizeAccount service converts a wallet into a piece of Liquid Infrastructure
-	TokenizeAccount(context.Context, *MsgTokenizeAccount) (*MsgTokenizeAccountResponse, error)
+	// The Liquify service converts an account into a piece of Liquid Infrastructure
+	Liquify(context.Context, *MsgLiquify) (*MsgLiquifyResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -580,8 +581,8 @@ type UnimplementedMsgServer struct {
 func (*UnimplementedMsgServer) Microtx(ctx context.Context, req *MsgMicrotx) (*MsgMicrotxResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Microtx not implemented")
 }
-func (*UnimplementedMsgServer) TokenizeAccount(ctx context.Context, req *MsgTokenizeAccount) (*MsgTokenizeAccountResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TokenizeAccount not implemented")
+func (*UnimplementedMsgServer) Liquify(ctx context.Context, req *MsgLiquify) (*MsgLiquifyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Liquify not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -606,20 +607,20 @@ func _Msg_Microtx_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_TokenizeAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgTokenizeAccount)
+func _Msg_Liquify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgLiquify)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).TokenizeAccount(ctx, in)
+		return srv.(MsgServer).Liquify(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/microtx.v1.Msg/TokenizeAccount",
+		FullMethod: "/microtx.v1.Msg/Liquify",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).TokenizeAccount(ctx, req.(*MsgTokenizeAccount))
+		return srv.(MsgServer).Liquify(ctx, req.(*MsgLiquify))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -633,8 +634,8 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Msg_Microtx_Handler,
 		},
 		{
-			MethodName: "TokenizeAccount",
-			Handler:    _Msg_TokenizeAccount_Handler,
+			MethodName: "Liquify",
+			Handler:    _Msg_Liquify_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -661,20 +662,16 @@ func (m *MsgMicrotx) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Amounts) > 0 {
-		for iNdEx := len(m.Amounts) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Amounts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintMsgs(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
+	{
+		size, err := m.Amount.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
+		i -= size
+		i = encodeVarintMsgs(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0x1a
 	if len(m.Receiver) > 0 {
 		i -= len(m.Receiver)
 		copy(dAtA[i:], m.Receiver)
@@ -800,20 +797,16 @@ func (m *EventBalanceRedirect) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Amounts) > 0 {
-		for iNdEx := len(m.Amounts) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Amounts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintMsgs(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
+	{
+		size, err := m.Amount.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
+		i -= size
+		i = encodeVarintMsgs(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0x12
 	if len(m.Account) > 0 {
 		i -= len(m.Account)
 		copy(dAtA[i:], m.Account)
@@ -824,7 +817,7 @@ func (m *EventBalanceRedirect) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *TokenizedAccount) Marshal() (dAtA []byte, err error) {
+func (m *LiquidInfrastructureAccount) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -834,12 +827,12 @@ func (m *TokenizedAccount) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *TokenizedAccount) MarshalTo(dAtA []byte) (int, error) {
+func (m *LiquidInfrastructureAccount) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *TokenizedAccount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *LiquidInfrastructureAccount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -851,10 +844,10 @@ func (m *TokenizedAccount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x1a
 	}
-	if len(m.TokenizedAccount) > 0 {
-		i -= len(m.TokenizedAccount)
-		copy(dAtA[i:], m.TokenizedAccount)
-		i = encodeVarintMsgs(dAtA, i, uint64(len(m.TokenizedAccount)))
+	if len(m.Account) > 0 {
+		i -= len(m.Account)
+		copy(dAtA[i:], m.Account)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.Account)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -868,7 +861,7 @@ func (m *TokenizedAccount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgTokenizeAccount) Marshal() (dAtA []byte, err error) {
+func (m *MsgLiquify) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -878,12 +871,12 @@ func (m *MsgTokenizeAccount) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgTokenizeAccount) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgLiquify) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgTokenizeAccount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgLiquify) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -898,7 +891,7 @@ func (m *MsgTokenizeAccount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgTokenizeAccountResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgLiquifyResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -908,12 +901,12 @@ func (m *MsgTokenizeAccountResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgTokenizeAccountResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgLiquifyResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgTokenizeAccountResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgLiquifyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -933,7 +926,7 @@ func (m *MsgTokenizeAccountResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *EventAccountTokenized) Marshal() (dAtA []byte, err error) {
+func (m *EventAccountLiquified) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -943,12 +936,12 @@ func (m *EventAccountTokenized) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EventAccountTokenized) MarshalTo(dAtA []byte) (int, error) {
+func (m *EventAccountLiquified) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *EventAccountTokenized) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *EventAccountLiquified) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -995,12 +988,8 @@ func (m *MsgMicrotx) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovMsgs(uint64(l))
 	}
-	if len(m.Amounts) > 0 {
-		for _, e := range m.Amounts {
-			l = e.Size()
-			n += 1 + l + sovMsgs(uint64(l))
-		}
-	}
+	l = m.Amount.Size()
+	n += 1 + l + sovMsgs(uint64(l))
 	return n
 }
 
@@ -1052,16 +1041,12 @@ func (m *EventBalanceRedirect) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovMsgs(uint64(l))
 	}
-	if len(m.Amounts) > 0 {
-		for _, e := range m.Amounts {
-			l = e.Size()
-			n += 1 + l + sovMsgs(uint64(l))
-		}
-	}
+	l = m.Amount.Size()
+	n += 1 + l + sovMsgs(uint64(l))
 	return n
 }
 
-func (m *TokenizedAccount) Size() (n int) {
+func (m *LiquidInfrastructureAccount) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1071,7 +1056,7 @@ func (m *TokenizedAccount) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovMsgs(uint64(l))
 	}
-	l = len(m.TokenizedAccount)
+	l = len(m.Account)
 	if l > 0 {
 		n += 1 + l + sovMsgs(uint64(l))
 	}
@@ -1082,7 +1067,7 @@ func (m *TokenizedAccount) Size() (n int) {
 	return n
 }
 
-func (m *MsgTokenizeAccount) Size() (n int) {
+func (m *MsgLiquify) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1095,7 +1080,7 @@ func (m *MsgTokenizeAccount) Size() (n int) {
 	return n
 }
 
-func (m *MsgTokenizeAccountResponse) Size() (n int) {
+func (m *MsgLiquifyResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1108,7 +1093,7 @@ func (m *MsgTokenizeAccountResponse) Size() (n int) {
 	return n
 }
 
-func (m *EventAccountTokenized) Size() (n int) {
+func (m *EventAccountLiquified) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1226,7 +1211,7 @@ func (m *MsgMicrotx) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Amounts", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1253,8 +1238,7 @@ func (m *MsgMicrotx) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Amounts = append(m.Amounts, types.Coin{})
-			if err := m.Amounts[len(m.Amounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1574,7 +1558,7 @@ func (m *EventBalanceRedirect) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Amounts", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1601,8 +1585,7 @@ func (m *EventBalanceRedirect) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Amounts = append(m.Amounts, types.Coin{})
-			if err := m.Amounts[len(m.Amounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1627,7 +1610,7 @@ func (m *EventBalanceRedirect) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *TokenizedAccount) Unmarshal(dAtA []byte) error {
+func (m *LiquidInfrastructureAccount) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1650,10 +1633,10 @@ func (m *TokenizedAccount) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: TokenizedAccount: wiretype end group for non-group")
+			return fmt.Errorf("proto: LiquidInfrastructureAccount: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TokenizedAccount: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: LiquidInfrastructureAccount: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1690,7 +1673,7 @@ func (m *TokenizedAccount) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokenizedAccount", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Account", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1718,7 +1701,7 @@ func (m *TokenizedAccount) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TokenizedAccount = string(dAtA[iNdEx:postIndex])
+			m.Account = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -1773,7 +1756,7 @@ func (m *TokenizedAccount) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgTokenizeAccount) Unmarshal(dAtA []byte) error {
+func (m *MsgLiquify) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1796,10 +1779,10 @@ func (m *MsgTokenizeAccount) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgTokenizeAccount: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgLiquify: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgTokenizeAccount: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgLiquify: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1855,7 +1838,7 @@ func (m *MsgTokenizeAccount) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgTokenizeAccountResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgLiquifyResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1878,10 +1861,10 @@ func (m *MsgTokenizeAccountResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgTokenizeAccountResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgLiquifyResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgTokenizeAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgLiquifyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1914,7 +1897,7 @@ func (m *MsgTokenizeAccountResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Account == nil {
-				m.Account = &TokenizedAccount{}
+				m.Account = &LiquidInfrastructureAccount{}
 			}
 			if err := m.Account.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1941,7 +1924,7 @@ func (m *MsgTokenizeAccountResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EventAccountTokenized) Unmarshal(dAtA []byte) error {
+func (m *EventAccountLiquified) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1964,10 +1947,10 @@ func (m *EventAccountTokenized) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EventAccountTokenized: wiretype end group for non-group")
+			return fmt.Errorf("proto: EventAccountLiquified: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EventAccountTokenized: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EventAccountLiquified: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

@@ -193,12 +193,10 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 		msgMicrotx := msg.(*microtxtypes.MsgMicrotx)
 		if _, present := exemptSet[msgMicrotx.GetSender()]; !present {
 			// The sender is not exempt, but are they sending a locked token?
-			for _, coin := range msgMicrotx.Amounts {
-				if _, present := lockedTokenDenomsSet[coin.Denom]; present {
-					// The token is locked, return an error
-					return false, sdkerrors.Wrap(types.ErrLocked,
-						"The chain is locked, only exempt addresses may Microtx a locked token denom")
-				}
+			if _, present := lockedTokenDenomsSet[msgMicrotx.Amount.Denom]; present {
+				// The token is locked, return an error
+				return false, sdkerrors.Wrap(types.ErrLocked,
+					"The chain is locked, only exempt addresses may Microtx a locked token denom")
 			}
 		}
 		return true, nil

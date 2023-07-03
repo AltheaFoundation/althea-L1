@@ -30,8 +30,8 @@ func GetQueryCmd() *cobra.Command {
 	microtxQueryCmd.AddCommand([]*cobra.Command{
 		CmdQueryParams(),
 		CmdQueryMicrotxFee(),
-		CmdQueryTokenizedAccount(),
-		CmdQueryTokenizedAccounts(),
+		CmdQueryLiquidAccount(),
+		CmdQueryLiquidAccounts(),
 	}...)
 
 	return microtxQueryCmd
@@ -100,13 +100,13 @@ func CmdQueryMicrotxFee() *cobra.Command {
 	return cmd
 }
 
-// CmdQueryTokenizedAccount fetches any Tokenized Account matching the request
-func CmdQueryTokenizedAccount() *cobra.Command {
+// CmdQueryLiquidAccount fetches any Liquid Infrastructure Account matching the request
+func CmdQueryLiquidAccount() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
-		Use:   "tokenized-account [--owner owner-bech32] [--account account-bech32] [--nft 0xNFTADDRESS]",
+		Use:   "liquid-account [--owner owner-bech32] [--account account-bech32] [--nft 0xNFTADDRESS]",
 		Args:  cobra.ExactArgs(0),
-		Short: "Query for any matching tokenized accounts",
+		Short: "Query for any matching liquid accounts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -129,13 +129,13 @@ func CmdQueryTokenizedAccount() *cobra.Command {
 				return err
 			}
 
-			req := types.QueryTokenizedAccountRequest{
-				Owner:            owner,
-				TokenizedAccount: account,
-				NftAddress:       nft,
+			req := types.QueryLiquidAccountRequest{
+				Owner:   owner,
+				Account: account,
+				Nft:     nft,
 			}
 
-			res, err := queryClient.TokenizedAccount(cmd.Context(), &req)
+			res, err := queryClient.LiquidAccount(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}
@@ -144,20 +144,20 @@ func CmdQueryTokenizedAccount() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(FlagOwner, "", "the bech32 address (althea1abc...) of the owner of the Tokenized Account")
-	cmd.Flags().String(FlagAccount, "", "the bech32 address (althea1abc...) of the Tokenized Account")
-	cmd.Flags().String(FlagNFT, "", "the EIP-55 (0xD3ADB33F...) address of the TokenizedAccountNFT contract")
+	cmd.Flags().String(FlagOwner, "", "the bech32 address (althea1abc...) OR the EIP-55 address (0xD34DB33F...) of the owner of the Liquid Infrastructure Account")
+	cmd.Flags().String(FlagAccount, "", "the bech32 address (althea1abc...) of the Liquid Infrastructure Account")
+	cmd.Flags().String(FlagNFT, "", "the EIP-55 (0xD3ADB33F...) address of the LiquidInfrastructureNFT contract")
 	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
 }
 
-// CmdQueryTokenizedAccounts fetches all known Tokenized Accounts
-func CmdQueryTokenizedAccounts() *cobra.Command {
+// CmdQueryLiquidAccounts fetches all known Liquid Infrastructure Accounts
+func CmdQueryLiquidAccounts() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
-		Use:   "tokenized-accounts",
+		Use:   "liquid-accounts",
 		Args:  cobra.ExactArgs(0),
-		Short: "Query for any matching tokenized accounts",
+		Short: "Query for any matching liquid accounts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -165,9 +165,9 @@ func CmdQueryTokenizedAccounts() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := types.QueryTokenizedAccountsRequest{}
+			req := types.QueryLiquidAccountsRequest{}
 
-			res, err := queryClient.TokenizedAccounts(cmd.Context(), &req)
+			res, err := queryClient.LiquidAccounts(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}
