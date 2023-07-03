@@ -10,4 +10,5 @@ var (
 	ErrNoLiquidAccount    = sdkerrors.Register(ModuleName, 3, "account is not a liquid infrastructure account")
 	ErrInvalidThresholds  = sdkerrors.Register(ModuleName, 4, "invalid liquid infrastructure account thresholds")
 	ErrInvalidMicrotx     = sdkerrors.Register(ModuleName, 5, "invalid microtx")
+	ErrInvalidContract    = sdkerrors.Register(ModuleName, 6, "invalid contract")
 )
