@@ -12,10 +12,10 @@ use test_runner::bootstrapping::parse_contract_addresses;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
 use test_runner::bootstrapping::{deploy_contracts, get_keys};
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
+use test_runner::tests::liquid_accounts::liquid_accounts_test;
 use test_runner::tests::lockup::lockup_test;
 use test_runner::tests::microtx_fees::microtx_fees_test;
 use test_runner::tests::native_token::native_token_test;
-use test_runner::tests::tokenized_accounts::tokenized_accounts_test;
 use test_runner::utils::one_atom;
 use test_runner::utils::one_hundred_eth;
 use test_runner::utils::send_funds_bulk;
@@ -127,9 +127,9 @@ pub async fn main() {
             info!("Starting native token test");
             native_token_test(&contact, &web30, keys).await;
             return;
-        } else if test_type == "TOKENIZED_ACCOUNTS" {
-            info!("Start Tokenized Accounts test");
-            tokenized_accounts_test(
+        } else if test_type == "LIQUID_ACCOUNTS" {
+            info!("Start Liquid Infrastructure Accounts test");
+            liquid_accounts_test(
                 &contact,
                 &web30,
                 keys,

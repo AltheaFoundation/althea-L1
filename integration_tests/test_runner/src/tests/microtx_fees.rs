@@ -125,12 +125,11 @@ pub fn generate_msg_microtxs(
             denom: denom.to_string(),
             amount: amount.to_string(),
         };
-        let amount_coins = vec![amount_coin];
 
         let msg_microtx = MsgMicrotx {
             receiver: receiver.ethermint_address.to_string(),
             sender: sender.ethermint_address.to_string(),
-            amounts: amount_coins,
+            amount: Some(amount_coin),
         };
         let msg = Msg::new(MSG_MICROTX_TYPE_URL, msg_microtx);
 
