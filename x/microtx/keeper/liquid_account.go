@@ -28,6 +28,8 @@ var DefaultGasLimit uint64 = 30000000
 // type will cause execution failure
 var AccountId *big.Int = big.NewInt(1)
 
+var CurrentNFTVersion *big.Int = big.NewInt(1)
+
 // DoLiquify will deploy a LiquidInfrastructureNFT smart contract for the given account.
 // The token will then be transferred to the given account and live under its control.
 // Transfer to another owner requires interacting with the EVM
@@ -56,6 +58,14 @@ func (k Keeper) deployLiquidInfrastructureNFTContract(ctx sdk.Context, account s
 	contract, err := k.DeployContract(ctx, types.LiquidInfrastructureNFT, account.String())
 	if err != nil {
 		return common.Address{}, sdkerrors.Wrap(err, "liquid infrastructure account contract deployment failed")
+	}
+
+	version, err := k.queryLiquidInfrastructureContractVersion(ctx, contract)
+	if err != nil {
+		return common.Address{}, sdkerrors.Wrap(err, "could not query NFT version")
+	}
+	if version.Cmp(CurrentNFTVersion) != 0 {
+		return common.Address{}, sdkerrors.Wrapf(err, "expected contract with version %v, got %v", CurrentNFTVersion, version)
 	}
 
 	_, err = k.transferLiquidInfrastructureNFTFromModuleToAddress(ctx, contract, account)
@@ -101,6 +111,17 @@ func (k Keeper) queryLiquidInfrastructureOwner(ctx sdk.Context, nftAddress commo
 	}
 	owner := common.BytesToAddress(res.Ret)
 	return &owner, nil
+}
+
+// queryLiquidInfrastructureContractVersion fetches the `Version()` of the LiquidInfrastructureNFT deployed at `nftAddress`
+func (k Keeper) queryLiquidInfrastructureContractVersion(ctx sdk.Context, nftAddress common.Address) (*big.Int, error) {
+	// ABI: uint256 public constant Version
+	res, err := k.QueryEVM(ctx, "Version", types.LiquidInfrastructureNFT, types.ModuleEVMAddress, &nftAddress)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "unable to call Versionw with no args")
+	}
+	version := big.NewInt(0).SetBytes(res.Ret)
+	return version, nil
 }
 
 // queryLiquidInfrastructureThresholds is used by the module to control liquid infrastructure account balances, it calls the

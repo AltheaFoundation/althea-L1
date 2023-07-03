@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+//SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.12; // Force solidity compliance
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -37,6 +37,12 @@ contract LiquidInfrastructureNFT is ERC721, OwnableApprovableERC721 {
 
     address[] private thresholdErc20s;
     uint256[] private thresholdAmounts;
+
+    /**
+     * @notice This is the current version of the contract. Every update to the contract will introduce a new
+     * version, regardless of anticipated compatibility.
+     */
+    uint256 public constant Version = 1;
 
     /**
      * @notice This NFT holds only 1 token in it, which is the Account token. Its Id is `1`.
