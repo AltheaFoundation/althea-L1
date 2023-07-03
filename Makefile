@@ -254,5 +254,5 @@ endif
 
 tools: proto-tools buf
 
-clean: proto-tools-clean contract-tools-clean
+clean: proto-tools-clean contracts-clean
 	rm -rf $(BUILDDIR)/ artifacts/
