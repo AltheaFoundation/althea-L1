@@ -1,5 +1,5 @@
 {
-  "name": "gravity-contracts",
+  "name": "althea-contracts",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,7 +10,7 @@
     "compile-deployer": "npx tsc -p . ; pkg dist/contract-deployer.js --targets node10-linux-x64",
     "evm_fork": "npx hardhat node --fork https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_ID} --fork-block-number 12782071"
   },
-  "author": "Jehan Tremback",
+  "author": "Jehan Tremback, Christian Borst",
   "license": "None",
   "devDependencies": {
     "@commitlint/cli": "^9.1.2",

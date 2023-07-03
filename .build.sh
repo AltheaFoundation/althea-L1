@@ -23,6 +23,9 @@ git config --global --add safe.directory /sources
 # - BASEDIR
 # - OUTDIR
 
+JS_CONTRACTS_ABI="solidity/artifacts/contracts"
+GO_CONTRACTS_ABI="contracts/compiled"
+
 export LEDGER_ENABLED=true
 # Build for each os-architecture pair
 for platform in ${TARGET_PLATFORMS} ; do
@@ -42,6 +45,17 @@ for platform in ${TARGET_PLATFORMS} ; do
 
     make clean
     make contracts
+
+    for f in $(ls $JS_CONTRACTS_ABI | grep -v Test); do
+        source="${f%.sol}.json"
+        out="${source%.json}-js.json"
+        cp $JS_CONTRACTS_ABI/$f/$source ${OUTDIR}/$out
+    done
+    for f in $(ls $GO_CONTRACTS_ABI | grep -v Test ); do
+        out="${f%.json}-go.json"
+        cp $GO_CONTRACTS_ABI/$f ${OUTDIR}/$out
+    done
+
     echo Building for $(go env GOOS)/$(go env GOARCH) >&2
     GOROOT_FINAL="$(go env GOROOT)" \
     make build \
