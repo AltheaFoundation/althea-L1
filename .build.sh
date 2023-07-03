@@ -13,6 +13,9 @@ set -uex
 # - LEDGER_ENABLED
 # - DEBUG
 
+# allow git to grab the submodules
+git config --global --add safe.directory /sources
+
 # Source builder's functions library
 . /usr/local/share/tendermint/buildlib.sh
 
