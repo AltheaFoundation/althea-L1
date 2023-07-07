@@ -7,10 +7,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/spf13/cobra"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	altheacfg "github.com/althea-net/althea-chain/config"
 )
@@ -56,7 +60,7 @@ func ValidateGenesisCmd(mbm module.BasicManager) *cobra.Command {
 			}
 
 			if err = altheaValidateGenesis(cdc, clientCtx, genState); err != nil {
-				return fmt.Errorf("error performing Althea-Chain-specific validations on genesis file %s: %s", genesis, err.Error())
+				return fmt.Errorf("error performing Althea-L1 additional validations on genesis file %s: %s", genesis, err.Error())
 			}
 
 			fmt.Printf("File at %s is a valid genesis file\n", genesis)
@@ -89,6 +93,16 @@ func altheaValidateGenesis(cdc codec.JSONCodec, ctx client.Context, genesis map[
 		return err
 	}
 
+	bankGenDoc := genesis[banktypes.ModuleName]
+	evmGenDoc := genesis[evmtypes.ModuleName]
+
+	if err := ValidateCoinDeclarations(cdc, ctx, bankGenDoc); err != nil {
+		return err
+	}
+	if err := ValidateEVMDenom(cdc, ctx, bankGenDoc, evmGenDoc); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -105,6 +119,136 @@ func ValidateMintGenesis(cdc codec.JSONCodec, ctx client.Context, genesis json.R
 	}
 
 	return nil
+}
+
+// ValidateCoinDeclarations will assert that the denoms set up in the bank module genesis are sensible
+func ValidateCoinDeclarations(cdc codec.JSONCodec, ctx client.Context, genesis json.RawMessage) error {
+	var data banktypes.GenesisState
+	if err := cdc.UnmarshalJSON(genesis, &data); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", banktypes.ModuleName, err)
+	}
+
+	for _, metadata := range data.DenomMetadata {
+		minDecimals := ^uint32(0) // This is how you get max of a uint32 in Go, don't ask me why
+		minDenom := ""            // The name of the smallest (base) unit
+		maxDecimals := 0
+		maxDenom := "" // The name of the biggest unit (the name everyone calls it by)
+
+		// Locate the names and sizes of the biggest and smallest units
+		for _, unit := range metadata.DenomUnits {
+			if unit.Exponent > uint32(maxDecimals) {
+				maxDecimals = int(unit.Exponent)
+				maxDenom = unit.Denom
+			}
+			if unit.Exponent < minDecimals {
+				minDecimals = unit.Exponent
+				minDenom = unit.Denom
+			}
+		}
+
+		if metadata.Base != minDenom {
+			return fmt.Errorf(
+				"Invalid base denom: Expected base (%v) to equal the smallest unit (%v with exponent %v)",
+				metadata.Base,
+				minDenom,
+				minDecimals,
+			)
+		}
+
+		var expectedMinDenomPrefix string
+		switch maxDecimals {
+		case 6:
+			expectedMinDenomPrefix = "u"
+		case 9:
+			expectedMinDenomPrefix = "n"
+		case 18:
+			expectedMinDenomPrefix = "a"
+		}
+
+		// Expecting to have a unit like "aalthea" (18 decimals) or "ugraviton" (6 decimals) or "ntoken" (9 decimals)
+		if minDenom != expectedMinDenomPrefix+maxDenom {
+			return fmt.Errorf(
+				"Invalid DenomUnits: expecting the smallest denomination (%v with exponent %v) to begin with %v to adhere to token denom conventions",
+				minDenom,
+				minDecimals,
+				expectedMinDenomPrefix,
+			)
+		}
+		if minDenom != metadata.Base {
+			return fmt.Errorf("Invalid DenomUnits: expecting the Base denom (%v) to be the smallest unit (%v with exponent %v)",
+				metadata.Base,
+				minDenom,
+				minDecimals,
+			)
+		}
+	}
+
+	return nil
+}
+
+// ValidateEVMDenom will assert that the config's EVM denom actually exists, and has a supply
+func ValidateEVMDenom(cdc codec.JSONCodec, ctx client.Context, bankGenesis json.RawMessage, evmGenesis json.RawMessage) error {
+	var bankData banktypes.GenesisState
+	if err := cdc.UnmarshalJSON(bankGenesis, &bankData); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", banktypes.ModuleName, err)
+	}
+	var evmData evmtypes.GenesisState
+	if err := cdc.UnmarshalJSON(evmGenesis, &evmData); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", evmtypes.ModuleName, err)
+	}
+
+	bankMetadatas := bankData.DenomMetadata
+	bankMetadataMap := MetadatasToMap(bankMetadatas)
+	bankSupplies := bankData.Supply
+	bankSupplyMap := CoinsToMap(bankSupplies)
+	evmDenom := evmData.Params.EvmDenom
+	foundEvmDenom := false
+
+	for _, metadata := range bankMetadatas {
+		supply, ok := bankSupplyMap[metadata.Base]
+		if !ok {
+			return fmt.Errorf("Could not find supply for token %v", metadata.Base)
+		}
+		if !supply.Amount.IsPositive() {
+			return fmt.Errorf("Found invalid supply for token %v", metadata.Base)
+		}
+		if metadata.Base == evmDenom {
+			foundEvmDenom = true
+		}
+	}
+
+	for k := range bankSupplyMap {
+		_, found := bankMetadataMap[k]
+		if !found {
+			return fmt.Errorf("Did not find metadata for token %v", k)
+		}
+	}
+
+	if !foundEvmDenom {
+		return fmt.Errorf("The EVM denom (%v) was not found in the bank module genesis, or it had nonpositive supply. Did you forget to set it?", evmDenom)
+	}
+
+	return nil
+}
+
+// Turns hard-to-search coins into a Denom -> Coin map
+func CoinsToMap(coins sdk.Coins) map[string]sdk.Coin {
+	ret := make(map[string]sdk.Coin)
+	for _, c := range coins {
+		ret[c.Denom] = c
+	}
+
+	return ret
+}
+
+// Turns hard-to-search coins into a Denom -> Coin map
+func MetadatasToMap(metadata []banktypes.Metadata) map[string]banktypes.Metadata {
+	ret := make(map[string]banktypes.Metadata)
+	for _, c := range metadata {
+		ret[c.Base] = c
+	}
+
+	return ret
 }
 
 // TODO: Validate all the genesis transactions so we can set up a convenient CI job for chain launch
