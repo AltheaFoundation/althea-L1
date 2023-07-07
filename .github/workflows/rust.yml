@@ -56,13 +56,3 @@ jobs:
           working-directory: integration_tests/
       - name: Run Cargo Audit
         run: cargo install cargo-audit && cd integration_tests && cargo audit
-  cross-compile-arm64:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-      - uses: Swatinem/rust-cache@v1
-        with:
-          working-directory: integration_tests/
-      - name: Cross compile tests
-        run: cargo install cross && cd integration_tests && cross test --all --exclude proto_build --release --target aarch64-unknown-linux-gnu
