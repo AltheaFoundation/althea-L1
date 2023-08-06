@@ -27,5 +27,6 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 // RegisterCodec registers concrete types on the Amino codec
 // nolint: exhaustruct
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgMicrotx{}, "microtx/MsgMicrotx", nil)
+	cdc.RegisterConcrete(&MsgMicrotx{}, "althea/MsgMicrotx", nil)
+	cdc.RegisterConcrete(&MsgLiquify{}, "althea/MsgLiquify", nil)
 }

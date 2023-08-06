@@ -5,6 +5,11 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+const (
+	TypeMsgMicrotx = "microtx"
+	TypeMsgLiquify = "liquify"
+)
+
 // nolint: exhaustruct
 var (
 	_ sdk.Msg = &MsgMicrotx{}
@@ -21,6 +26,8 @@ func NewMsgMicrotx(sender string, reciever string, amount sdk.Coin) *MsgMicrotx 
 
 // Route should return the name of the module
 func (msg *MsgMicrotx) Route() string { return RouterKey }
+
+func (msg MsgMicrotx) Type() string { return TypeMsgMicrotx }
 
 // ValidateBasic checks for valid addresses and amounts
 func (msg *MsgMicrotx) ValidateBasic() error {
@@ -51,6 +58,11 @@ func (msg *MsgMicrotx) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{acc}
 }
 
+// GetSignBytes Implements Msg.
+func (msg MsgMicrotx) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+}
+
 // NewMsgLiquify returns a new MsgLiquify
 func NewMsgLiquify(sender string) *MsgLiquify {
 	return &MsgLiquify{
@@ -60,6 +72,8 @@ func NewMsgLiquify(sender string) *MsgLiquify {
 
 // Route should return the name of the module
 func (msg *MsgLiquify) Route() string { return RouterKey }
+
+func (msg MsgLiquify) Type() string { return TypeMsgLiquify }
 
 // ValidateBasic checks for valid addresses
 func (msg *MsgLiquify) ValidateBasic() error {
@@ -78,4 +92,9 @@ func (msg *MsgLiquify) GetSigners() []sdk.AccAddress {
 		panic(err)
 	}
 	return []sdk.AccAddress{acc}
+}
+
+// GetSignBytes Implements Msg.
+func (msg MsgLiquify) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
 }
