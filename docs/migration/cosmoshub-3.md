@@ -1,1 +1,0 @@
-# Cosmos Hub 4 Upgrade Instructions
