@@ -114,15 +114,9 @@ althea keys list
 
 ```
 
-Copy your address from the 'address' field and paste it into the command below remember to remove the `<>`
+request tokens in the social faucet channel of the Althea discord.
 
-```
-
-curl -vv -XPOST http://testnet2.althea.net/get_altg/<your address here without the brackets>
-
-```
-
-This will provide you 10 ALTG from the faucet storage.
+This will provide you 10000 ALTHEA from the faucet storage.
 
 ### Send your validator setup transaction
 
