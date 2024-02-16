@@ -3,6 +3,7 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	authlegacy "github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 )
 
 const (
@@ -12,7 +13,10 @@ const (
 
 // nolint: exhaustruct
 var (
-	_ sdk.Msg = &MsgMicrotx{}
+	_ sdk.Msg              = &MsgMicrotx{}
+	_ sdk.Msg              = &MsgLiquify{}
+	_ authlegacy.LegacyMsg = &MsgMicrotx{}
+	_ authlegacy.LegacyMsg = &MsgLiquify{}
 )
 
 // NewMsgMicrotx returns a new MsgMicrotx
