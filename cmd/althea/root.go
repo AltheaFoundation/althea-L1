@@ -117,13 +117,6 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
 
-			// TODO: Fix ledger + handle errors before chain launch
-			// nolint: errcheck
-			useLedger, _ := cmd.Flags().GetBool(flags.FlagUseLedger)
-			if useLedger {
-				return fmt.Errorf("use of the --ledger flag is not supported")
-			}
-
 			initClientCtx, err := config.ReadFromClientConfig(initClientCtx)
 			if err != nil {
 				return fmt.Errorf("unable to update context with client.toml config: %v", err)
