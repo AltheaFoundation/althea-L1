@@ -19,7 +19,15 @@ cd /althea/
 export PATH=$PATH:/usr/local/go/bin
 make install-core
 tests/container-scripts/setup-validators.sh $NODES
+tests/container-scripts/setup-ibc-validators.sh $NODES
 tests/container-scripts/run-testnet.sh $NODES
+
+# Setup relayer files to avoid permissions issues later
+set +e
+mkdir /ibc-relayer-logs
+touch /ibc-relayer-logs/hermes-logs
+touch /ibc-relayer-logs/channel-creation
+set -e
 
 sleep 10
 
