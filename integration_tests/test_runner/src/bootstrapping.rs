@@ -1,7 +1,14 @@
+use crate::ibc_utils::get_channel;
+use crate::utils::{
+    get_chain_id, get_deposit, get_ibc_chain_id, ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC,
+    HERMES_CONFIG, IBC_RELAYER_ADDRESS, IBC_STAKING_TOKEN, OPERATION_TIMEOUT,
+    RELAYER_MNEMONIC_FILE,
+};
 use crate::utils::{
     send_erc20_bulk, EthermintUserKey, ValidatorKeys, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT,
 };
 
+use althea_proto::cosmos_sdk_proto::ibc::core::channel::v1::query_client::QueryClient as IbcChannelQueryClient;
 use clarity::Address as EthAddress;
 use clarity::Uint256;
 use deep_space::private_key::CosmosPrivateKey;
@@ -9,8 +16,11 @@ use deep_space::private_key::PrivateKey;
 use deep_space::Contact;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
+use std::os::fd::{FromRawFd, IntoRawFd};
 use std::path::Path;
-use std::process::{Command, ExitStatus};
+use std::process::{Command, ExitStatus, Stdio};
+use std::thread;
+use std::time::Duration;
 use web30::client::Web3;
 use web30::jsonrpc::error::Web3Error;
 
@@ -67,6 +77,14 @@ pub fn get_keys() -> Vec<ValidatorKeys> {
         })
     }
     ret
+}
+
+/// The same as parse_validator_keys() except for a second chain accessed
+/// over IBC for testing purposes
+pub fn parse_ibc_validator_keys() -> (Vec<CosmosPrivateKey>, Vec<String>) {
+    let filename = "/ibc-validator-phrases";
+    info!("Reading mnemonics from {}", filename);
+    parse_phrases(filename)
 }
 
 /// This function deploys the required contracts onto the Ethereum testnet
@@ -210,115 +228,168 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
         uniswap_liquidity_address: uniswap_liquidity,
     }
 }
+
 // Creates a key in the relayer's test keyring, which the relayer should use
-// Hermes stores its keys in hermes_home/ althea_phrase is for the main chain
-// ibc phrase is for the test chain
-// pub fn setup_relayer_keys(
-//     althea_phrase: &str,
-//     ibc_phrase: &str,
-// ) -> Result<(), Box<dyn std::error::Error>> {
-//     let mut keyring = KeyRing::new(
-//         Store::Test,
-//         "althea",
-//         &ChainId::from_string(&get_chain_id()),
-//     )?;
+// Hermes stores its keys in hermes_home/
+pub fn setup_relayer_keys() -> Result<(), Box<dyn std::error::Error>> {
+    let mut command = hermes_base();
+    let _althea_key = command
+        .args([
+            "keys",
+            "add",
+            "--key-name",
+            "altheakey",
+            "--chain",
+            &get_chain_id(),
+            "--hd-path",
+            "m/44'/60'/0'/0/0",
+            "--mnemonic-file",
+            RELAYER_MNEMONIC_FILE,
+        ])
+        .spawn()
+        .expect("Failed to add althea key");
+    info!("Added altheakey to hermes keybase");
 
-//     let key = keyring.key_from_mnemonic(
-//         althea_phrase,
-//         &HDPath::from_str(DEFAULT_COSMOS_HD_PATH).unwrap(),
-//         &AddressType::Cosmos,
-//     )?;
-//     keyring.add_key("altheakey", key)?;
+    let mut command = hermes_base();
+    let _ibc_key = command
+        .args([
+            "keys",
+            "add",
+            "--key-name",
+            "ibckey",
+            "--chain",
+            &get_ibc_chain_id(),
+            "--mnemonic-file",
+            RELAYER_MNEMONIC_FILE,
+        ])
+        .spawn()
+        .expect("Failed to add ibc key");
+    info!("Added ibckey to hermes keybase");
 
-//     keyring = KeyRing::new(
-//         Store::Test,
-//         "cosmos",
-//         &ChainId::from_string(&get_ibc_chain_id()),
-//     )?;
-//     let key = keyring.key_from_mnemonic(
-//         ibc_phrase,
-//         &HDPath::from_str(DEFAULT_COSMOS_HD_PATH).unwrap(),
-//         &AddressType::Cosmos,
-//     )?;
-//     keyring.add_key("ibckey", key)?;
+    Ok(())
+}
 
-//     Ok(())
-// }
-
-// Create a channel between althea chain and the ibc test chain over the "transfer" port
+// Create a channel between gravity chain and the ibc test chain over the "transfer" port
 // Writes the output to /ibc-relayer-logs/channel-creation
-// pub fn create_ibc_channel(hermes_base: &mut Command) {
-//     // hermes -c config.toml create channel althea-test-1 ibc-test-1 --port-a transfer --port-b transfer
-//     let create_channel = hermes_base.args([
-//         "create",
-//         "channel",
-//         &get_chain_id(),
-//         &get_ibc_chain_id(),
-//         "--port-a",
-//         "transfer",
-//         "--port-b",
-//         "transfer",
-//     ]);
+pub fn create_ibc_channel(hermes_base: Command) {
+    info!("Creating IBC channel with hermes");
+    let mut hermes_base = hermes_base;
+    // hermes -c config.toml create channel gravity-test-1 ibc-test-1 --port-a transfer --port-b transfer
+    let create_channel = hermes_base.args([
+        "create",
+        "channel",
+        "--a-chain",
+        &get_chain_id(),
+        "--b-chain",
+        &get_ibc_chain_id(),
+        "--a-port",
+        "transfer",
+        "--b-port",
+        "transfer",
+        "--new-client-connection",
+        "--yes",
+    ]);
 
-//     let out_file = File::options()
-//         .write(true)
-//         .open("/ibc-relayer-logs/channel-creation")
-//         .unwrap()
-//         .into_raw_fd();
-//     unsafe {
-//         // unsafe needed for stdout + stderr redirect to file
-//         let create_channel = create_channel
-//             .stdout(Stdio::from_raw_fd(out_file))
-//             .stderr(Stdio::from_raw_fd(out_file));
-//         info!("Create channel command: {:?}", create_channel);
-//         create_channel.spawn().expect("Could not create channel");
-//     }
-// }
+    let out_file = File::options()
+        .write(true)
+        .open("/ibc-relayer-logs/channel-creation")
+        .unwrap()
+        .into_raw_fd();
+    unsafe {
+        // unsafe needed for stdout + stderr redirect to file
+        let create_channel = create_channel
+            .stdout(Stdio::from_raw_fd(out_file))
+            .stderr(Stdio::from_raw_fd(out_file));
+        create_channel.spawn().expect("Could not create channel");
+    }
+}
 
 // Start an IBC relayer locally and run until it terminates
 // full_scan Force a full scan of the chains for clients, connections and channels
 // Writes the output to /ibc-relayer-logs/hermes-logs
-// pub fn run_ibc_relayer(hermes_base: &mut Command, full_scan: bool) {
-//     let mut start = hermes_base.arg("start");
-//     if full_scan {
-//         start = start.arg("-f");
-//     }
-//     let out_file = File::options()
-//         .write(true)
-//         .open("/ibc-relayer-logs/hermes-logs")
-//         .unwrap()
-//         .into_raw_fd();
-//     unsafe {
-//         // unsafe needed for stdout + stderr redirect to file
-//         start
-//             .stdout(Stdio::from_raw_fd(out_file))
-//             .stderr(Stdio::from_raw_fd(out_file))
-//             .spawn()
-//             .expect("Could not run hermes");
-//     }
-// }
+pub fn run_ibc_relayer(hermes_base: Command, full_scan: bool) {
+    info!("Running ibc relayer");
+    let mut hermes_base = hermes_base;
+    let mut start = hermes_base.arg("start");
+    if full_scan {
+        start = start.arg("--full-scan");
+    }
+    let out_file = File::options()
+        .write(true)
+        .open("/ibc-relayer-logs/hermes-logs")
+        .unwrap()
+        .into_raw_fd();
+    unsafe {
+        // unsafe needed for stdout + stderr redirect to file
+        start
+            .stdout(Stdio::from_raw_fd(out_file))
+            .stderr(Stdio::from_raw_fd(out_file))
+            .spawn()
+            .expect("Could not run hermes");
+    }
+}
 
 // starts up the IBC relayer (hermes) in a background thread
-// pub async fn start_ibc_relayer(contact: &Contact, keys: &[ValidatorKeys], ibc_phrases: &[String]) {
-//     contact
-//         .send_coins(
-//             get_deposit(),
-//             None,
-//             *RELAYER_ADDRESS,
-//             Some(OPERATION_TIMEOUT),
-//             keys[0].validator_key,
-//         )
-//         .await
-//         .unwrap();
-//     info!("test-runner starting IBC relayer mode: init hermes, create ibc channel, start hermes");
-//     let mut hermes_base = Command::new("hermes");
-//     let hermes_base = hermes_base.arg("-c").arg(HERMES_CONFIG);
-//     setup_relayer_keys(&RELAYER_MNEMONIC, &ibc_phrases[0]).unwrap();
-//     create_ibc_channel(hermes_base);
-//     thread::spawn(|| {
-//         let mut hermes_base = Command::new("hermes");
-//         let hermes_base = hermes_base.arg("-c").arg(HERMES_CONFIG);
-//         run_ibc_relayer(hermes_base, true); // likely will not return from here, just keep running
-//     });
-//     info!("Running ibc relayer in the background, directing output to /ibc-relayer-logs");
-// }
+pub async fn start_ibc_relayer(
+    contact: &Contact,
+    ibc_contact: &Contact,
+    keys: &[ValidatorKeys],
+    ibc_keys: &[CosmosPrivateKey],
+) {
+    let althea_deposit = get_deposit(None);
+    let ibc_deposit = get_deposit(Some(IBC_STAKING_TOKEN.to_string()));
+    info!("Sending relayer {althea_deposit:?} on althea");
+    contact
+        .send_coins(
+            althea_deposit,
+            None,
+            ALTHEA_RELAYER_ADDRESS.parse().unwrap(),
+            Some(OPERATION_TIMEOUT),
+            keys[0].validator_key,
+        )
+        .await
+        .unwrap();
+    info!("Sending relayer {ibc_deposit:?} on ibc-test");
+    ibc_contact
+        .send_coins(
+            ibc_deposit,
+            Some(deep_space::Coin {
+                amount: 100u8.into(),
+                denom: IBC_STAKING_TOKEN.to_string(),
+            }),
+            IBC_RELAYER_ADDRESS.parse().unwrap(),
+            Some(OPERATION_TIMEOUT),
+            ibc_keys[0],
+        )
+        .await
+        .unwrap();
+    info!("test-runner starting IBC relayer mode: init hermes, create ibc channel, start hermes");
+    setup_relayer_keys().unwrap();
+
+    let gravity_channel_qc = IbcChannelQueryClient::connect(COSMOS_NODE_GRPC.as_str())
+        .await
+        .expect("Could not connect channel query client");
+
+    // Wait for the ibc channel to be created and find the channel ids
+    let channel_id_timeout = Duration::from_secs(60 * 5);
+    let gravity_channel = get_channel(
+        gravity_channel_qc,
+        get_ibc_chain_id(),
+        Some(channel_id_timeout),
+    )
+    .await;
+    if gravity_channel.is_err() {
+        info!("No IBC channels exist between gravity-test-1 and ibc-test-1, creating one now...");
+        create_ibc_channel(hermes_base());
+    }
+    thread::spawn(|| {
+        run_ibc_relayer(hermes_base(), true); // likely will not return from here, just keep running
+    });
+    info!("Running ibc relayer in the background, directing output to /ibc-relayer-logs");
+}
+
+fn hermes_base() -> Command {
+    let mut hermes_base = Command::new("hermes");
+    hermes_base.arg("--config").arg(HERMES_CONFIG);
+    hermes_base
+}
