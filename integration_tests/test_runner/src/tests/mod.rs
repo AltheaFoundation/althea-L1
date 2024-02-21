@@ -1,4 +1,5 @@
 pub mod erc20_conversion;
+pub mod ica_host;
 pub mod liquid_accounts;
 pub mod lockup;
 pub mod microtx_fees;

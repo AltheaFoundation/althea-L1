@@ -9,9 +9,12 @@ use deep_space::Contact;
 use deep_space::PrivateKey;
 use std::env;
 use test_runner::bootstrapping::parse_contract_addresses;
+use test_runner::bootstrapping::parse_ibc_validator_keys;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
+use test_runner::bootstrapping::start_ibc_relayer;
 use test_runner::bootstrapping::{deploy_contracts, get_keys};
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
+use test_runner::tests::ica_host::ica_host_happy_path;
 use test_runner::tests::liquid_accounts::liquid_accounts_test;
 use test_runner::tests::lockup::lockup_test;
 use test_runner::tests::microtx_fees::microtx_fees_test;
@@ -21,6 +24,8 @@ use test_runner::utils::one_hundred_eth;
 use test_runner::utils::send_funds_bulk;
 use test_runner::utils::ETH_NODE;
 use test_runner::utils::EVM_USER_KEYS;
+use test_runner::utils::IBC_ADDRESS_PREFIX;
+use test_runner::utils::IBC_NODE_GRPC;
 use test_runner::utils::STAKING_TOKEN;
 use test_runner::utils::{
     get_test_token_name, should_deploy_contracts, wait_for_cosmos_online, ADDRESS_PREFIX,
@@ -35,6 +40,12 @@ pub async fn main() {
         COSMOS_NODE_GRPC.as_str(),
         OPERATION_TIMEOUT,
         ADDRESS_PREFIX.as_str(),
+    )
+    .unwrap();
+    let ibc_contact = Contact::new(
+        IBC_NODE_GRPC.as_str(),
+        OPERATION_TIMEOUT,
+        IBC_ADDRESS_PREFIX.as_str(),
     )
     .unwrap();
     let web30 = web30::client::Web3::new(ETH_NODE.as_str(), OPERATION_TIMEOUT);
@@ -65,6 +76,7 @@ pub async fn main() {
 
     // keys for the primary test chain
     let keys = get_keys();
+    let (ibc_keys, _ibc_phrases) = parse_ibc_validator_keys();
 
     info!("Funding EVM users with the native coin");
     // Send the EVM users some althea token
@@ -137,6 +149,11 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
             )
             .await;
+            return;
+        } else if test_type == "ICA_HOST" {
+            start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
+            info!("Start ICA Host test");
+            ica_host_happy_path(&contact, &ibc_contact, keys, ibc_keys).await;
             return;
         }
     }

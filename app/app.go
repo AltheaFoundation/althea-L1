@@ -81,6 +81,11 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	// Cosmos IBC-Go
+	ica "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts"
+	icahost "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host"
+	icahostkeeper "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/keeper"
+	icahosttypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
 	transfer "github.com/cosmos/ibc-go/v4/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v4/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
@@ -183,6 +188,7 @@ var (
 		evm.AppModuleBasic{},
 		erc20.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
+		ica.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -199,6 +205,7 @@ var (
 		lockuptypes.ModuleName:         nil,
 		microtxtypes.ModuleName:        nil,
 		feemarkettypes.ModuleName:      nil,
+		icatypes.ModuleName:            nil,
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -251,10 +258,12 @@ type AltheaApp struct { // nolint: golint
 	evmKeeper         *evmkeeper.Keeper
 	erc20Keeper       *erc20keeper.Keeper
 	feemarketKeeper   *feemarketkeeper.Keeper
+	icaHostKeeper     *icahostkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      *capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper *capabilitykeeper.ScopedKeeper
+	ScopedICAHostKeeper  *capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	mm *module.Manager
@@ -333,6 +342,9 @@ func (app AltheaApp) ValidateMembers() {
 	if app.feemarketKeeper == nil {
 		panic("Nil feemarketKeeper!")
 	}
+	if app.icaHostKeeper == nil {
+		panic("Nil icaHostKeeper!")
+	}
 
 	// scoped keepers
 	if app.ScopedIBCKeeper == nil {
@@ -340,6 +352,9 @@ func (app AltheaApp) ValidateMembers() {
 	}
 	if app.ScopedTransferKeeper == nil {
 		panic("Nil ScopedTransferKeeper!")
+	}
+	if app.ScopedICAHostKeeper == nil {
+		panic("Nil ScopedICAHostKeeper!")
 	}
 
 	// managers
@@ -381,7 +396,7 @@ func NewAltheaApp(
 		ibchost.StoreKey, upgradetypes.StoreKey, evidencetypes.StoreKey,
 		ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		erc20types.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey,
-		lockuptypes.StoreKey, microtxtypes.StoreKey,
+		lockuptypes.StoreKey, microtxtypes.StoreKey, icahosttypes.StoreKey,
 	)
 	// Transient keys which only last for a block before being wiped
 	// Params uses thsi to track whether some parameter changed this block or not
@@ -428,6 +443,9 @@ func NewAltheaApp(
 
 	scopedTransferKeeper := capabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	app.ScopedTransferKeeper = &scopedTransferKeeper
+
+	scopedICAHostKeeper := capabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
+	app.ScopedICAHostKeeper = &scopedICAHostKeeper
 
 	// No more scoped keepers from here on!
 	capabilityKeeper.Seal()
@@ -511,6 +529,13 @@ func NewAltheaApp(
 		accountKeeper, bankKeeper, scopedTransferKeeper,
 	)
 	app.ibcTransferKeeper = &ibcTransferKeeper
+
+	icaHostKeeper := icahostkeeper.NewKeeper(
+		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
+		ibcKeeper.ChannelKeeper, &ibcKeeper.PortKeeper,
+		accountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
+	)
+	app.icaHostKeeper = &icaHostKeeper
 
 	// Connect the inter-module staking hooks together, these are the only modules allowed to interact with how staking
 	// works, including inflationary staking rewards and punishing bad actors (excluding genutil which works at genesis to
@@ -606,9 +631,12 @@ func NewAltheaApp(
 	// updates on a foreign chain have been observed
 	ibcTransferAppModule := transfer.NewAppModule(ibcTransferKeeper)
 	ibcTransferIBCModule := transfer.NewIBCModule(ibcTransferKeeper)
+	icaAppModule := ica.NewAppModule(nil, &icaHostKeeper)
+	icaHostIBCModule := icahost.NewIBCModule(icaHostKeeper)
 
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcTransferIBCModule)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcTransferIBCModule).
+		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
 	ibcKeeper.SetRouter(ibcRouter)
 
 	evidenceKeeper := *evidencekeeper.NewKeeper(
@@ -713,6 +741,7 @@ func NewAltheaApp(
 		evm.NewAppModule(&evmKeeper, accountKeeper),
 		erc20.NewAppModule(erc20Keeper, accountKeeper),
 		feemarket.NewAppModule(feemarketKeeper),
+		icaAppModule,
 	)
 	app.mm = &mm
 
@@ -745,6 +774,7 @@ func NewAltheaApp(
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,
+		icatypes.ModuleName,
 	)
 
 	// Determine the order in which modules' EndBlock() functions are called each block
@@ -753,6 +783,7 @@ func NewAltheaApp(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
+		icatypes.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -797,6 +828,7 @@ func NewAltheaApp(
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,
 		crisistypes.ModuleName,
+		icatypes.ModuleName,
 	)
 
 	// --------------------------------------------------------------------------
@@ -1081,6 +1113,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(erc20types.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
+	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 
 	return paramsKeeper
 }

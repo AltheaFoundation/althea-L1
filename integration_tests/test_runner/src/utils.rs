@@ -38,6 +38,9 @@ pub const OPERATION_TIMEOUT: Duration = Duration::from_secs(30);
 pub const TOTAL_TIMEOUT: Duration = Duration::from_secs(300);
 // The config file location for hermes
 pub const HERMES_CONFIG: &str = "/althea/tests/assets/ibc-relayer-config.toml";
+pub const RELAYER_MNEMONIC_FILE: &str = "/althea/tests/assets/relayer-mnemonic.txt";
+pub const ALTHEA_RELAYER_ADDRESS: &str = "althea1zcr3730w7cwl5q7n28yuu3l9hmuq4w9j8rg8at";
+pub const IBC_RELAYER_ADDRESS: &str = "cosmos1vdv5jau58qxv2xgzw6fj3ql70txnpl08z9pngs";
 
 /// this value reflects the contents of /tests/container-scripts/setup-validator.sh
 /// and is used to compute if a stake change is big enough to trigger a validator set
@@ -112,9 +115,10 @@ pub fn get_fee(denom: Option<String>) -> Coin {
     }
 }
 
-pub fn get_deposit() -> Coin {
+pub fn get_deposit(denom_override: Option<String>) -> Coin {
+    let denom = denom_override.unwrap_or_else(|| STAKING_TOKEN.to_string());
     Coin {
-        denom: STAKING_TOKEN.to_string(),
+        denom,
         amount: 1_000_000_000u64.into(),
     }
 }
@@ -125,7 +129,7 @@ pub fn get_test_token_name() -> String {
 
 /// Returns the chain-id of the althea instance running, see ALTHEA CHAIN CONSTANTS above
 pub fn get_chain_id() -> String {
-    "althea-test-1".to_string()
+    "althea_417834-1".to_string()
 }
 
 /// Returns the chain-id of the gaiad instance running, see IBC CHAIN CONSTANTS above
@@ -331,7 +335,7 @@ pub async fn create_parameter_change_proposal(
     let res = contact
         .submit_parameter_change_proposal(
             proposal,
-            get_deposit(),
+            get_deposit(None),
             fee_coin,
             key,
             Some(TOTAL_TIMEOUT),
@@ -383,7 +387,7 @@ pub async fn execute_register_erc20_proposal(
     let res = contact
         .submit_register_erc20_proposal(
             proposal,
-            get_deposit(),
+            get_deposit(None),
             get_fee(None),
             keys[0].validator_key,
             Some(duration),
@@ -424,7 +428,7 @@ pub async fn execute_register_coin_proposal(
     let res = contact
         .submit_register_coin_proposal(
             proposal,
-            get_deposit(),
+            get_deposit(None),
             get_fee(None),
             keys[0].validator_key,
             Some(duration),
@@ -474,7 +478,7 @@ pub async fn execute_upgrade_proposal(
     let res = contact
         .submit_upgrade_proposal(
             proposal,
-            get_deposit(),
+            get_deposit(None),
             get_fee(None),
             keys[0].validator_key,
             Some(duration),
@@ -626,11 +630,9 @@ pub async fn check_cosmos_balances(
 pub async fn wait_for_cosmos_online(contact: &Contact, timeout: Duration) {
     // First check if we're past the first block, we can just start
     let latest = contact.get_latest_block().await;
-    if latest.is_ok() {
-        if let LatestBlock::Latest { block } = latest.unwrap() {
-            if block.header.unwrap().height > 1 {
-                return;
-            }
+    if let Ok(LatestBlock::Latest { block }) = latest {
+        if block.header.unwrap().height > 1 {
+            return;
         }
     };
 
@@ -953,9 +955,8 @@ pub async fn get_convertible_coin(contact: &Contact, validator_keys: &[Validator
             token: coin.clone(),
         })
         .await;
-    if pair.is_ok() {
-        let pair = pair.unwrap().into_inner().token_pair;
-        if pair.is_some() {
+    if let Ok(pair) = pair {
+        if pair.into_inner().token_pair.is_some() {
             return coin.clone();
         }
     };
