@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/althea-net/althea-chain/contracts"
+	"github.com/althea-net/althea-L1/contracts"
 )
 
 // Redeclare the contract for package use

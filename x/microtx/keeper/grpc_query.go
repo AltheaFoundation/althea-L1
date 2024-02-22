@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/althea-net/althea-chain/x/microtx/types"
+	"github.com/althea-net/althea-L1/x/microtx/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerror "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"

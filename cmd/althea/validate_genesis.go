@@ -16,7 +16,7 @@ import (
 
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	altheacfg "github.com/althea-net/althea-chain/config"
+	altheacfg "github.com/althea-net/althea-L1/config"
 )
 
 // This file is mostly a copy of the genutil ValidateGenesisCmd and helpers over at https://github.com/cosmos/cosmos-sdk

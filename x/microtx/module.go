@@ -21,10 +21,10 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/althea-net/althea-chain/x/microtx/client/cli"
-	"github.com/althea-net/althea-chain/x/microtx/client/rest"
-	"github.com/althea-net/althea-chain/x/microtx/keeper"
-	"github.com/althea-net/althea-chain/x/microtx/types"
+	"github.com/althea-net/althea-L1/x/microtx/client/cli"
+	"github.com/althea-net/althea-L1/x/microtx/client/rest"
+	"github.com/althea-net/althea-L1/x/microtx/keeper"
+	"github.com/althea-net/althea-L1/x/microtx/types"
 )
 
 // type check to ensure the interface is properly implemented

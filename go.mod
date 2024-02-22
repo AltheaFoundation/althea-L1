@@ -1,4 +1,4 @@
-module github.com/althea-net/althea-chain
+module github.com/althea-net/althea-L1
 
 go 1.19
 

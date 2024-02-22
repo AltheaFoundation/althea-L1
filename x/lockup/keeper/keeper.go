@@ -6,7 +6,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	"github.com/althea-net/althea-chain/x/lockup/types"
+	"github.com/althea-net/althea-L1/x/lockup/types"
 )
 
 type Keeper struct {

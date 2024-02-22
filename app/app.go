@@ -113,14 +113,14 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 
-	altheaappparams "github.com/althea-net/althea-chain/app/params"
-	altheacfg "github.com/althea-net/althea-chain/config"
-	lockup "github.com/althea-net/althea-chain/x/lockup"
-	lockupkeeper "github.com/althea-net/althea-chain/x/lockup/keeper"
-	lockuptypes "github.com/althea-net/althea-chain/x/lockup/types"
-	"github.com/althea-net/althea-chain/x/microtx"
-	microtxkeeper "github.com/althea-net/althea-chain/x/microtx/keeper"
-	microtxtypes "github.com/althea-net/althea-chain/x/microtx/types"
+	altheaappparams "github.com/althea-net/althea-L1/app/params"
+	altheacfg "github.com/althea-net/althea-L1/config"
+	lockup "github.com/althea-net/althea-L1/x/lockup"
+	lockupkeeper "github.com/althea-net/althea-L1/x/lockup/keeper"
+	lockuptypes "github.com/althea-net/althea-L1/x/lockup/types"
+	"github.com/althea-net/althea-L1/x/microtx"
+	microtxkeeper "github.com/althea-net/althea-L1/x/microtx/keeper"
+	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
 )
 
 func init() {

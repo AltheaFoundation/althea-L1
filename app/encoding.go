@@ -1,7 +1,7 @@
 package althea
 
 import (
-	"github.com/althea-net/althea-chain/app/params"
+	"github.com/althea-net/althea-L1/app/params"
 
 	ethermintenccdc "github.com/evmos/ethermint/encoding/codec"
 )

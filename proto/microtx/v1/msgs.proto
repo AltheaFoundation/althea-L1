@@ -3,7 +3,7 @@ package microtx.v1;
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-option go_package = "github.com/althea-net/althea-chain/x/microtx/types";
+option go_package = "github.com/althea-net/althea-L1/x/microtx/types";
 
 // Msg defines the state transitions possible within microtx
 service Msg {

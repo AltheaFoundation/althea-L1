@@ -50,10 +50,10 @@ import (
 	ethermintserverflags "github.com/evmos/ethermint/server/flags"
 
 	// Althea
-	althea "github.com/althea-net/althea-chain/app"
-	"github.com/althea-net/althea-chain/app/params"
-	altheacfg "github.com/althea-net/althea-chain/config"
-	"github.com/althea-net/althea-chain/crypto/keyring"
+	althea "github.com/althea-net/althea-L1/app"
+	"github.com/althea-net/althea-L1/app/params"
+	altheacfg "github.com/althea-net/althea-L1/config"
+	"github.com/althea-net/althea-L1/crypto/keyring"
 )
 
 const EnvPrefix = "althea"

@@ -9,7 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/althea-net/althea-chain/x/microtx/types"
+	"github.com/althea-net/althea-L1/x/microtx/types"
 )
 
 // GetTxCmd bundles all the subcmds together so they appear under `gravity tx`

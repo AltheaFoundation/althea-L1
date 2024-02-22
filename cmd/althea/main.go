@@ -8,8 +8,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	althea "github.com/althea-net/althea-chain/app"
-	altheacfg "github.com/althea-net/althea-chain/config"
+	althea "github.com/althea-net/althea-L1/app"
+	altheacfg "github.com/althea-net/althea-L1/config"
 )
 
 func main() {
