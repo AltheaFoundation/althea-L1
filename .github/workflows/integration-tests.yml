@@ -90,3 +90,17 @@ jobs:
         run: tests/all-up-test.sh LIQUID_ACCOUNTS
         env:
           NO_IMAGE_BUILD: True
+  ica_host:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Test the interchain accounts host module on Althea-L1
+        run: tests/all-up-test.sh ICA_HOST
+        env:
+          NO_IMAGE_BUILD: True
