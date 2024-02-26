@@ -73,7 +73,10 @@ pub async fn liquid_accounts_test(
     )
     .await
     .expect("Unable to liquify account");
-    info!("Got liquify account response:\n{}", liquify_res.raw_log);
+    info!(
+        "Got liquify account response:\n{}\nTx Hash: {}\nGas used: {}",
+        liquify_res.raw_log, liquify_res.txhash, liquify_res.gas_used
+    );
 
     let (liquid_account, _eth_owner) =
         assert_correct_account(web3, &mut microtx_qc, to_liquify.ethermint_address).await;
@@ -227,7 +230,7 @@ pub async fn liquify_account(
             to_liquify,
             Fee {
                 amount: vec![fee],
-                gas_limit: 1_000_000,
+                gas_limit: 2_500_000,
                 payer: None,
                 granter: None,
             },
