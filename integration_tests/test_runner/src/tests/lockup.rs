@@ -67,7 +67,7 @@ async fn fund_lock_exempt_user(
     validator_keys: &[ValidatorKeys],
     lock_exempt: EthermintUserKey,
 ) {
-    let sender = validator_keys.get(0).unwrap().validator_key;
+    let sender = validator_keys.first().unwrap().validator_key;
     let amount = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: one_atom() * 100u16.into(),
@@ -92,7 +92,7 @@ async fn fund_authorized_users(
     auth_1: EthermintUserKey,
     auth_2: EthermintUserKey,
 ) {
-    let sender = validator_keys.get(0).unwrap().validator_key;
+    let sender = validator_keys.first().unwrap().validator_key;
     let amount = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: one_atom(),
@@ -127,7 +127,7 @@ pub async fn lockup_the_chain(
     lock_exempt: &EthermintUserKey,
 ) {
     let to_change = create_lockup_param_changes(lock_exempt.ethermint_address);
-    let proposer = validator_keys.get(0).unwrap();
+    let proposer = validator_keys.first().unwrap();
     let zero_fee = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: 0u8.into(),
@@ -176,7 +176,7 @@ pub async fn fail_to_send(
     validator_keys: &[ValidatorKeys],
     authorized_users: [EthermintUserKey; 3],
 ) {
-    let sender = validator_keys.get(0).unwrap().validator_key;
+    let sender = validator_keys.first().unwrap().validator_key;
     let receiver = get_user_key(None);
     let amount = ProtoCoin {
         denom: STAKING_TOKEN.clone(),
@@ -528,7 +528,7 @@ async fn unlock_the_chain(contact: &Contact, validator_keys: &[ValidatorKeys]) {
         key: LOCKED_PARAM_KEY.to_string(),
         value: format!("{}", false),
     };
-    let proposer = validator_keys.get(0).unwrap();
+    let proposer = validator_keys.first().unwrap();
     let zero_fee = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: 0u8.into(),
@@ -544,7 +544,7 @@ async fn successfully_send(
     validator_keys: &[ValidatorKeys],
     lock_exempt: EthermintUserKey,
 ) {
-    let val0 = validator_keys.get(0).unwrap().validator_key;
+    let val0 = validator_keys.first().unwrap().validator_key;
     let amount = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: one_atom(),
@@ -554,7 +554,7 @@ async fn successfully_send(
 }
 
 async fn send_unlocked_token(contact: &Contact, validator_keys: &[ValidatorKeys]) {
-    let val0 = validator_keys.get(0).unwrap().validator_key;
+    let val0 = validator_keys.first().unwrap().validator_key;
     let amount = Coin {
         denom: footoken_metadata(contact).await.base,
         amount: one_atom(),

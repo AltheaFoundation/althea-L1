@@ -82,7 +82,7 @@ pub async fn main() {
     // Send the EVM users some althea token
     send_funds_bulk(
         &contact,
-        keys.get(0).expect("No validator keys?").validator_key,
+        keys.first().expect("No validator keys?").validator_key,
         &EVM_USER_KEYS
             .clone()
             .into_iter()

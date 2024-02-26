@@ -267,8 +267,7 @@ pub async fn enable_ica_host(
         .expect("No ica host params returned?");
     if host_params.host_enabled
         && host_params
-            .allow_messages
-            .get(0)
+            .allow_messages.first()
             .map(|m| m == "*")
             .unwrap_or(false)
     {

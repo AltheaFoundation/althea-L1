@@ -154,8 +154,8 @@ pub async fn send_erc20s_to_evm_users(
     info!("Checking for existing balances, might skip funding");
     if !web3
         .get_erc20_balance(
-            *erc20_contracts.get(0).unwrap(),
-            *destinations.get(0).unwrap(),
+            *erc20_contracts.first().unwrap(),
+            *destinations.first().unwrap(),
         )
         .await
         .unwrap()
