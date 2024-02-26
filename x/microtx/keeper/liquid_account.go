@@ -55,7 +55,7 @@ func (k Keeper) DoLiquify(
 // deployLiquidInfrastructureNFTContract deploys an NFT contract for the given `account` and then transfers ownership of the
 // underlying NFT to the given `account`
 func (k Keeper) deployLiquidInfrastructureNFTContract(ctx sdk.Context, account sdk.AccAddress) (common.Address, error) {
-	contract, err := k.DeployContract(ctx, types.LiquidInfrastructureNFT, account.String())
+	contract, err := k.DeployContract(ctx, account, types.LiquidInfrastructureNFT, account.String())
 	if err != nil {
 		return common.Address{}, sdkerrors.Wrap(err, "liquid infrastructure account contract deployment failed")
 	}
@@ -68,21 +68,7 @@ func (k Keeper) deployLiquidInfrastructureNFTContract(ctx sdk.Context, account s
 		return common.Address{}, sdkerrors.Wrapf(err, "expected contract with version %v, got %v", CurrentNFTVersion, version)
 	}
 
-	_, err = k.transferLiquidInfrastructureNFTFromModuleToAddress(ctx, contract, account)
-	if err != nil {
-		return common.Address{}, sdkerrors.Wrapf(err, "could not transfer nft from %v to %v", types.ModuleEVMAddress.Hex(), SDKToEVMAddress(account).Hex())
-	}
-
 	return contract, nil
-}
-
-// transferLiquidInfrastructureNFTFromModuleToAddress calls the ERC721 "transferFrom" method on `contract`,
-// passing the arguments needed to transfer the LiquidInfrastructureNFT Account token
-// from the x/microtx module account to to the `newOwner`
-func (k Keeper) transferLiquidInfrastructureNFTFromModuleToAddress(ctx sdk.Context, contract common.Address, newOwner sdk.AccAddress) (*evmtypes.MsgEthereumTxResponse, error) {
-	// ABI: transferFrom(   address from,           address to,                uint256 tokenId)
-	var args = ToMethodArgs(types.ModuleEVMAddress, SDKToEVMAddress(newOwner), &AccountId)
-	return k.CallMethod(ctx, "transferFrom", types.LiquidInfrastructureNFT, types.ModuleEVMAddress, &contract, &big.Int{}, args...)
 }
 
 // addLiquidInfrastructureEntry Sets a new Liquid Infrastructure Account entry in the bech32 -> EVM NFT address mapping
@@ -219,7 +205,6 @@ func (k Keeper) IsLiquidAccountWithValue(ctx sdk.Context, account sdk.AccAddress
 // returns nil, ErrNoLiquidAccount if `nftAddress` is not a record for any Liquid Infrastructure Account
 func (k Keeper) GetLiquidAccountByNFTAddress(ctx sdk.Context, nftAddress common.Address) (*types.LiquidInfrastructureAccount, error) {
 	var liquidAccount *types.LiquidInfrastructureAccount = nil
-	var err error = nil
 
 	k.IterateLiquidAccounts(
 		ctx,
@@ -235,10 +220,6 @@ func (k Keeper) GetLiquidAccountByNFTAddress(ctx sdk.Context, nftAddress common.
 			return false
 		},
 	)
-
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to find liquid account by NFT")
-	}
 
 	return liquidAccount, nil
 }
@@ -275,7 +256,6 @@ func (k Keeper) GetLiquidAccountsByEVMOwner(ctx sdk.Context, ownerAddress common
 // GetLiquidAccountByNFTAddress fetches info about a Liquid Infrastructure Account given the address of the LiquidInfrastructureNFT in the EVM
 func (k Keeper) CollectLiquidAccounts(ctx sdk.Context) ([]*types.LiquidInfrastructureAccount, error) {
 	var liquidAccounts []*types.LiquidInfrastructureAccount
-	var err error = nil
 
 	k.IterateLiquidAccounts(
 		ctx,
@@ -288,10 +268,6 @@ func (k Keeper) CollectLiquidAccounts(ctx sdk.Context) ([]*types.LiquidInfrastru
 			return false
 		},
 	)
-
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to collect liquid accounts")
-	}
 
 	return liquidAccounts, nil
 }
@@ -431,12 +407,14 @@ func ToMethodArgs(args ...interface{}) []interface{} {
 
 // DeployContract will deploy an arbitrary smart-contract. It takes the compiled contract object as
 // well as an arbitrary number of arguments which will be supplied to the contructor. All contracts deployed
-// are deployed by the module account.
+// are deployed by the deployer account.
 func (k Keeper) DeployContract(
 	ctx sdk.Context,
+	deployer sdk.AccAddress,
 	contract evmtypes.CompiledContract,
 	args ...interface{},
 ) (common.Address, error) {
+	deployerEVM := SDKToEVMAddress(deployer)
 	// pack constructor arguments according to compiled contract's abi
 	// method name is nil in this case, we are calling the constructor
 	ctorArgs, err := contract.ABI.Pack("", args...)
@@ -455,7 +433,7 @@ func (k Keeper) DeployContract(
 	copy(data[len(contract.Bin):], ctorArgs)
 
 	// retrieve sequence number first to derive address if not by CREATE2
-	nonce, err := k.accountKeeper.GetSequence(ctx, types.ModuleAddress.Bytes())
+	nonce, err := k.accountKeeper.GetSequence(ctx, deployer)
 	if err != nil {
 		return common.Address{},
 			sdkerrors.Wrapf(types.ErrContractDeployment,
@@ -463,7 +441,7 @@ func (k Keeper) DeployContract(
 	}
 
 	amount := big.NewInt(0)
-	_, err = k.CallEVM(ctx, types.ModuleEVMAddress, nil, amount, data, true)
+	_, err = k.CallEVM(ctx, deployerEVM, nil, amount, data, true)
 	if err != nil {
 		return common.Address{},
 			sdkerrors.Wrapf(types.ErrContractDeployment,
@@ -471,7 +449,7 @@ func (k Keeper) DeployContract(
 	}
 
 	// Derive the newly created module smart contract using the module address and nonce
-	return crypto.CreateAddress(types.ModuleEVMAddress, nonce), nil
+	return crypto.CreateAddress(deployerEVM, nonce), nil
 }
 
 // CallMethod is a function to interact with a contract once it is deployed. It inputs the method name on the
@@ -517,12 +495,12 @@ func (k Keeper) CallEVM(
 		return nil, err
 	}
 
-	// As evmKeeper.ApplyMessage does not directly increment the gas meter, any transaction
-	// completed through the CSR module account will technically be 'free'. As such, we can
-	// set the gas limit to some arbitrarily high enough number such that every transaction
-	// from the module account will always go through.
-	// see: https://github.com/evmos/ethermint/blob/35850e620d2825327a175f46ec3e8c60af84208d/x/evm/keeper/state_transition.go#L466
-	gasLimit := DefaultGasLimit
+	cosmosLimit := ctx.GasMeter().Limit()
+	gasUsed := ctx.GasMeter().GasConsumed()
+	if cosmosLimit <= gasUsed {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrOutOfGas, "insufficient gas")
+	}
+	gasLimit := cosmosLimit - gasUsed
 
 	// Create the EVM msg
 	msg := ethtypes.NewMessage(
@@ -544,6 +522,11 @@ func (k Keeper) CallEVM(
 	if err != nil {
 		return nil, err
 	}
+
+	// ApplyMessage does not consume gas, so we need to consume the gas used within the EVM
+	// This is completely different than the ethermint gas consumption, where an AnteHandler consumes all the gas
+	// the EVM Tx is allowed to use, and then refunds remaining gas after execution.
+	ctx.GasMeter().ConsumeGas(res.GasUsed, "EVM call")
 
 	if res.Failed() {
 		return nil, sdkerrors.Wrap(evmtypes.ErrVMExecution, res.VmError)
