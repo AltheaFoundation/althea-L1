@@ -60,7 +60,8 @@ pub async fn erc20_register_and_round_trip_test(
     erc20_contracts: Vec<EthAddress>,
 ) {
     // Register an ERC20 in the EVM to a new Cosmos Coin controlled by the bank module
-    let registered_erc20 = erc20_contracts.first()
+    let registered_erc20 = erc20_contracts
+        .first()
         .expect("No ERC20 contracts passed to erc20 happy path test?");
 
     // TODO: Test unregistered conversion failure
