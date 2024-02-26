@@ -34,7 +34,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
     };
     send_funds_bulk(
         contact,
-        validator_keys.get(0).unwrap().validator_key,
+        validator_keys.first().unwrap().validator_key,
         &senders
             .clone()
             .iter()

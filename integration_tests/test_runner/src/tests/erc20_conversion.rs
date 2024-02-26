@@ -60,15 +60,14 @@ pub async fn erc20_register_and_round_trip_test(
     erc20_contracts: Vec<EthAddress>,
 ) {
     // Register an ERC20 in the EVM to a new Cosmos Coin controlled by the bank module
-    let registered_erc20 = erc20_contracts
-        .get(0)
+    let registered_erc20 = erc20_contracts.first()
         .expect("No ERC20 contracts passed to erc20 happy path test?");
 
     // TODO: Test unregistered conversion failure
     let _unregistered_erc20 = erc20_contracts.get(1).expect(
         "Not enough ERC20 contracts passed to erc20 happy path test? Need at least 2 contracts.",
     );
-    let recvr = evm_user_keys.get(0).expect("No EVM users?");
+    let recvr = evm_user_keys.first().expect("No EVM users?");
     let transfer_recvr = evm_user_keys.get(1).expect("fewer than 2 evm users?");
     let start_evm_balance = web3
         .get_erc20_balance(*registered_erc20, transfer_recvr.eth_address)
@@ -107,7 +106,7 @@ pub async fn erc20_register_and_round_trip_test(
             }),
             recvr.ethermint_address,
             Some(OPERATION_TIMEOUT),
-            validator_keys.get(0).unwrap().validator_key,
+            validator_keys.first().unwrap().validator_key,
         )
         .await
         .expect("Unable to send evm user any {STAKING_TOKEN}");
@@ -338,7 +337,7 @@ pub async fn coin_register_and_round_trip_test(
         .await
         .expect("could not connect to ERC20 query client");
     let registered_denom = cosmos_coin.base.clone();
-    let recvr = evm_user_keys.get(0).expect("No EVM users?");
+    let recvr = evm_user_keys.first().expect("No EVM users?");
     let transfer_recvr = evm_user_keys.get(1).expect("fewer than 2 evm users?");
     let erc20_module_eth_address = cosmos_address_to_eth_address(
         get_module_account_address("erc20", None).expect("unable to get erc20 module address"),
@@ -382,7 +381,7 @@ pub async fn coin_register_and_round_trip_test(
             }),
             recvr.ethermint_address,
             Some(OPERATION_TIMEOUT),
-            validator_keys.get(0).unwrap().validator_key,
+            validator_keys.first().unwrap().validator_key,
         )
         .await
         .expect("Unable to send evm user any {STAKING_TOKEN}");

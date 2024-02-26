@@ -216,7 +216,7 @@ pub const HIGH_GAS_PRICE: u64 = 1_000_000_000u64;
 // Generates a new BridgeUserKey through randomly generated secrets
 // cosmos_prefix allows for generation of a cosmos_address with a different prefix than "althea"
 pub fn get_user_key(cosmos_prefix: Option<&str>) -> EthermintUserKey {
-    *bulk_get_user_keys(cosmos_prefix, 1).get(0).unwrap()
+    *bulk_get_user_keys(cosmos_prefix, 1).first().unwrap()
 }
 
 // Generates many CosmosUser keys + addresses
@@ -946,7 +946,7 @@ async fn wait_for_txids(txids: Vec<Result<Uint256, Web3Error>>, web3: &Web3) {
 
 // Fetches a coin which has been registered with the ERC20 module, and thus has an Althea L1 EVM representation
 pub async fn get_convertible_coin(contact: &Contact, validator_keys: &[ValidatorKeys]) -> String {
-    let coin = COINS_FOR_REGISTERING.get(0).unwrap();
+    let coin = COINS_FOR_REGISTERING.first().unwrap();
     let mut erc20_qc = Erc20QueryClient::connect(contact.get_url())
         .await
         .expect("Unable to connect to ERC20 query client");

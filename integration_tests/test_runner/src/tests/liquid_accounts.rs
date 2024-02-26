@@ -104,7 +104,7 @@ pub async fn liquid_accounts_test(
             .await;
         coin_erc20
     } else {
-        COINS_FOR_REGISTERING.get(0).unwrap().clone()
+        COINS_FOR_REGISTERING.first().unwrap().clone()
     };
     let pair = erc20_qc
         .token_pair(QueryTokenPairRequest {
@@ -259,7 +259,7 @@ pub async fn assert_correct_account(
     info!("Got liquid account: {ta:?}");
     let tas = ta.unwrap().into_inner().accounts;
     assert_eq!(tas.len(), 1);
-    let ta = tas.get(0).expect("No liquid account?");
+    let ta = tas.first().expect("No liquid account?");
 
     info!("Checking owner of account: {ta:?}");
     let query_owner = CosmosAddress::from_bech32(ta.owner.clone())
@@ -329,7 +329,7 @@ pub async fn execute_microtxs(
     };
     let destination = CosmosAddress::from_str(&liquid_account.account).unwrap();
     let nft_address = EthAddress::from_str(&liquid_account.nft_address).unwrap();
-    let querier = erc20_holders.get(0).unwrap().eth_address;
+    let querier = erc20_holders.first().unwrap().eth_address;
 
     // Send unregistered coin
     let res = contact
