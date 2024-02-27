@@ -166,6 +166,10 @@ func (m *msgServer) Liquify(c context.Context, msg *types.MsgLiquify) (*types.Ms
 		return nil, sdkerrors.Wrap(sdkerrors.ErrorInvalidSigner, "liquid infrastructure accounts must use ethermint keys, perhaps this is the first message the sender has sent?")
 	}
 
+	if m.Keeper.IsLiquidAccount(ctx, sender) {
+		return nil, types.ErrAccountAlreadyLiquid
+	}
+
 	// Call the actual liquify implementation
 	nft, err := m.Keeper.DoLiquify(ctx, sender)
 	if err != nil {
