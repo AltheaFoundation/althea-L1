@@ -99,14 +99,12 @@ import (
 
 	// EVM + ERC20
 
-	cantoante "github.com/Canto-Network/Canto/v5/app/ante"
 	"github.com/Canto-Network/Canto/v5/x/erc20"
 	erc20client "github.com/Canto-Network/Canto/v5/x/erc20/client"
 	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
 	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
 	"github.com/Canto-Network/Canto/v5/x/vesting"
 	ethermintsrvflags "github.com/evmos/ethermint/server/flags"
-	ethermint "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm"
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
@@ -118,6 +116,7 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 
+	"github.com/althea-net/althea-L1/app/ante"
 	altheaappparams "github.com/althea-net/althea-L1/app/params"
 	altheacfg "github.com/althea-net/althea-L1/config"
 	lockup "github.com/althea-net/althea-L1/x/lockup"
@@ -454,7 +453,9 @@ func NewAltheaApp(
 		appCodec,
 		keys[authtypes.StoreKey],
 		app.GetSubspace(authtypes.ModuleName),
-		ethermint.ProtoAccount,
+		// Here we define the default account type to be a cosmos BaseAccount, rather than an EthAccount
+		// See the ante directory for more information
+		authtypes.ProtoBaseAccount,
 		maccPerms,
 	)
 	app.accountKeeper = &accountKeeper
@@ -874,7 +875,7 @@ func NewAltheaApp(
 
 	// Create the chain of mempool Tx filter functions, aka the AnteHandler
 	maxGasWanted := cast.ToUint64(appOpts.Get(ethermintsrvflags.EVMMaxTxGasWanted))
-	options := cantoante.HandlerOptions{
+	options := ante.HandlerOptions{
 		AccountKeeper:   accountKeeper,
 		BankKeeper:      bankKeeper,
 		IBCKeeper:       &ibcKeeper,
@@ -890,7 +891,7 @@ func NewAltheaApp(
 	if err := options.Validate(); err != nil {
 		panic(fmt.Errorf("invalid antehandler options: %v", err))
 	}
-	ah := cantoante.NewAnteHandler(options)
+	ah := ante.NewAnteHandler(options)
 
 	// Create the lockup AnteHandler, to ensure sufficient decentralization before funds may be transferred
 	lockupAnteHandler := lockup.NewWrappedLockupAnteHandler(ah, lockupKeeper, appCodec)
