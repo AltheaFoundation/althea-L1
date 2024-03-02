@@ -4,19 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 
+	altheacfg "github.com/althea-net/althea-L1/config"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/spf13/cobra"
 	tmtypes "github.com/tendermint/tendermint/types"
-
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-
-	altheacfg "github.com/althea-net/althea-L1/config"
 )
 
 // This file is mostly a copy of the genutil ValidateGenesisCmd and helpers over at https://github.com/cosmos/cosmos-sdk
@@ -49,6 +50,7 @@ func ValidateGenesisCmd(mbm module.BasicManager) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			var chainId string = genDoc.ChainID
 
 			var genState map[string]json.RawMessage
 			if err = json.Unmarshal(genDoc.AppState, &genState); err != nil {
@@ -59,7 +61,7 @@ func ValidateGenesisCmd(mbm module.BasicManager) *cobra.Command {
 				return fmt.Errorf("error validating genesis file %s: %s", genesis, err.Error())
 			}
 
-			if err = altheaValidateGenesis(cdc, clientCtx, genState); err != nil {
+			if err = altheaValidateGenesis(cdc, clientCtx, genState, chainId); err != nil {
 				return fmt.Errorf("error performing Althea-L1 additional validations on genesis file %s: %s", genesis, err.Error())
 			}
 
@@ -87,19 +89,24 @@ func validateGenDoc(importGenesisFile string) (*tmtypes.GenesisDoc, error) {
 
 // AltheaValidateGenesis performs the Althea Chain validations, and is the whole reason the above code was copied
 // from the cosmos-sdk source
-func altheaValidateGenesis(cdc codec.JSONCodec, ctx client.Context, genesis map[string]json.RawMessage) error {
+func altheaValidateGenesis(cdc codec.JSONCodec, ctx client.Context, genesis map[string]json.RawMessage, chainId string) error {
 	mintGenDoc := genesis[minttypes.ModuleName]
 	if err := ValidateMintGenesis(cdc, ctx, mintGenDoc); err != nil {
 		return err
 	}
 
 	bankGenDoc := genesis[banktypes.ModuleName]
+	authGenDoc := genesis[authtypes.ModuleName]
 	evmGenDoc := genesis[evmtypes.ModuleName]
+	gentxGenDoc := genesis[genutiltypes.ModuleName]
 
 	if err := ValidateCoinDeclarations(cdc, ctx, bankGenDoc); err != nil {
 		return err
 	}
 	if err := ValidateEVMDenom(cdc, ctx, bankGenDoc, evmGenDoc); err != nil {
+		return err
+	}
+	if err := ValidateGenesisTx(cdc, ctx, authGenDoc, gentxGenDoc, chainId); err != nil {
 		return err
 	}
 
@@ -251,4 +258,71 @@ func MetadatasToMap(metadata []banktypes.Metadata) map[string]banktypes.Metadata
 	return ret
 }
 
-// TODO: Validate all the genesis transactions so we can set up a convenient CI job for chain launch
+// Validates the gentx in the config if they have already been 'collected' meaning moved out of the individual files and
+// info the	genesis.json file. The default command for doing this checks for account existance, and token amounts but does not
+// validate the signatures themselves, we are adding that signature verification functionality here.
+func ValidateGenesisTx(cdc codec.JSONCodec, ctx client.Context, authGenesis json.RawMessage, genTx json.RawMessage, chainId string) error {
+	var authData authtypes.GenesisState
+	if err := cdc.UnmarshalJSON(authGenesis, &authData); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", banktypes.ModuleName, err)
+	}
+	var genTxData genutiltypes.GenesisState
+	if err := cdc.UnmarshalJSON(genTx, &genTxData); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", genutiltypes.ModuleName, err)
+	}
+	var txJSONDecoder = ctx.TxConfig.TxJSONDecoder()
+	accounts, err := authtypes.UnpackAccounts(authData.Accounts)
+	if err != nil {
+		return err
+	}
+
+	// create a map of account data to account numbers and sequence numbers for easy lookup
+	accMap := make(map[string]struct {
+		accountNumber uint64
+		sequence      uint64
+	})
+	for _, acc := range accounts {
+		accMap[acc.GetAddress().String()] = struct {
+			accountNumber uint64
+			sequence      uint64
+		}{
+			accountNumber: acc.GetAccountNumber(),
+			sequence:      acc.GetSequence(),
+		}
+	}
+
+	for _, jsonRawTx := range genTxData.GenTxs {
+		var genTx sdk.Tx
+		var err error
+		if genTx, err = txJSONDecoder(jsonRawTx); err != nil {
+			return err
+		}
+		sigTx := genTx.(authsigning.SigVerifiableTx)
+		signModeHandler := ctx.TxConfig.SignModeHandler()
+
+		signers := sigTx.GetSigners()
+		sigs, err := sigTx.GetSignaturesV2()
+		if err != nil {
+			return err
+		}
+		if len(sigs) != len(signers) {
+			return fmt.Errorf("expected %d signatures, got %d", len(signers), len(sigs))
+		}
+		var sig = sigs[0]
+
+		signingData := authsigning.SignerData{
+			ChainID:       chainId,
+			AccountNumber: accMap[sig.PubKey.Address().String()].accountNumber,
+			Sequence:      accMap[sig.PubKey.Address().String()].sequence,
+		}
+
+		err = authsigning.VerifySignature(sig.PubKey, signingData, sig.Data, signModeHandler, sigTx)
+		if err != nil {
+			fmt.Printf("Failed to validate signature for %v\n", sig.PubKey.Address())
+			return err
+		}
+	}
+
+	return nil
+
+}
