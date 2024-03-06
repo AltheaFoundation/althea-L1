@@ -67,7 +67,10 @@ func (avd EthAccountVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx
 
 		if acct == nil {
 			acc := ethtypes.ProtoAccount()
-			acc.SetAddress(from)
+			err := acc.SetAddress(from)
+			if err != nil {
+				return ctx, sdkerrors.Wrap(err, "failed to set address")
+			}
 			avd.ak.NewAccount(ctx, acc)
 			acct = statedb.NewEmptyAccount()
 		} else if acct.IsContract() {

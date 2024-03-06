@@ -133,6 +133,7 @@ func recoverPubKey(config *params.ChainConfig, blockNumber *big.Int, ethTx *etht
 		signer := ethtypes.NewEIP155Signer(config.ChainID)
 		pubkeyUncompressed, err = eip155PubKey(config, ethTx, signer)
 	case config.IsHomestead(blockNumber):
+		// nolint: exhaustruct
 		signer := ethtypes.HomesteadSigner{}
 		pubkeyUncompressed, err = homesteadPubKey(ethTx, signer)
 	default:
@@ -171,6 +172,7 @@ func eip2930PubKey(config *params.ChainConfig, tx *ethtypes.Transaction, signer 
 	switch tx.Type() {
 	case LegacyTxType:
 		if !tx.Protected() {
+			// nolint: exhaustruct
 			return homesteadPubKey(tx, ethtypes.HomesteadSigner{})
 		}
 		V = new(big.Int).Sub(V, new(big.Int).Mul(config.ChainID, big.NewInt(2)))
@@ -196,6 +198,7 @@ func eip155PubKey(config *params.ChainConfig, tx *ethtypes.Transaction, signer e
 		return nil, ErrTxTypeNotSupported
 	}
 	if !tx.Protected() {
+		// nolint: exhaustruct
 		return homesteadPubKey(tx, ethtypes.HomesteadSigner{})
 	}
 	if tx.ChainId().Cmp(config.ChainID) != 0 {
