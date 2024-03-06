@@ -137,7 +137,7 @@ func (suite *AnteTestSuite) TestEthSetPubkeyHandler() {
 			acc := suite.app.AccountKeeper.GetAccount(ctx, addr)
 
 			if tc.signCosmosTx {
-				builder = suite.SignTestCosmosTx(ctx, builder, privKey, acc.GetAccountNumber(), acc.GetSequence())
+				builder = suite.SignTestCosmosTx(ctx.ChainID(), builder, privKey, acc.GetAccountNumber(), acc.GetSequence())
 			}
 
 			tx := builder.GetTx()

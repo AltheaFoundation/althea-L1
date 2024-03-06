@@ -2,7 +2,6 @@ package ante_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"math/big"
 	"testing"
@@ -359,12 +358,11 @@ func (suite *AnteTestSuite) CreateTestCosmosTxBuilder(gasPrice sdk.Int, denom st
 	return txBuilder
 }
 
-func (suite *AnteTestSuite) SignTestCosmosTx(ctx sdk.Context, txBuilder client.TxBuilder, privkey cryptotypes.PrivKey, accNum uint64, sequence uint64) client.TxBuilder {
-	fmt.Println("Signing cosmos tx: ", sdk.AccAddress(privkey.PubKey().Address().Bytes()).String(), accNum, sequence, suite.ctx.ChainID())
+func (suite *AnteTestSuite) SignTestCosmosTx(chainId string, txBuilder client.TxBuilder, privkey cryptotypes.PrivKey, accNum uint64, sequence uint64) client.TxBuilder {
 	signMode := suite.clientCtx.TxConfig.SignModeHandler().DefaultMode()
 	pubKey := privkey.PubKey()
 	signerData := authsigning.SignerData{
-		ChainID:       ctx.ChainID(),
+		ChainID:       chainId,
 		AccountNumber: accNum,
 		Sequence:      sequence,
 	}

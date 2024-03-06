@@ -33,6 +33,7 @@ func isEthPubKey(pubKey cryptotypes.PubKey) bool {
 	_, ok := pubKey.(*ethsecp256k1.PubKey)
 	return ok
 }
+
 func (suite *AnteTestSuite) testCaseSetup(ctx sdk.Context, addr sdk.AccAddress, isBaseAccount bool) {
 	var acc authtypes.AccountI
 	suite.enableFeemarket = false
@@ -181,7 +182,7 @@ func (suite *AnteTestSuite) TestAccountTypeAnteHandler() {
 			acc := suite.app.AccountKeeper.GetAccount(ctx, addr)
 
 			if tc.signCosmosTx {
-				builder = suite.SignTestCosmosTx(ctx, builder, privKey, acc.GetAccountNumber(), acc.GetSequence())
+				builder = suite.SignTestCosmosTx(ctx.ChainID(), builder, privKey, acc.GetAccountNumber(), acc.GetSequence())
 			}
 
 			tx := builder.GetTx()
