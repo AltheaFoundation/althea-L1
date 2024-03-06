@@ -12,6 +12,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
 
 	ethante "github.com/evmos/ethermint/app/ante"
+	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	vestingtypes "github.com/Canto-Network/Canto/v5/x/vesting/types"
@@ -20,12 +21,12 @@ import (
 // HandlerOptions defines the list of module keepers required to run the canto
 // AnteHandler decorators.
 type HandlerOptions struct {
-	AccountKeeper   evmtypes.AccountKeeper
+	AccountKeeper   AccountKeeper
 	BankKeeper      evmtypes.BankKeeper
 	IBCKeeper       *ibckeeper.Keeper
 	FeeMarketKeeper evmtypes.FeeMarketKeeper
 	StakingKeeper   vestingtypes.StakingKeeper
-	EvmKeeper       ethante.EVMKeeper
+	EvmKeeper       *evmkeeper.Keeper
 	FeegrantKeeper  ante.FeegrantKeeper
 	SignModeHandler authsigning.SignModeHandler
 	SigGasConsumer  func(meter sdk.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
@@ -64,15 +65,15 @@ func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ethante.NewEthMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper), // Check eth effective gas price against the global MinGasPrice
 		ethante.NewEthValidateBasicDecorator(options.EvmKeeper),
 		ethante.NewEthSigVerificationDecorator(options.EvmKeeper),
-		ethante.NewEthAccountVerificationDecorator(options.AccountKeeper, options.EvmKeeper),
+		NewEthAccountVerificationDecorator(options.AccountKeeper, options.EvmKeeper),
+		NewEthSetPubkeyDecorator(options.AccountKeeper, options.EvmKeeper),
+		NewSetAccountTypeDecorator(options.AccountKeeper, options.EvmKeeper.AccountProtoFn),
 		ethante.NewCanTransferDecorator(options.EvmKeeper),
 		NewEthVestingTransactionDecorator(options.AccountKeeper),
 		ethante.NewEthGasConsumeDecorator(options.EvmKeeper, options.MaxTxGasWanted),
 		ethante.NewEthIncrementSenderSequenceDecorator(options.AccountKeeper),
 		ethante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
 		ethante.NewEthEmitEventDecorator(options.EvmKeeper), // emit eth tx hash and index at the very last ante handler.
-		NewEthSetPubkeyDecorator(options.AccountKeeper, options.EvmKeeper),
-		NewSetAccountTypeDecorator(options.AccountKeeper),
 	)
 }
 
@@ -99,7 +100,7 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewAnteDecorator(options.IBCKeeper),
 		ethante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
-		NewSetAccountTypeDecorator(options.AccountKeeper),
+		NewSetAccountTypeDecorator(options.AccountKeeper, options.EvmKeeper.AccountProtoFn),
 	)
 }
 
@@ -126,6 +127,6 @@ func newCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewAnteDecorator(options.IBCKeeper),
 		ethante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
-		NewSetAccountTypeDecorator(options.AccountKeeper),
+		NewSetAccountTypeDecorator(options.AccountKeeper, options.EvmKeeper.AccountProtoFn),
 	)
 }

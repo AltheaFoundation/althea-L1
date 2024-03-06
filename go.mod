@@ -3,23 +3,24 @@ module github.com/althea-net/althea-L1
 go 1.19
 
 require (
-	github.com/Canto-Network/Canto/v5 v5.1.0
+	github.com/Canto-Network/Canto/v5 v5.1.1
 	github.com/cosmos/cosmos-sdk v0.45.16
 	github.com/cosmos/ibc-go/v4 v4.3.1
-	github.com/evmos/ethermint v0.19.5
+	github.com/evmos/ethermint v0.19.5-fix // fixes account creation
 )
 
 replace (
 	// Canto unfortunately has their module listed as .../Canto/v2 @ versions v3.0.0, v4.0.0, and v5.0.0
 	// This replace fixes that issue until they can sort out their go.mod at various versions
-	github.com/Canto-Network/Canto/v5 => github.com/althea-net/canto/v5 v5.1.0
+	github.com/Canto-Network/Canto/v5 => github.com/althea-net/canto/v5 v5.1.1
 	github.com/btcsuite/btcutil => github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23 v0.0.0-20221014140410-2582f0aab7b2
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.16
 
 	github.com/cosmos/cosmos-sdk/simapp => cosmossdk.io/simapp v0.0.0-20230531154223-5097b0c22672
 	// Ethermint's older versions are not compatible with the end of line sdk v0.45.x
-	github.com/evmos/ethermint => github.com/althea-net/ethermint v0.19.5
+	github.com/evmos/ethermint => github.com/althea-net/ethermint v0.19.5-fix // fixes account creation
+
 	github.com/gogo/grpc => google.golang.org/grpc v1.33.2
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27

@@ -13,11 +13,11 @@ import (
 // (since the chain is fully initialized then) guarded by a special sync.RunOnce variable
 func (app *AltheaApp) assertBaseDenomMatchesConfig(ctx sdk.Context) {
 	expectedBaseDenom := config.BaseDenom
-	if app == nil || expectedBaseDenom == "" || app.mintKeeper == nil {
+	if app == nil || expectedBaseDenom == "" || app.MintKeeper == nil {
 		panic("Unable to assert first BeginBlock configuration, some values are nil when they should be initialized!")
 	}
 
-	mintDenom := app.mintKeeper.GetParams(ctx).MintDenom
+	mintDenom := app.MintKeeper.GetParams(ctx).MintDenom
 	if mintDenom == "" {
 		panic("The mint keeper does not have a valid MintDenom set!")
 	}

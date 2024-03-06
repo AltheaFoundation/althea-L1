@@ -15,10 +15,10 @@ import (
 // EthVestingTransactionDecorator validates if clawback vesting accounts are
 // permitted to perform Ethereum Tx.
 type EthVestingTransactionDecorator struct {
-	ak evmtypes.AccountKeeper
+	ak AccountKeeper
 }
 
-func NewEthVestingTransactionDecorator(ak evmtypes.AccountKeeper) EthVestingTransactionDecorator {
+func NewEthVestingTransactionDecorator(ak AccountKeeper) EthVestingTransactionDecorator {
 	return EthVestingTransactionDecorator{
 		ak: ak,
 	}

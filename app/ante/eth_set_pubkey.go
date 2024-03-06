@@ -15,6 +15,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
+	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
@@ -24,10 +25,14 @@ import (
 // This decorator should come AFTER assigning From on the Tx, AFTER signature verification, and AFTER the account is stored
 type EthSetPubkeyDecorator struct {
 	ak        AccountKeeper
-	evmKeeper EvmKeeper
+	evmKeeper *evmkeeper.Keeper
 }
 
-func NewEthSetPubkeyDecorator(ak AccountKeeper, evmKeeper EvmKeeper) EthSetPubkeyDecorator {
+func NewEthSetPubkeyDecorator(ak AccountKeeper, evmKeeper *evmkeeper.Keeper) EthSetPubkeyDecorator {
+	if evmKeeper == nil {
+		panic("evm keeper is required for EthSetPubkeyDecorator")
+	}
+
 	return EthSetPubkeyDecorator{
 		ak:        ak,
 		evmKeeper: evmKeeper,

@@ -111,6 +111,14 @@ github.com/allegro/bigcache v1.2.1-0.20190218064605-e24eb225f156/go.mod h1:Cb/ax
 github.com/allegro/bigcache v1.2.1 h1:hg1sY1raCwic3Vnsvje6TT7/pnZba83LeFck5NrFKSc=
 github.com/althea-net/canto/v5 v5.1.0 h1:zXFjQy1r467rV+MMZfNAm6bZUyJgJzV/RIn0t0Guhcg=
 github.com/althea-net/canto/v5 v5.1.0/go.mod h1:RKjv2UcnriFrgU+BrestQLeCUXW2aqX36oCmzqf6POA=
+github.com/althea-net/canto/v5 v5.1.1 h1:dyDtLoxY6b89cPKBfUt2QLr6iolcxJYU9aRWVz9PmTM=
+github.com/althea-net/canto/v5 v5.1.1/go.mod h1:bVNB/jYYwEAaG7HSetowKmuT1JgSrE31GTIT0fpfa2o=
+github.com/althea-net/ethermint v0.19.5-accountfix h1:HCJJqc06WUYe9ZdHtzLmf3BlI9I7SDvHyKxHMTBIhQ8=
+github.com/althea-net/ethermint v0.19.5-accountfix/go.mod h1:D1Jfhqtrb0q12IQLLB6w0jfjcSl/EMRCR3VKJVVPXSM=
+github.com/althea-net/ethermint v0.19.5-accountfix2 h1:/GjvX/Pcdqfkm5QJK+lnKHBRbXvG4ucSvJMvTILusy0=
+github.com/althea-net/ethermint v0.19.5-accountfix2/go.mod h1:D1Jfhqtrb0q12IQLLB6w0jfjcSl/EMRCR3VKJVVPXSM=
+github.com/althea-net/ethermint v0.19.5-fix h1:PuHOBIFrgi7BH3pok7tnJ3rSFC9HtfxjGGJWPU55bgM=
+github.com/althea-net/ethermint v0.19.5-fix/go.mod h1:D1Jfhqtrb0q12IQLLB6w0jfjcSl/EMRCR3VKJVVPXSM=
 github.com/althea-net/ethermint v0.19.5 h1:w2s8tIGL4z+XzQKK+NbQ69txzRA7xfqlXmKHUptKWBM=
 github.com/althea-net/ethermint v0.19.5/go.mod h1:D1Jfhqtrb0q12IQLLB6w0jfjcSl/EMRCR3VKJVVPXSM=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=

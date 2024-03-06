@@ -104,8 +104,9 @@ import (
 	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
 	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
 	"github.com/Canto-Network/Canto/v5/x/vesting"
+
 	ethermintsrvflags "github.com/evmos/ethermint/server/flags"
-	ethermint "github.com/evmos/ethermint/types"
+	ethtypes "github.com/evmos/ethermint/types"
 	"github.com/evmos/ethermint/x/evm"
 	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
@@ -238,27 +239,27 @@ type AltheaApp struct { // nolint: golint
 
 	// keepers
 	// NOTE: If you add anything to this struct, add a nil check to ValidateMembers below!
-	accountKeeper     *authkeeper.AccountKeeper
-	authzKeeper       *authzkeeper.Keeper
-	bankKeeper        *bankkeeper.BaseKeeper
-	capabilityKeeper  *capabilitykeeper.Keeper
-	stakingKeeper     *stakingkeeper.Keeper
-	slashingKeeper    *slashingkeeper.Keeper
-	mintKeeper        *mintkeeper.Keeper
-	distrKeeper       *distrkeeper.Keeper
-	govKeeper         *govkeeper.Keeper
-	crisisKeeper      *crisiskeeper.Keeper
-	upgradeKeeper     *upgradekeeper.Keeper
-	paramsKeeper      *paramskeeper.Keeper
-	ibcKeeper         *ibckeeper.Keeper
-	evidenceKeeper    *evidencekeeper.Keeper
-	ibcTransferKeeper *ibctransferkeeper.Keeper
-	lockupKeeper      *lockupkeeper.Keeper
-	microtxKeeper     *microtxkeeper.Keeper
-	evmKeeper         *evmkeeper.Keeper
-	erc20Keeper       *erc20keeper.Keeper
-	feemarketKeeper   *feemarketkeeper.Keeper
-	icaHostKeeper     *icahostkeeper.Keeper
+	AccountKeeper     *authkeeper.AccountKeeper
+	AuthzKeeper       *authzkeeper.Keeper
+	BankKeeper        *bankkeeper.BaseKeeper
+	CapabilityKeeper  *capabilitykeeper.Keeper
+	StakingKeeper     *stakingkeeper.Keeper
+	SlashingKeeper    *slashingkeeper.Keeper
+	MintKeeper        *mintkeeper.Keeper
+	DistrKeeper       *distrkeeper.Keeper
+	GovKeeper         *govkeeper.Keeper
+	CrisisKeeper      *crisiskeeper.Keeper
+	UpgradeKeeper     *upgradekeeper.Keeper
+	ParamsKeeper      *paramskeeper.Keeper
+	IbcKeeper         *ibckeeper.Keeper
+	EvidenceKeeper    *evidencekeeper.Keeper
+	IbcTransferKeeper *ibctransferkeeper.Keeper
+	LockupKeeper      *lockupkeeper.Keeper
+	MicrotxKeeper     *microtxkeeper.Keeper
+	EvmKeeper         *evmkeeper.Keeper
+	Erc20Keeper       *erc20keeper.Keeper
+	FeemarketKeeper   *feemarketkeeper.Keeper
+	IcaHostKeeper     *icahostkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      *capabilitykeeper.ScopedKeeper
@@ -266,13 +267,13 @@ type AltheaApp struct { // nolint: golint
 	ScopedICAHostKeeper  *capabilitykeeper.ScopedKeeper
 
 	// the module manager
-	mm *module.Manager
+	MM *module.Manager
 
 	// simulation manager
 	sm *module.SimulationManager
 
-	// configurator
-	configurator *module.Configurator
+	// Configurator
+	Configurator *module.Configurator
 }
 
 // ValidateMembers checks for unexpected values, typically nil values needed for the chain to operate
@@ -282,68 +283,68 @@ func (app AltheaApp) ValidateMembers() {
 	}
 
 	// keepers
-	if app.accountKeeper == nil {
-		panic("Nil accountKeeper!")
+	if app.AccountKeeper == nil {
+		panic("Nil AccountKeeper!")
 	}
-	if app.authzKeeper == nil {
-		panic("Nil authzKeeper!")
+	if app.AuthzKeeper == nil {
+		panic("Nil AuthzKeeper!")
 	}
-	if app.bankKeeper == nil {
-		panic("Nil bankKeeper!")
+	if app.BankKeeper == nil {
+		panic("Nil BankKeeper!")
 	}
-	if app.capabilityKeeper == nil {
-		panic("Nil capabilityKeeper!")
+	if app.CapabilityKeeper == nil {
+		panic("Nil CapabilityKeeper!")
 	}
-	if app.stakingKeeper == nil {
-		panic("Nil stakingKeeper!")
+	if app.StakingKeeper == nil {
+		panic("Nil StakingKeeper!")
 	}
-	if app.slashingKeeper == nil {
-		panic("Nil slashingKeeper!")
+	if app.SlashingKeeper == nil {
+		panic("Nil SlashingKeeper!")
 	}
-	if app.mintKeeper == nil {
-		panic("Nil mintKeeper!")
+	if app.MintKeeper == nil {
+		panic("Nil MintKeeper!")
 	}
-	if app.distrKeeper == nil {
-		panic("Nil distrKeeper!")
+	if app.DistrKeeper == nil {
+		panic("Nil DistrKeeper!")
 	}
-	if app.govKeeper == nil {
-		panic("Nil govKeeper!")
+	if app.GovKeeper == nil {
+		panic("Nil GovKeeper!")
 	}
-	if app.crisisKeeper == nil {
-		panic("Nil crisisKeeper!")
+	if app.CrisisKeeper == nil {
+		panic("Nil CrisisKeeper!")
 	}
-	if app.upgradeKeeper == nil {
-		panic("Nil upgradeKeeper!")
+	if app.UpgradeKeeper == nil {
+		panic("Nil UpgradeKeeper!")
 	}
-	if app.paramsKeeper == nil {
-		panic("Nil paramsKeeper!")
+	if app.ParamsKeeper == nil {
+		panic("Nil ParamsKeeper!")
 	}
-	if app.ibcKeeper == nil {
-		panic("Nil ibcKeeper!")
+	if app.IbcKeeper == nil {
+		panic("Nil IbcKeeper!")
 	}
-	if app.evidenceKeeper == nil {
-		panic("Nil evidenceKeeper!")
+	if app.EvidenceKeeper == nil {
+		panic("Nil EvidenceKeeper!")
 	}
-	if app.ibcTransferKeeper == nil {
-		panic("Nil ibcTransferKeeper!")
+	if app.IbcTransferKeeper == nil {
+		panic("Nil IbcTransferKeeper!")
 	}
-	if app.lockupKeeper == nil {
-		panic("Nil lockupKeeper!")
+	if app.LockupKeeper == nil {
+		panic("Nil LockupKeeper!")
 	}
-	if app.microtxKeeper == nil {
-		panic("Nil microtxKeeper!")
+	if app.MicrotxKeeper == nil {
+		panic("Nil MicrotxKeeper!")
 	}
-	if app.evmKeeper == nil {
-		panic("Nil evmKeeper!")
+	if app.EvmKeeper == nil {
+		panic("Nil EvmKeeper!")
 	}
-	if app.erc20Keeper == nil {
-		panic("Nil erc20Keeper!")
+	if app.Erc20Keeper == nil {
+		panic("Nil Erc20Keeper!")
 	}
-	if app.feemarketKeeper == nil {
-		panic("Nil feemarketKeeper!")
+	if app.FeemarketKeeper == nil {
+		panic("Nil FeemarketKeeper!")
 	}
-	if app.icaHostKeeper == nil {
-		panic("Nil icaHostKeeper!")
+	if app.IcaHostKeeper == nil {
+		panic("Nil IcaHostKeeper!")
 	}
 
 	// scoped keepers
@@ -358,7 +359,7 @@ func (app AltheaApp) ValidateMembers() {
 	}
 
 	// managers
-	if app.mm == nil {
+	if app.MM == nil {
 		panic("Nil ModuleManager!")
 	}
 	if app.sm == nil {
@@ -425,7 +426,7 @@ func NewAltheaApp(
 	// Create all keepers and register inter-module relationships
 
 	paramsKeeper := initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
-	app.paramsKeeper = &paramsKeeper
+	app.ParamsKeeper = &paramsKeeper
 
 	bApp.SetParamStore(paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
 
@@ -436,7 +437,7 @@ func NewAltheaApp(
 		keys[capabilitytypes.StoreKey],
 		memKeys[capabilitytypes.MemStoreKey],
 	)
-	app.capabilityKeeper = &capabilityKeeper
+	app.CapabilityKeeper = &capabilityKeeper
 
 	scopedIBCKeeper := capabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	app.ScopedIBCKeeper = &scopedIBCKeeper
@@ -454,17 +455,17 @@ func NewAltheaApp(
 		appCodec,
 		keys[authtypes.StoreKey],
 		app.GetSubspace(authtypes.ModuleName),
-		ethermint.ProtoAccount,
+		authtypes.ProtoBaseAccount,
 		maccPerms,
 	)
-	app.accountKeeper = &accountKeeper
+	app.AccountKeeper = &accountKeeper
 
 	authzKeeper := authzkeeper.NewKeeper(
 		keys[authzkeeper.StoreKey],
 		appCodec,
 		bApp.MsgServiceRouter(),
 	)
-	app.authzKeeper = &authzKeeper
+	app.AuthzKeeper = &authzKeeper
 
 	bankKeeper := bankkeeper.NewBaseKeeper(
 		appCodec,
@@ -473,7 +474,7 @@ func NewAltheaApp(
 		app.GetSubspace(banktypes.ModuleName),
 		app.BlockedAddrs(),
 	)
-	app.bankKeeper = &bankKeeper
+	app.BankKeeper = &bankKeeper
 
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec,
@@ -482,7 +483,7 @@ func NewAltheaApp(
 		bankKeeper,
 		app.GetSubspace(stakingtypes.ModuleName),
 	)
-	app.stakingKeeper = &stakingKeeper
+	app.StakingKeeper = &stakingKeeper
 
 	distrKeeper := distrkeeper.NewKeeper(
 		appCodec,
@@ -494,7 +495,7 @@ func NewAltheaApp(
 		authtypes.FeeCollectorName,
 		app.ModuleAccountAddrs(),
 	)
-	app.distrKeeper = &distrKeeper
+	app.DistrKeeper = &distrKeeper
 
 	slashingKeeper := slashingkeeper.NewKeeper(
 		appCodec,
@@ -502,7 +503,7 @@ func NewAltheaApp(
 		&stakingKeeper,
 		app.GetSubspace(slashingtypes.ModuleName),
 	)
-	app.slashingKeeper = &slashingKeeper
+	app.SlashingKeeper = &slashingKeeper
 
 	upgradeKeeper := upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
@@ -511,7 +512,7 @@ func NewAltheaApp(
 		homePath,
 		&bApp,
 	)
-	app.upgradeKeeper = &upgradeKeeper
+	app.UpgradeKeeper = &upgradeKeeper
 
 	ibcKeeper := *ibckeeper.NewKeeper(
 		appCodec,
@@ -521,21 +522,21 @@ func NewAltheaApp(
 		upgradeKeeper,
 		scopedIBCKeeper,
 	)
-	app.ibcKeeper = &ibcKeeper
+	app.IbcKeeper = &ibcKeeper
 
 	ibcTransferKeeper := ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
 		ibcKeeper.ChannelKeeper, ibcKeeper.ChannelKeeper, &ibcKeeper.PortKeeper,
 		accountKeeper, bankKeeper, scopedTransferKeeper,
 	)
-	app.ibcTransferKeeper = &ibcTransferKeeper
+	app.IbcTransferKeeper = &ibcTransferKeeper
 
 	icaHostKeeper := icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
 		ibcKeeper.ChannelKeeper, &ibcKeeper.PortKeeper,
 		accountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
 	)
-	app.icaHostKeeper = &icaHostKeeper
+	app.IcaHostKeeper = &icaHostKeeper
 
 	// Connect the inter-module staking hooks together, these are the only modules allowed to interact with how staking
 	// works, including inflationary staking rewards and punishing bad actors (excluding genutil which works at genesis to
@@ -556,7 +557,7 @@ func NewAltheaApp(
 		bankKeeper,
 		authtypes.FeeCollectorName,
 	)
-	app.mintKeeper = &mintKeeper
+	app.MintKeeper = &mintKeeper
 
 	crisisKeeper := crisiskeeper.NewKeeper(
 		app.GetSubspace(crisistypes.ModuleName),
@@ -564,7 +565,7 @@ func NewAltheaApp(
 		bankKeeper,
 		authtypes.FeeCollectorName,
 	)
-	app.crisisKeeper = &crisisKeeper
+	app.CrisisKeeper = &crisisKeeper
 
 	// EVM keepers
 	tracer := cast.ToString(appOpts.Get(ethermintsrvflags.EVMTracer))
@@ -574,7 +575,7 @@ func NewAltheaApp(
 		appCodec, app.GetSubspace(feemarkettypes.ModuleName),
 		keys[feemarkettypes.StoreKey], tkeys[feemarkettypes.TransientKey],
 	)
-	app.feemarketKeeper = &feemarketKeeper
+	app.FeemarketKeeper = &feemarketKeeper
 
 	// EVM calls the go-ethereum source code within ABCI to implement an EVM within Althea Chain
 	evmKeeper := *evmkeeper.NewKeeper(
@@ -587,6 +588,7 @@ func NewAltheaApp(
 		stakingKeeper,
 		feemarketKeeper,
 		tracer,
+		ethtypes.ProtoAccountWithAddress,
 	)
 
 	// ERC20 provides translation between Cosmos-style tokens and Ethereum ERC20 contracts so that things like IBC work
@@ -598,12 +600,12 @@ func NewAltheaApp(
 		bankKeeper,
 		&evmKeeper,
 	)
-	app.erc20Keeper = &erc20Keeper
+	app.Erc20Keeper = &erc20Keeper
 
 	// Connect the inter-module EVM hooks together, these are the only modules allowed to interact with how contracts are
 	// executed, including ERC20's  Cosmos Coin <-> EVM ERC20 Token translation functions via magic contract address
 	evmKeeper = *evmKeeper.SetHooks(evmkeeper.NewMultiEvmHooks(erc20Keeper.Hooks()))
-	app.evmKeeper = &evmKeeper
+	app.EvmKeeper = &evmKeeper
 
 	// Register custom governance proposal logic via router keys and handler functions
 	govRouter := govtypes.NewRouter()
@@ -623,7 +625,7 @@ func NewAltheaApp(
 		stakingKeeper,
 		govRouter,
 	)
-	app.govKeeper = &govKeeper
+	app.GovKeeper = &govKeeper
 
 	// Construct the IBC "stack", a chain of IBC modules which enable arbitrary loosely-coupled Msg processing per module
 	// This is the simplest sort of stack, with just the core and a single IBC app for token transfers
@@ -645,7 +647,7 @@ func NewAltheaApp(
 		&stakingKeeper,
 		slashingKeeper,
 	)
-	app.evidenceKeeper = &evidenceKeeper
+	app.EvidenceKeeper = &evidenceKeeper
 
 	// Althea custom modules
 
@@ -653,13 +655,13 @@ func NewAltheaApp(
 	lockupKeeper := lockupkeeper.NewKeeper(
 		appCodec, keys[lockuptypes.StoreKey], app.GetSubspace(lockuptypes.ModuleName),
 	)
-	app.lockupKeeper = &lockupKeeper
+	app.LockupKeeper = &lockupKeeper
 
 	// Microtx enables peer-to-peer automated microtransactions to form the payment layer for Althea-based networks
 	microtxKeeper := microtxkeeper.NewKeeper(
 		keys[microtxtypes.StoreKey], app.GetSubspace(microtxtypes.ModuleName), appCodec, &bankKeeper, &accountKeeper, &evmKeeper, &erc20Keeper,
 	)
-	app.microtxKeeper = &microtxKeeper
+	app.MicrotxKeeper = &microtxKeeper
 
 	// --------------------------------------------------------------------------
 	// ----------------------- AppModule Intitialization ------------------------
@@ -743,7 +745,7 @@ func NewAltheaApp(
 		feemarket.NewAppModule(feemarketKeeper),
 		icaAppModule,
 	)
-	app.mm = &mm
+	app.MM = &mm
 
 	// --------------------------------------------------------------------------
 	// ---------------------------- ABCI Ordering -------------------------------
@@ -838,8 +840,8 @@ func NewAltheaApp(
 	mm.RegisterInvariants(&crisisKeeper)
 	mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 	configurator := module.NewConfigurator(appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	app.configurator = &configurator
-	mm.RegisterServices(*app.configurator)
+	app.Configurator = &configurator
+	mm.RegisterServices(*app.Configurator)
 
 	// Simapp provides fuzz testing capabilities
 	sm := *module.NewSimulationManager(
@@ -917,7 +919,7 @@ func (app *AltheaApp) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker delegates the ABCI BeginBlock execution to the ModuleManager
 func (app *AltheaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	out := app.mm.BeginBlock(ctx, req)
+	out := app.MM.BeginBlock(ctx, req)
 	firstBlock.Do(func() { // Run the startup firstBeginBlocker assertions only once
 		app.firstBeginBlocker(ctx, req)
 	})
@@ -932,7 +934,7 @@ func (app *AltheaApp) firstBeginBlocker(ctx sdk.Context, _ abci.RequestBeginBloc
 
 // EndBlocker delegates the ABCI EndBlock execution to the ModuleManager
 func (app *AltheaApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
-	return app.mm.EndBlock(ctx, req)
+	return app.MM.EndBlock(ctx, req)
 }
 
 // InitChainer deserializes the given chain genesis state, registers in-place upgrade migrations, and delegates
@@ -943,9 +945,9 @@ func (app *AltheaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) ab
 		panic(err)
 	}
 
-	app.upgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
+	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.MM.GetVersionMap())
 
-	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+	return app.MM.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
 // LoadHeight loads the blockchain a particular height
@@ -1020,7 +1022,7 @@ func (app *AltheaApp) GetMemKey(storeKey string) *sdk.MemoryStoreKey {
 // GetSubspace returns a param subspace for a given module name.
 // Reading params is fine, but they should be updated by governace proposal
 func (app *AltheaApp) GetSubspace(moduleName string) paramstypes.Subspace {
-	subspace, _ := app.paramsKeeper.GetSubspace(moduleName)
+	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
 	return subspace
 }
 
