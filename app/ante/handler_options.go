@@ -16,6 +16,10 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	vestingtypes "github.com/Canto-Network/Canto/v5/x/vesting/types"
+
+	"github.com/althea-net/althea-L1/x/gasfree"
+	gasfreekeeper "github.com/althea-net/althea-L1/x/gasfree/keeper"
+	microtxkeeper "github.com/althea-net/althea-L1/x/microtx/keeper"
 )
 
 // HandlerOptions defines the list of module keepers required to run the canto
@@ -32,6 +36,8 @@ type HandlerOptions struct {
 	SigGasConsumer  func(meter sdk.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
 	Cdc             codec.BinaryCodec
 	MaxTxGasWanted  uint64
+	GasfreeKeeper   *gasfreekeeper.Keeper
+	MicrotxKeeper   *microtxkeeper.Keeper
 }
 
 // Validate checks if the keepers are defined
@@ -53,6 +59,12 @@ func (options HandlerOptions) Validate() error {
 	}
 	if options.EvmKeeper == nil {
 		return sdkerrors.Wrap(sdkerrors.ErrLogic, "evm keeper is required for AnteHandler")
+	}
+	if options.GasfreeKeeper == nil {
+		return sdkerrors.Wrap(sdkerrors.ErrLogic, "gasfree keeper is required for AnteHandler")
+	}
+	if options.MicrotxKeeper == nil {
+		return sdkerrors.Wrap(sdkerrors.ErrLogic, "microtx keeper is required for AnteHandler")
 	}
 	return nil
 }
@@ -84,12 +96,17 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewSetUpContextDecorator(),
 		ante.NewRejectExtensionOptionsDecorator(),
 		ante.NewValidateBasicDecorator(),
-		ante.NewMempoolFeeDecorator(),
-		ethante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
+		// Gasfree txs ignore the mempool fee requirement
+		gasfree.NewSelectiveBypassDecorator(*options.GasfreeKeeper, ante.NewMempoolFeeDecorator()),
+		// Gasfree txs ignore the min gas price requirement
+		gasfree.NewSelectiveBypassDecorator(*options.GasfreeKeeper, ethante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper)),
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper),
+		// Gasfree txs do not have fees deducted the normal way, their fees will be deducted separately
+		gasfree.NewSelectiveBypassDecorator(*options.GasfreeKeeper, ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper)),
+		// Charge gas fees for gasfree messages
+		NewChargeGasfreeFeesDecorator(options.AccountKeeper, *options.GasfreeKeeper, *options.MicrotxKeeper),
 		NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.Cdc),
 		NewValidatorCommissionDecorator(options.Cdc),
 		// SetPubKeyDecorator must be called before all signature verification decorators

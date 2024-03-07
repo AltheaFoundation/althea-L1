@@ -121,6 +121,8 @@ import (
 	"github.com/althea-net/althea-L1/app/ante"
 	altheaappparams "github.com/althea-net/althea-L1/app/params"
 	altheacfg "github.com/althea-net/althea-L1/config"
+	gasfreekeeper "github.com/althea-net/althea-L1/x/gasfree/keeper"
+	gasfreetypes "github.com/althea-net/althea-L1/x/gasfree/types"
 	lockup "github.com/althea-net/althea-L1/x/lockup"
 	lockupkeeper "github.com/althea-net/althea-L1/x/lockup/keeper"
 	lockuptypes "github.com/althea-net/althea-L1/x/lockup/types"
@@ -205,6 +207,7 @@ var (
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		lockuptypes.ModuleName:         nil,
 		microtxtypes.ModuleName:        nil,
+		gasfreetypes.ModuleName:        nil,
 		feemarkettypes.ModuleName:      nil,
 		icatypes.ModuleName:            nil,
 	}
@@ -256,6 +259,7 @@ type AltheaApp struct { // nolint: golint
 	IbcTransferKeeper *ibctransferkeeper.Keeper
 	LockupKeeper      *lockupkeeper.Keeper
 	MicrotxKeeper     *microtxkeeper.Keeper
+	GasfreeKeeper     *gasfreekeeper.Keeper
 	EvmKeeper         *evmkeeper.Keeper
 	Erc20Keeper       *erc20keeper.Keeper
 	FeemarketKeeper   *feemarketkeeper.Keeper
@@ -274,6 +278,9 @@ type AltheaApp struct { // nolint: golint
 
 	// Configurator
 	Configurator *module.Configurator
+
+	// amino and proto encoding
+	EncodingConfig altheaappparams.EncodingConfig
 }
 
 // ValidateMembers checks for unexpected values, typically nil values needed for the chain to operate
@@ -333,6 +340,9 @@ func (app AltheaApp) ValidateMembers() {
 	}
 	if app.MicrotxKeeper == nil {
 		panic("Nil MicrotxKeeper!")
+	}
+	if app.GasfreeKeeper == nil {
+		panic("Nil GasfreeKeeper!")
 	}
 	if app.EvmKeeper == nil {
 		panic("Nil EvmKeeper!")
@@ -397,7 +407,8 @@ func NewAltheaApp(
 		ibchost.StoreKey, upgradetypes.StoreKey, evidencetypes.StoreKey,
 		ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		erc20types.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey,
-		lockuptypes.StoreKey, microtxtypes.StoreKey, icahosttypes.StoreKey,
+		lockuptypes.StoreKey, microtxtypes.StoreKey, gasfreetypes.StoreKey,
+		icahosttypes.StoreKey,
 	)
 	// Transient keys which only last for a block before being wiped
 	// Params uses thsi to track whether some parameter changed this block or not
@@ -417,6 +428,7 @@ func NewAltheaApp(
 		keys:              keys,
 		tKeys:             tkeys,
 		memKeys:           memKeys,
+		EncodingConfig:    encodingConfig,
 	}
 
 	// --------------------------------------------------------------------------
@@ -657,9 +669,15 @@ func NewAltheaApp(
 	)
 	app.LockupKeeper = &lockupKeeper
 
+	// Gasfree allows for gasless transactions by bypassing the gas charging ante handlers for specific txs consisting of
+	// governance controlled message types. These txs are charged fees out-of-band in a separate ante handler
+	gasfreeKeeper := gasfreekeeper.NewKeeper(appCodec, keys[gasfreetypes.StoreKey], app.GetSubspace(gasfreetypes.ModuleName))
+	app.GasfreeKeeper = &gasfreeKeeper
+
 	// Microtx enables peer-to-peer automated microtransactions to form the payment layer for Althea-based networks
 	microtxKeeper := microtxkeeper.NewKeeper(
-		keys[microtxtypes.StoreKey], app.GetSubspace(microtxtypes.ModuleName), appCodec, &bankKeeper, &accountKeeper, &evmKeeper, &erc20Keeper,
+		keys[microtxtypes.StoreKey], app.GetSubspace(microtxtypes.ModuleName), appCodec,
+		&bankKeeper, &accountKeeper, &evmKeeper, &erc20Keeper, &gasfreeKeeper,
 	)
 	app.MicrotxKeeper = &microtxKeeper
 
@@ -875,20 +893,8 @@ func NewAltheaApp(
 	app.SetEndBlocker(app.EndBlocker)
 
 	// Create the chain of mempool Tx filter functions, aka the AnteHandler
-	maxGasWanted := cast.ToUint64(appOpts.Get(ethermintsrvflags.EVMMaxTxGasWanted))
-	options := ante.HandlerOptions{
-		AccountKeeper:   accountKeeper,
-		BankKeeper:      bankKeeper,
-		IBCKeeper:       &ibcKeeper,
-		FeeMarketKeeper: feemarketKeeper,
-		StakingKeeper:   stakingKeeper,
-		EvmKeeper:       &evmKeeper,
-		FeegrantKeeper:  nil,
-		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-		SigGasConsumer:  SigVerificationGasConsumer,
-		Cdc:             appCodec,
-		MaxTxGasWanted:  maxGasWanted,
-	}
+
+	options := app.NewAnteHandlerOptions(appOpts)
 	if err := options.Validate(); err != nil {
 		panic(fmt.Errorf("invalid antehandler options: %v", err))
 	}
@@ -1112,6 +1118,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(lockuptypes.ModuleName)
 	paramsKeeper.Subspace(microtxtypes.ModuleName)
+	paramsKeeper.Subspace(gasfreetypes.ModuleName)
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(erc20types.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
@@ -1123,4 +1130,23 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // registerUpgradeHandlers registers in-place upgrades, which are faster and easier than genesis-based upgrades
 func (app *AltheaApp) registerUpgradeHandlers() {
 	// No op
+}
+
+func (app *AltheaApp) NewAnteHandlerOptions(appOpts servertypes.AppOptions) ante.HandlerOptions {
+	maxGasWanted := cast.ToUint64(appOpts.Get(ethermintsrvflags.EVMMaxTxGasWanted))
+	return ante.HandlerOptions{
+		AccountKeeper:   app.AccountKeeper,
+		BankKeeper:      app.BankKeeper,
+		IBCKeeper:       app.IbcKeeper,
+		FeeMarketKeeper: app.FeemarketKeeper,
+		StakingKeeper:   app.StakingKeeper,
+		EvmKeeper:       app.EvmKeeper,
+		FeegrantKeeper:  nil,
+		SignModeHandler: app.EncodingConfig.TxConfig.SignModeHandler(),
+		SigGasConsumer:  SigVerificationGasConsumer,
+		Cdc:             app.AppCodec(),
+		MaxTxGasWanted:  maxGasWanted,
+		GasfreeKeeper:   app.GasfreeKeeper,
+		MicrotxKeeper:   app.MicrotxKeeper,
+	}
 }

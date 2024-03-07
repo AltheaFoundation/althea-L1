@@ -35,7 +35,7 @@ func (sbd SelectiveBypassDecorator) AnteHandle(
 		return ctx, sdkerrors.Wrap(err, "failed to check AnteDecorator can be bypassed")
 	}
 
-	if gasFree {
+	if !gasFree {
 		return sbd.bypassable.AnteHandle(ctx, tx, simulate, next)
 	} else {
 		return next(ctx, tx, simulate)

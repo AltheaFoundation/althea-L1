@@ -124,16 +124,7 @@ func (suite *AnteTestSuite) SetupTest() {
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 
 	// nolint: exhaustruct
-	anteHandler := ante.NewAnteHandler(ante.HandlerOptions{
-		AccountKeeper:   suite.app.AccountKeeper,
-		BankKeeper:      suite.app.BankKeeper,
-		EvmKeeper:       suite.app.EvmKeeper,
-		FeegrantKeeper:  nil,
-		IBCKeeper:       suite.app.IbcKeeper,
-		FeeMarketKeeper: suite.app.FeemarketKeeper,
-		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-		SigGasConsumer:  althea.SigVerificationGasConsumer,
-	})
+	anteHandler := ante.NewAnteHandler(suite.app.NewAnteHandlerOptions(simapp.EmptyAppOptions{}))
 
 	suite.anteHandler = anteHandler
 
