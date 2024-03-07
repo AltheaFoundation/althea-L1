@@ -40,7 +40,7 @@ func (wad WrappedAnteHandler) AnteHandle(
 	return next(modCtx, tx, simulate)
 }
 
-// NewAnteHandler returns an AnteHandler that ensures any transaction under a locked chain
+// NewLockupAnteHandler returns an AnteHandler that ensures any transaction under a locked chain
 // originates from a LockExempt address
 func NewLockupAnteHandler(lockupKeeper keeper.Keeper, cdc codec.Codec) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(NewLockupAnteDecorator(lockupKeeper, cdc))
