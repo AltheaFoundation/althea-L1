@@ -15,6 +15,7 @@ import (
 	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 
+	gasfreekeeper "github.com/althea-net/althea-L1/x/gasfree/keeper"
 	"github.com/althea-net/althea-L1/x/microtx/types"
 )
 
@@ -30,6 +31,7 @@ type Keeper struct {
 	accountKeeper *authkeeper.AccountKeeper
 	evmKeeper     *evmkeeper.Keeper
 	erc20Keeper   *erc20keeper.Keeper
+	gasfreeKeeper *gasfreekeeper.Keeper
 }
 
 // Check for nil members
@@ -46,6 +48,9 @@ func (k Keeper) ValidateMembers() {
 	if k.erc20Keeper == nil {
 		panic("Nil erc20Keeper!")
 	}
+	if k.gasfreeKeeper == nil {
+		panic("Nil gasfreeKeeper!")
+	}
 }
 
 // NewKeeper returns a new instance of the microtx keeper
@@ -57,6 +62,7 @@ func NewKeeper(
 	accKeeper *authkeeper.AccountKeeper,
 	evmKeeper *evmkeeper.Keeper,
 	erc20Keeper *erc20keeper.Keeper,
+	gasfreeKeeper *gasfreekeeper.Keeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -72,6 +78,7 @@ func NewKeeper(
 		accountKeeper: accKeeper,
 		evmKeeper:     evmKeeper,
 		erc20Keeper:   erc20Keeper,
+		gasfreeKeeper: gasfreeKeeper,
 	}
 
 	k.ValidateMembers()

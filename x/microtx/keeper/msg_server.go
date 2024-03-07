@@ -62,49 +62,86 @@ func (m msgServer) Microtx(c context.Context, msg *types.MsgMicrotx) (*types.Msg
 // Microtx implements the transfer of funds from sender to receiver
 // Due to the function of Liquid Infrastructure Accounts, any Microtx must transfer only EVM compatible bank coins
 func (k Keeper) Microtx(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.AccAddress, amount sdk.Coin) error {
-	var erc20Amount common.Address // `amount.Denom` converted to an ERC20 address
-	// The native token is automatically usable within the EVM
-	if amount.Denom != config.BaseDenom {
-		// Ensure the input tokens are actively registered as an ERC20-convertible token
-		pair, found := k.erc20Keeper.GetTokenPair(ctx, k.erc20Keeper.GetTokenPairID(ctx, amount.Denom))
-		if !found {
-			return sdkerrors.Wrapf(types.ErrInvalidMicrotx, "token %v is not registered as an erc20, only evm-compatible tokens may be used", amount.Denom)
-		}
-		if !pair.Enabled {
-			return sdkerrors.Wrapf(types.ErrInvalidMicrotx, "token %v is registered as an erc20 (%v), but the pair is not enabled", amount.Denom, pair.Erc20Address)
-		}
-		// Collect the ERC20s for later use in funneling
-		erc20Amount = common.HexToAddress(pair.Erc20Address)
-	}
-
-	feeCollected, err := k.DeductMicrotxFee(ctx, sender, amount)
-
+	erc20Address, err := k.ValidateAndGetERC20Address(ctx, amount)
 	if err != nil {
-		return sdkerrors.Wrap(err, "unable to collect fees")
+		return err
 	}
 
-	err = k.bankKeeper.SendCoins(ctx, sender, receiver, sdk.NewCoins(amount))
+	// If MsgMicrotx is not a gas free msg, then the fees should be charged here since they were not charged in the antehandler
+	if !k.gasfreeKeeper.IsGasFreeMsgType(ctx, sdk.MsgTypeURL(&types.MsgMicrotx{})) {
+		collected, err := k.DeductMicrotxFee(ctx, sender, amount)
+		if err != nil {
+			return sdkerrors.Wrap(err, "unable to collect MsgMicrotx fees")
+		}
+		ctx.EventManager().EmitEvent(types.NewEventMicrotxFeeCollected(sender.String(), *collected))
+	}
 
+	// Perform the transfer now that fees have been collected
+	err = k.bankKeeper.SendCoins(ctx, sender, receiver, sdk.NewCoins(amount))
 	if err != nil {
 		return sdkerrors.Wrap(err, "unable to send tokens via the bank module")
 	}
 
 	// Emit an event for the block's event log
 	ctx.EventManager().EmitEvent(
-		types.NewEventMicrotx(sender.String(), receiver.String(), amount, *feeCollected),
+		types.NewEventMicrotx(sender.String(), receiver.String(), amount),
 	)
 
 	// Detect if this is a Liquid Infrastructure Account and if so
 	// migrate balances to the NFT if the amounts are in excess of any configured threshold
 	k.Logger(ctx).Debug("Detecting and funneling excess balances for liquid infrastructure accounts")
-	if err := k.RedirectLiquidAccountExcessBalance(ctx, receiver, erc20Amount); err != nil {
+	if err := k.RedirectLiquidAccountExcessBalance(ctx, receiver, erc20Address); err != nil {
 		return sdkerrors.Wrapf(err, "failed to redirect excess balance")
 	}
 
 	return nil
 }
 
-// checkAndDeductSendToEthFees asserts that the minimum chainFee has been met for the given sendAmount
+func (k Keeper) ValidateAndGetERC20Address(ctx sdk.Context, amount sdk.Coin) (common.Address, error) {
+	var erc20Address common.Address
+	// The native token is automatically usable within the EVM
+	if amount.Denom != config.BaseDenom {
+		// Ensure the input tokens are actively registered as an ERC20-convertible token
+		pair, found := k.erc20Keeper.GetTokenPair(ctx, k.erc20Keeper.GetTokenPairID(ctx, amount.Denom))
+		if !found {
+			return common.Address{}, sdkerrors.Wrapf(types.ErrInvalidMicrotx, "token %v is not registered as an erc20, only evm-compatible tokens may be used", amount.Denom)
+		}
+		if !pair.Enabled {
+			return common.Address{}, sdkerrors.Wrapf(types.ErrInvalidMicrotx, "token %v is registered as an erc20 (%v), but the pair is not enabled", amount.Denom, pair.Erc20Address)
+		}
+		// Collect the ERC20 address for later use in funneling
+		erc20Address = common.HexToAddress(pair.Erc20Address)
+	}
+
+	return erc20Address, nil
+}
+
+// DeductMsgMicrotxFee is expected to be called from the AnteHandler to deduct the fee for the Msg
+// It is possible for MsgMicrotx to not be a gasfree message type, since governance controls the list,
+// in that case the fee should be deducted in the Msg handler
+//
+// WARNING: Do **NOT** call this from the MsgMicrotx handler, as it will result in bad event logs, call DeductMicrotxFee instead
+func (k Keeper) DeductMsgMicrotxFee(ctx sdk.Context, msg *types.MsgMicrotx) (feeCollected *sdk.Coin, err error) {
+	_, err = k.ValidateAndGetERC20Address(ctx, msg.Amount)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "unable to deduct Microtx fees")
+	}
+
+	sender, err := sdk.AccAddressFromBech32(msg.Sender)
+	if err != nil {
+		return nil, err
+	}
+
+	feeCollected, err = k.DeductMicrotxFee(ctx, sender, msg.Amount)
+
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "unable to collect fees")
+	}
+
+	return
+}
+
+// DeductMicrotxFee will check and deduct the MsgMicrotx fee for the given sendAmount, based on the MicrotxFeeBasisPoints param value
 func (k Keeper) DeductMicrotxFee(ctx sdk.Context, sender sdk.AccAddress, sendAmount sdk.Coin) (feeCollected *sdk.Coin, err error) {
 	// Compute the minimum fees which must be paid
 	microtxFeeBasisPoints, err := k.GetMicrotxFeeBasisPoints(ctx)
@@ -143,8 +180,8 @@ func (k Keeper) DeductMicrotxFee(ctx sdk.Context, sender sdk.AccAddress, sendAmo
 // getMicrotxFeeForAmount Computes the fee a user must pay for any input `amount`, given the current `basisPoints`
 func (k Keeper) getMicrotxFeeForAmount(amount sdk.Int, basisPoints uint64) sdk.Int {
 	return sdk.NewDecFromInt(amount).
-		QuoInt64(int64(BasisPointDivisor)).
 		MulInt64(int64(basisPoints)).
+		QuoInt64(int64(BasisPointDivisor)).
 		TruncateInt()
 }
 

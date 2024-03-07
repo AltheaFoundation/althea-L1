@@ -16,7 +16,10 @@ const (
 	MicrotxKeySender   = "sender"
 	MicrotxKeyReceiver = "receiver"
 	MicrotxKeyAmount   = "amount"
-	MicrotxKeyFee      = "fee"
+
+	EventTypeMicrotxFeeCollected = "microtx-fee-collected"
+	MicrotxFeeCollectedKeySender = "sender"
+	MicrotxFeeCollectedKeyFee    = "fee"
 
 	EventTypeBalanceRedirect = "balance-redirect"
 	RedirectKeyReceiver      = "receiver"
@@ -28,13 +31,20 @@ const (
 	LiquifyKeyNFTAddress = "nft-address"
 )
 
-func NewEventMicrotx(sender string, receiver string, amount sdk.Coin, fee sdk.Coin) sdk.Event {
+func NewEventMicrotx(sender string, receiver string, amount sdk.Coin) sdk.Event {
 	return sdk.NewEvent(
 		EventTypeMicrotx,
 		sdk.NewAttribute(MicrotxKeySender, sender),
 		sdk.NewAttribute(MicrotxKeyReceiver, receiver),
 		sdk.NewAttribute(MicrotxKeyAmount, amount.String()),
-		sdk.NewAttribute(MicrotxKeyFee, fee.String()),
+	)
+}
+
+func NewEventMicrotxFeeCollected(sender string, fee sdk.Coin) sdk.Event {
+	return sdk.NewEvent(
+		EventTypeMicrotxFeeCollected,
+		sdk.NewAttribute(MicrotxFeeCollectedKeySender, sender),
+		sdk.NewAttribute(MicrotxFeeCollectedKeyFee, fee.String()),
 	)
 }
 
