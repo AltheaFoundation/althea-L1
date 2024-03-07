@@ -4,6 +4,7 @@ use crate::evm_utils::{
     get_liquid_account_owner, get_thresholds, set_thresholds, withdraw_liquid_account_balances,
     LiquidInfrastructureThreshold,
 };
+use crate::type_urls::MSG_LIQUIFY_TYPE_URL;
 use crate::utils::{
     execute_register_coin_proposal, get_fee, get_test_token_name, get_unregistered_coin_for_erc20,
     get_user_key, one_eth, send_funds_bulk, EthermintUserKey, RegisterCoinProposalParams,
@@ -25,7 +26,6 @@ use deep_space::{Address as CosmosAddress, Coin, Contact, Fee, Msg, PrivateKey};
 use tonic::transport::Channel;
 use web30::client::Web3;
 
-pub const MSG_LIQUIFY_TYPE_URL: &str = "/microtx.v1.MsgLiquify";
 pub const SKIP_GOV: bool = false;
 
 /// Simulates activity of automated peer-to-peer transactions on Althea networks,

@@ -1,5 +1,6 @@
 // microtx
-pub const MSG_MICROTX_TYPE_URL: &str = "/microtx.v1.MsgMicrotx";
+pub const MSG_MICROTX_TYPE_URL: &str = "/althea.microtx.v1.MsgMicrotx";
+pub const MSG_LIQUIFY_TYPE_URL: &str = "/althea.microtx.v1.MsgLiquify";
 
 // authz
 pub const GENERIC_AUTHORIZATION_TYPE_URL: &str = "/cosmos.authz.v1beta1.GenericAuthorization";
