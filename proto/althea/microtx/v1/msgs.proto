@@ -42,7 +42,13 @@ message EventMicrotx {
   string receiver = 2;
   repeated cosmos.base.v1beta1.Coin amounts = 3
       [ (gogoproto.nullable) = false ];
-  repeated cosmos.base.v1beta1.Coin fee = 4 [ (gogoproto.nullable) = false ];
+}
+
+// A type for the block's event log, Microtx fees may be collected out-of-band and so
+// this event may be emitted in an AnteHandler or during the Msg handler
+message EventMicrotxFeeCollected {
+  string sender = 1;
+  repeated cosmos.base.v1beta1.Coin fee = 2 [ (gogoproto.nullable) = false ];
 }
 
 // A type for the block's event log recording when a Liquid Infrastructure account
