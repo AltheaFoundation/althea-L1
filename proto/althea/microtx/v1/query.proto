@@ -1,7 +1,8 @@
 syntax = "proto3";
-package microtx.v1;
-import "microtx/v1/genesis.proto";
-import "microtx/v1/msgs.proto";
+package althea.microtx.v1;
+
+import "althea/microtx/v1/genesis.proto";
+import "althea/microtx/v1/msgs.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 option go_package = "github.com/althea-net/althea-L1/x/microtx/types";

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package microtx.v1;
+package althea.microtx.v1;
 
 option go_package = "github.com/althea-net/althea-L1/x/microtx/types";
 
