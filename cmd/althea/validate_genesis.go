@@ -298,6 +298,13 @@ func ValidateGenesisTx(cdc codec.JSONCodec, ctx client.Context, authGenesis json
 			return err
 		}
 		sigTx := genTx.(authsigning.SigVerifiableTx)
+
+		feeTx := genTx.(sdk.FeeTx)
+		feeAmount := feeTx.GetFee()
+		if feeAmount.IsZero() {
+			return fmt.Errorf("fee is zero in genesis transaction, you must provide a minimum fee for the transaction to be valid")
+		}
+
 		signModeHandler := ctx.TxConfig.SignModeHandler()
 
 		signers := sigTx.GetSigners()
