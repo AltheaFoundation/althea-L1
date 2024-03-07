@@ -4,7 +4,7 @@ ENV PATH=$PATH:/go/bin
 RUN dnf install -y git make gcc gcc-c++ which iproute iputils procps-ng vim-minimal tmux net-tools htop tar jq npm openssl-devel perl rust cargo golang wget
 
 # Download the althea gaia fork as a IBC test chain
-ADD https://github.com/althea-net/ibc-test-chain/releases/download/v9.1.4/gaiad-v9.1.4-linux-amd64 /usr/bin/gaiad
+ADD https://github.com/althea-net/ibc-test-chain/releases/download/v9.1.5/gaiad-v9.1.5-linux-amd64 /usr/bin/gaiad
 # Setup Hermes for IBC connections between chains
 ADD https://github.com/informalsystems/ibc-rs/releases/download/v1.7.0/hermes-v1.7.0-x86_64-unknown-linux-gnu.tar.gz /tmp/
 RUN cd /tmp/ && tar -xvf hermes-v1.7.0-x86_64-unknown-linux-gnu.tar.gz && mv hermes /usr/bin/
