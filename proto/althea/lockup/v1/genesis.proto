@@ -1,5 +1,5 @@
 syntax = "proto3";
-package lockup.v1;
+package althea.lockup.v1;
 
 option go_package = "github.com/althea-net/althea-L1/x/lockup/types";
 
