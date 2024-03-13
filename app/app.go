@@ -121,6 +121,7 @@ import (
 	"github.com/althea-net/althea-L1/app/ante"
 	altheaappparams "github.com/althea-net/althea-L1/app/params"
 	altheacfg "github.com/althea-net/althea-L1/config"
+	"github.com/althea-net/althea-L1/x/gasfree"
 	gasfreekeeper "github.com/althea-net/althea-L1/x/gasfree/keeper"
 	gasfreetypes "github.com/althea-net/althea-L1/x/gasfree/types"
 	lockup "github.com/althea-net/althea-L1/x/lockup"
@@ -756,8 +757,9 @@ func NewAltheaApp(
 		ibc.NewAppModule(&ibcKeeper),
 		params.NewAppModule(paramsKeeper),
 		ibcTransferAppModule,
+		gasfree.NewAppModule(gasfreeKeeper),
 		lockup.NewAppModule(lockupKeeper, bankKeeper),
-		microtx.NewAppModule(microtxKeeper, accountKeeper, bankKeeper),
+		microtx.NewAppModule(microtxKeeper, accountKeeper),
 		evm.NewAppModule(&evmKeeper, accountKeeper),
 		erc20.NewAppModule(erc20Keeper, accountKeeper),
 		feemarket.NewAppModule(feemarketKeeper),
@@ -791,6 +793,7 @@ func NewAltheaApp(
 		authz.ModuleName,
 		govtypes.ModuleName,
 		paramstypes.ModuleName,
+		gasfreetypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,
@@ -819,6 +822,7 @@ func NewAltheaApp(
 		genutiltypes.ModuleName,
 		authz.ModuleName,
 		paramstypes.ModuleName,
+		gasfreetypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,
@@ -844,6 +848,7 @@ func NewAltheaApp(
 		ibctransfertypes.ModuleName,
 		authz.ModuleName,
 		paramstypes.ModuleName,
+		gasfreetypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,

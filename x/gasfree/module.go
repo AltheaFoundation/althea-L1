@@ -1,6 +1,7 @@
 package gasfree
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -15,11 +16,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/althea-net/althea-L1/x/gasfree/keeper"
 	"github.com/althea-net/althea-L1/x/gasfree/types"
+	"github.com/althea-net/althea-L1/x/microtx/client/cli"
 )
 
 // type check to ensure the interface is properly implemented
@@ -40,6 +41,7 @@ func (AppModuleBasic) Name() string {
 
 // RegisterLegacyAminoCodec implements app module basic
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	// types.RegisterCodec(cdc)
 }
 
 // DefaultGenesis implements app module basic
@@ -63,8 +65,8 @@ func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {
 
 // GetQueryCmd implements app module basic
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	// nolint: exhaustruct
-	return &cobra.Command{}
+	return cli.GetQueryCmd()
+
 }
 
 // GetTxCmd implements app module basic
@@ -74,12 +76,17 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the distribution module.
-// also implements app modeul basic
+// also implements app module basic
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err != nil {
+		panic("Failed to register query handler")
+	}
 }
 
-// RegisterInterfaces implements app bmodule basic
+// RegisterInterfaces implements app module basic
 func (b AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	// types.RegisterInterfaces(registry)
 }
 
 //____________________________________________________________________________
@@ -87,16 +94,14 @@ func (b AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry
 // AppModule object for module implementation
 type AppModule struct {
 	AppModuleBasic
-	keeper     keeper.Keeper
-	bankKeeper bankkeeper.Keeper
+	keeper keeper.Keeper
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k keeper.Keeper, bankKeeper bankkeeper.Keeper) AppModule {
+func NewAppModule(k keeper.Keeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
-		bankKeeper:     bankKeeper,
 	}
 }
 

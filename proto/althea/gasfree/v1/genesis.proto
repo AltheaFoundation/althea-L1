@@ -7,7 +7,7 @@ option go_package = "github.com/althea-net/althea-L1/x/gasfree/types";
 message Params {
   // Messages with one of these types will not be charged gas fees in the
   // AnteHandler, but will later be charged some form of fee in the Msg handler
-  repeated string                    gas_free_message_types = 3;
+  repeated string                    gas_free_message_types = 1;
 }
 
 message GenesisState {

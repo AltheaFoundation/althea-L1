@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/althea-net/althea-L1/x/microtx/client/cli"
@@ -98,7 +97,6 @@ type AppModule struct {
 	AppModuleBasic
 	keeper        keeper.Keeper
 	accountKeeper authkeeper.AccountKeeper
-	bankKeeper    bankkeeper.Keeper
 }
 
 func (am AppModule) ConsensusVersion() uint64 {
@@ -106,12 +104,11 @@ func (am AppModule) ConsensusVersion() uint64 {
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k keeper.Keeper, accountKeeper authkeeper.AccountKeeper, bankKeeper bankkeeper.Keeper) AppModule {
+func NewAppModule(k keeper.Keeper, accountKeeper authkeeper.AccountKeeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
 		accountKeeper:  accountKeeper,
-		bankKeeper:     bankKeeper,
 	}
 }
 
