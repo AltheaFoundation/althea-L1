@@ -68,6 +68,7 @@ func (k Keeper) Microtx(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.Acc
 	}
 
 	// If MsgMicrotx is not a gas free msg, then the fees should be charged here since they were not charged in the antehandler
+	// nolint: exhaustruct
 	if !k.gasfreeKeeper.IsGasFreeMsgType(ctx, sdk.MsgTypeURL(&types.MsgMicrotx{})) {
 		collected, err := k.DeductMicrotxFee(ctx, sender, amount)
 		if err != nil {

@@ -9,6 +9,7 @@ import (
 	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
 )
 
+// nolint: exhaustruct
 var microtxMsgType string = sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{})
 
 // ChargeGasfreeFeesDecorator enables custom fee charging for gas-free transactions on a per-message basis

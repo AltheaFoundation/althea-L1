@@ -2,7 +2,6 @@ package gasfree_test
 
 import (
 	"encoding/json"
-	"math/big"
 	"testing"
 	"time"
 
@@ -24,7 +23,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -48,15 +46,10 @@ type GasfreeTestSuite struct {
 	ctx     sdk.Context
 	handler sdk.Handler
 	app     *althea.AltheaApp
-	codec   codec.Codec
-	chainID *big.Int
 
 	signer    keyring.Signer
 	ethSigner ethtypes.Signer
 	from      common.Address
-	to        sdk.AccAddress
-
-	dynamicTxFee bool
 }
 
 // / DoSetupTest setup test environment, it uses `require.TestingT` to support both `testing.T` and `testing.B`.
@@ -105,6 +98,7 @@ func (suite *GasfreeTestSuite) DoSetupTest(t require.TestingT) {
 
 	// Initialize the chain
 	suite.app.InitChain(
+		// nolint: exhaustruct
 		abci.RequestInitChain{
 			ChainId:         "althea_417834-1",
 			Validators:      []abci.ValidatorUpdate{},
@@ -113,14 +107,17 @@ func (suite *GasfreeTestSuite) DoSetupTest(t require.TestingT) {
 		},
 	)
 
+	// nolint: exhaustruct
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
 		Height:          1,
 		ChainID:         "althea_417834-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: consAddress.Bytes(),
+		// nolint: exhaustruct
 		Version: tmversion.Consensus{
 			Block: version.BlockProtocol,
 		},
+		// nolint: exhaustruct
 		LastBlockId: tmproto.BlockID{
 			Hash: tmhash.Sum([]byte("block_id")),
 			PartSetHeader: tmproto.PartSetHeader{
@@ -148,6 +145,7 @@ func (suite *GasfreeTestSuite) DoSetupTest(t require.TestingT) {
 	suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
 	valAddr := sdk.ValAddress(address.Bytes())
+	// nolint: exhaustruct
 	validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 

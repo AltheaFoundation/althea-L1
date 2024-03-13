@@ -12,6 +12,13 @@ import (
 	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
 )
 
+// ----------------
+// This file checks that the configured bypass decorators are being bypassed as expected, which gives 4 possible scenarios:
+//	1. There are no gasfree messages (no bypass)
+//  2. MsgMicrotx is the only gasfree message (expected, only bypass on txs containing only MsgMicrotx)
+//  3. MsgSend is the only gasfree message (only bypass on txs containing only MsgSend)
+//  4. MsgSend AND MsgMicrotx are the only gasfree messages (only bypass on txs containing MsgSend AND/OR MsgMicrotx)
+
 func runBypassTest(suite *AnteTestSuite, expErrorStr string, gasfreeMicrotxCtx, gasfreeSendCtx, noGasfreeCtx, bothGasfreeCtx sdk.Context, msgMicrotxTx, msgSendTx, bothTx sdk.Tx) error {
 	// --- Microtx is the only Gasfree Msg type ---
 	// Expect bypass for the Microtx tx
@@ -100,10 +107,12 @@ func (suite *AnteTestSuite) TestCosmosAnteHandlerMempoolFeeBypass() {
 
 	gasfreeMicrotxCtx, _ := suite.ctx.CacheContext()
 	gasfreeSendCtx, _ := suite.ctx.CacheContext()
+	// nolint: exhaustruct
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(gasfreeSendCtx, []string{sdk.MsgTypeURL(&banktypes.MsgSend{})})
 	noGasfreeCtx, _ := suite.ctx.CacheContext()
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(noGasfreeCtx, []string{})
 	bothGasfreeCtx, _ := suite.ctx.CacheContext()
+	// nolint: exhaustruct
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(bothGasfreeCtx, []string{sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}), sdk.MsgTypeURL(&banktypes.MsgSend{})})
 
 	// Expect the error from the mempool fee decorator to contain something like "insufficient fees; got: x required: provided fee < minimum global feey"
@@ -111,6 +120,7 @@ func (suite *AnteTestSuite) TestCosmosAnteHandlerMempoolFeeBypass() {
 }
 
 // Checks that the MinGasPrices antedecorator is bypassed for applicable txs
+// nolint: dupl
 func (suite *AnteTestSuite) TestCosmosAnteHandlerMinGasPricesBypass() {
 	suite.SetupTest()
 	suite.ctx = suite.ctx.WithIsCheckTx(false) // use checkTx false to avoid triggering mempool fee decorator
@@ -129,10 +139,12 @@ func (suite *AnteTestSuite) TestCosmosAnteHandlerMinGasPricesBypass() {
 
 	gasfreeMicrotxCtx, _ := suite.ctx.CacheContext()
 	gasfreeSendCtx, _ := suite.ctx.CacheContext()
+	// nolint: exhaustruct
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(gasfreeSendCtx, []string{sdk.MsgTypeURL(&banktypes.MsgSend{})})
 	noGasfreeCtx, _ := suite.ctx.CacheContext()
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(noGasfreeCtx, []string{})
 	bothGasfreeCtx, _ := suite.ctx.CacheContext()
+	// nolint: exhaustruct
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(bothGasfreeCtx, []string{sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}), sdk.MsgTypeURL(&banktypes.MsgSend{})})
 
 	// Expect the error from the MinGasPricesDecorator to contain something like "provided fee < minimum global fee (x < y). Please increase the gas price."
@@ -140,6 +152,7 @@ func (suite *AnteTestSuite) TestCosmosAnteHandlerMinGasPricesBypass() {
 }
 
 // Checks that the DeductFee antedecorator is bypassed for applicable txs
+// nolint: dupl
 func (suite *AnteTestSuite) TestCosmosAnteHandlerDeductFeeBypass() {
 	suite.SetupTest()
 	suite.ctx = suite.ctx.WithIsCheckTx(false) // use checkTx false to avoid triggering mempool fee decorator
@@ -158,10 +171,12 @@ func (suite *AnteTestSuite) TestCosmosAnteHandlerDeductFeeBypass() {
 
 	gasfreeMicrotxCtx, _ := suite.ctx.CacheContext()
 	gasfreeSendCtx, _ := suite.ctx.CacheContext()
+	// nolint: exhaustruct
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(gasfreeSendCtx, []string{sdk.MsgTypeURL(&banktypes.MsgSend{})})
 	noGasfreeCtx, _ := suite.ctx.CacheContext()
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(noGasfreeCtx, []string{})
 	bothGasfreeCtx, _ := suite.ctx.CacheContext()
+	// nolint: exhaustruct
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(bothGasfreeCtx, []string{sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}), sdk.MsgTypeURL(&banktypes.MsgSend{})})
 
 	// Expect the error to be a wrapped insufficient funds error

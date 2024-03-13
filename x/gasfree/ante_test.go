@@ -9,6 +9,10 @@ import (
 	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
 )
 
+// --------------
+// This file checks the SelectiveBypassDecorator by wrapping the test BypassIndicatorDecorator with it,
+// the BypassIndicatorDecorator's AnteHandlerRuns value should only increment on non-gasfree messages
+
 // NewSelectiveBypassDecorator makes a test antehandler which indicates how many times it has been run
 func NewBypassIndicatorDecorator() BypassIndicatorDecorator {
 	var runs int = 0
@@ -68,7 +72,8 @@ func (suite *GasfreeTestSuite) TestSelectiveBypassAnteDecorator() {
 			name: "single microtx bypass",
 			malleate: func() {
 				builder := suite.app.EncodingConfig.TxConfig.NewTxBuilder()
-				builder.SetMsgs(&microtxtypes.MsgMicrotx{})
+				// nolint: exhaustruct
+				suite.Require().NoError(builder.SetMsgs(&microtxtypes.MsgMicrotx{}))
 				tx := builder.GetTx()
 				txs = []sdk.Tx{tx}
 			},
@@ -82,7 +87,8 @@ func (suite *GasfreeTestSuite) TestSelectiveBypassAnteDecorator() {
 			name: "multi microtx bypass",
 			malleate: func() {
 				builder := suite.app.EncodingConfig.TxConfig.NewTxBuilder()
-				builder.SetMsgs(&microtxtypes.MsgMicrotx{}, &microtxtypes.MsgMicrotx{}, &microtxtypes.MsgMicrotx{})
+				// nolint: exhaustruct
+				suite.Require().NoError(builder.SetMsgs(&microtxtypes.MsgMicrotx{}, &microtxtypes.MsgMicrotx{}, &microtxtypes.MsgMicrotx{}))
 				tx := builder.GetTx()
 				txs = []sdk.Tx{tx}
 			},
@@ -96,7 +102,8 @@ func (suite *GasfreeTestSuite) TestSelectiveBypassAnteDecorator() {
 			name: "single microtx single send no bypass",
 			malleate: func() {
 				builder := suite.app.EncodingConfig.TxConfig.NewTxBuilder()
-				builder.SetMsgs(&microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{})
+				// nolint: exhaustruct
+				suite.Require().NoError(builder.SetMsgs(&microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{}))
 				tx := builder.GetTx()
 				txs = []sdk.Tx{tx}
 			},
@@ -110,7 +117,8 @@ func (suite *GasfreeTestSuite) TestSelectiveBypassAnteDecorator() {
 			name: "multi microtx multi send no bypass",
 			malleate: func() {
 				builder := suite.app.EncodingConfig.TxConfig.NewTxBuilder()
-				builder.SetMsgs(&microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{}, &microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{}, &microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{})
+				// nolint: exhaustruct
+				suite.Require().NoError(builder.SetMsgs(&microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{}, &microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{}, &microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{}))
 				tx := builder.GetTx()
 				txs = []sdk.Tx{tx}
 			},
@@ -123,9 +131,11 @@ func (suite *GasfreeTestSuite) TestSelectiveBypassAnteDecorator() {
 		{
 			name: "single microtx single send gov bypass",
 			malleate: func() {
+				// nolint: exhaustruct
 				suite.app.GasfreeKeeper.SetGasFreeMessageTypes(suite.ctx, []string{sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}), sdk.MsgTypeURL(&banktypes.MsgSend{})})
 				builder := suite.app.EncodingConfig.TxConfig.NewTxBuilder()
-				builder.SetMsgs(&microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{})
+				// nolint: exhaustruct
+				suite.Require().NoError(builder.SetMsgs(&microtxtypes.MsgMicrotx{}, &banktypes.MsgSend{}))
 				tx := builder.GetTx()
 				txs = []sdk.Tx{tx}
 			},
