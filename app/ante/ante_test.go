@@ -29,7 +29,7 @@ func (suite *AnteTestSuite) TestAnteHandler() {
 		suite.Require().NoError(acc.SetSequence(1))
 		suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
-		suite.Require().NoError(suite.app.EvmKeeper.SetBalance(suite.ctx, addr, big.NewInt(10000000000)))
+		suite.FundAccount(suite.ctx, acc.GetAddress(), big.NewInt(10000000000))
 
 		suite.app.FeemarketKeeper.SetBaseFee(suite.ctx, big.NewInt(100))
 	}

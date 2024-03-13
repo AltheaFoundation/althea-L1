@@ -2,7 +2,6 @@ package ante_test
 
 import (
 	"encoding/json"
-	"math"
 	"math/big"
 	"testing"
 	"time"
@@ -50,6 +49,7 @@ import (
 	althea "github.com/althea-net/althea-L1/app"
 	ante "github.com/althea-net/althea-L1/app/ante"
 	altheaconfig "github.com/althea-net/althea-L1/config"
+	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
 )
 
 type AnteTestSuite struct {
@@ -62,7 +62,6 @@ type AnteTestSuite struct {
 	oldAnteHandler  sdk.AnteHandler
 	ethSigner       ethtypes.Signer
 	enableFeemarket bool
-	enableLondonHF  bool
 	evmParamsOption func(*evmtypes.Params)
 }
 
@@ -92,13 +91,7 @@ func (suite *AnteTestSuite) SetupTest() {
 		evmGenesis := evmtypes.DefaultGenesisState()
 		evmGenesis.Params.EvmDenom = altheaconfig.BaseDenom
 		evmGenesis.Params.AllowUnprotectedTxs = false
-		if !suite.enableLondonHF {
-			maxInt := sdk.NewInt(math.MaxInt64)
-			evmGenesis.Params.ChainConfig.LondonBlock = &maxInt
-			evmGenesis.Params.ChainConfig.ArrowGlacierBlock = &maxInt
-			evmGenesis.Params.ChainConfig.GrayGlacierBlock = &maxInt
-			evmGenesis.Params.ChainConfig.MergeNetsplitBlock = &maxInt
-		}
+
 		if suite.evmParamsOption != nil {
 			suite.evmParamsOption(&evmGenesis.Params)
 		}
@@ -199,9 +192,7 @@ func Setup(isCheckTx bool, patchGenesis func(*althea.AltheaApp, althea.GenesisSt
 
 func TestAnteTestSuite(t *testing.T) {
 	// nolint: exhaustruct
-	suite.Run(t, &AnteTestSuite{
-		enableLondonHF: true,
-	})
+	suite.Run(t, &AnteTestSuite{})
 }
 
 func (s *AnteTestSuite) NewEthermintPrivkey() *ethsecp256k1.PrivKey {
@@ -219,6 +210,10 @@ func (s *AnteTestSuite) NewEthermintPrivkey() *ethsecp256k1.PrivKey {
 
 func (s *AnteTestSuite) NewCosmosPrivkey() *secp256k1.PrivKey {
 	return secp256k1.GenPrivKey()
+}
+func (s *AnteTestSuite) FundAccount(ctx sdk.Context, acc sdk.AccAddress, amount *big.Int) {
+	address := common.BytesToAddress(acc.Bytes())
+	s.Require().NoError(s.app.EvmKeeper.SetBalance(s.ctx, address, amount))
 }
 
 func (s *AnteTestSuite) BuildTestEVMTx(
@@ -338,6 +333,16 @@ func (suite *AnteTestSuite) CreateTestCosmosMsgSend(gasPrice sdk.Int, denom stri
 	return suite.CreateTestCosmosTxBuilder(gasPrice, denom, banktypes.NewMsgSend(from, to, sdk.NewCoins(sdk.NewCoin(denom, amount))))
 }
 
+func (suite *AnteTestSuite) CreateTestCosmosMsgMicrotx(gasPrice sdk.Int, denom string, amount sdk.Int, from sdk.AccAddress, to sdk.AccAddress) client.TxBuilder {
+	return suite.CreateTestCosmosTxBuilder(gasPrice, denom, microtxtypes.NewMsgMicrotx(from.String(), to.String(), sdk.NewCoin(denom, amount)))
+}
+
+func (suite *AnteTestSuite) CreateTestCosmosMsgMicrotxMsgSend(gasPrice sdk.Int, denom string, amount sdk.Int, from sdk.AccAddress, to sdk.AccAddress) client.TxBuilder {
+	msgMicrotx := microtxtypes.NewMsgMicrotx(from.String(), to.String(), sdk.NewCoin(denom, amount))
+	msgSend := banktypes.NewMsgSend(from, to, sdk.NewCoins(sdk.NewCoin(denom, amount)))
+	return suite.CreateTestCosmosTxBuilder(gasPrice, denom, msgMicrotx, msgSend)
+}
+
 func (suite *AnteTestSuite) CreateTestCosmosTxBuilder(gasPrice sdk.Int, denom string, msgs ...sdk.Msg) client.TxBuilder {
 	txBuilder := suite.clientCtx.TxConfig.NewTxBuilder()
 
@@ -396,6 +401,12 @@ func (suite *AnteTestSuite) SignTestCosmosTx(chainId string, txBuilder client.Tx
 
 	suite.Require().NoError(txBuilder.SetSignatures(sig))
 	return txBuilder
+}
+
+func (suite *AnteTestSuite) CreateSignedCosmosTx(ctx sdk.Context, txBuilder client.TxBuilder, priv cryptotypes.PrivKey) sdk.Tx {
+	addr := sdk.AccAddress(priv.PubKey().Address().Bytes())
+	acc := suite.app.AccountKeeper.GetAccount(ctx, addr)
+	return suite.SignTestCosmosTx(suite.ctx.ChainID(), txBuilder, priv, acc.GetAccountNumber(), acc.GetSequence()).GetTx()
 }
 
 func (suite *AnteTestSuite) CreateTestEIP712TxBuilderMsgSend(from sdk.AccAddress, priv cryptotypes.PrivKey, chainId string, gas uint64, gasAmount sdk.Coins) client.TxBuilder {
