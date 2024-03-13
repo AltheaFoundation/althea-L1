@@ -41,6 +41,7 @@ func ValidateGasFreeMessageTypes(i interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid gas free message types type: %T", i)
 	}
+
 	return nil
 }
 

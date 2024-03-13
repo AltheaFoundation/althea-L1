@@ -76,9 +76,13 @@ func createSet(strings []string) map[string]struct{} {
 
 // Checks if the given Tx contains only messages in the GasFreeMessageTypes set
 func (k Keeper) IsGasFreeTx(ctx sdk.Context, keeper Keeper, tx sdk.Tx) (bool, error) {
-	gasFreeMessageSet := k.GetGasFreeMessageTypesSet(ctx)
+	msgs := tx.GetMsgs()
+	if len(msgs) == 0 {
+		return false, nil
+	}
 
-	for _, msg := range tx.GetMsgs() {
+	gasFreeMessageSet := k.GetGasFreeMessageTypesSet(ctx)
+	for _, msg := range msgs {
 		switch msg := msg.(type) {
 		// Since authz MsgExec holds Msgs inside of it, all those inner Msgs must be checked
 		case *authz.MsgExec:
