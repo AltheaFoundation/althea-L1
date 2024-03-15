@@ -10,13 +10,15 @@ import (
 var (
 	ParamStoreKeyEnableOnboarding     = []byte("EnableOnboarding")
 	ParamsStoreKeyWhitelistedChannels = []byte("WhitelistedChannels")
-	DefaultWhitelistedChannels        = []string{}
+	DefaultWhitelistedChannels        = []string{""}
 )
 
+// nolint: exhaustruct
 var _ paramtypes.ParamSet = &Params{}
 
 // ParamKeyTable returns the parameter key table.
 func ParamKeyTable() paramtypes.KeyTable {
+	// nolint: exhaustruct
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 

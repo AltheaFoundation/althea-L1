@@ -13,6 +13,7 @@ import (
 
 // GetQueryCmd returns the parent command for all onboarding CLI query commands.
 func GetQueryCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "Querying commands for the onboarding module",
@@ -29,6 +30,7 @@ func GetQueryCmd() *cobra.Command {
 
 // GetParamsCmd queries the module parameters
 func GetParamsCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "params",
 		Short: "Gets onboarding params",

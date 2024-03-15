@@ -11,6 +11,7 @@ import (
 	"github.com/althea-net/althea-L1/x/onboarding/keeper"
 )
 
+// nolint: exhaustruct
 var _ porttypes.Middleware = &IBCMiddleware{}
 
 // IBCMiddleware implements the ICS26 callbacks for the transfer middleware given

@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 )
 
+// nolint: exhaustruct
 var _ porttypes.IBCModule = &Module{}
 
 // Module a concrete type for a module boilerplate.

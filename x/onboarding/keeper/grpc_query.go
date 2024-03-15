@@ -8,6 +8,7 @@ import (
 	"github.com/althea-net/althea-L1/x/onboarding/types"
 )
 
+// nolint: exhaustruct
 var _ types.QueryServer = Keeper{}
 
 // Params returns the module parameters
