@@ -1,0 +1,18 @@
+syntax = "proto3";
+package althea.nativedex.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/althea-net/althea-L1/x/nativedex/types";
+
+// GenesisState defines the nativedex module's genesis state.
+message GenesisState {
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+// Params defines the parameters for the module.
+message Params {
+  string verified_native_dex_address = 1;
+  string verified_croc_policy_address = 2;
+}
+
