@@ -141,6 +141,51 @@ pub async fn deploy_contracts(contact: &Contact) {
     file.write_all(&output.stdout).unwrap();
 }
 
+/// This function deploys the Ambient (aka CrocSwap) dex contracts and configures them
+pub async fn deploy_dex() {
+    const A: [&str; 1] = ["dex-deployer"];
+    // files are placed in a root /solidity-dex/ folder
+    const B: [&str; 1] = ["/solidity-dex/dex-deployer"];
+    // the default unmoved locations for the Gravity repo
+    const C: [&str; 2] = [
+        "/althea/solidity-dex/misc/scripts/dex-deployer.ts",
+        "/althea/solidity-dex/",
+    ];
+    let output = if all_paths_exist(&A) || all_paths_exist(&B) {
+        let paths = return_existing(A, B);
+        Command::new(paths[0])
+            .args([
+                &format!("--eth-node={}", ETH_NODE.as_str()),
+                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                "--test-mode=true",
+            ])
+            .output()
+            .expect("Failed to deploy contracts!")
+    } else if all_paths_exist(&C) {
+        Command::new("npx")
+            .args([
+                "ts-node",
+                C[0],
+                &format!("--eth-node={}", ETH_NODE.as_str()),
+                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                "--test-mode=true",
+            ])
+            .current_dir(C[1])
+            .output()
+            .expect("Failed to deploy contracts!")
+    } else {
+        panic!("Could not find json contract artifacts in any known location!")
+    };
+
+    info!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+    info!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+    if !ExitStatus::success(&output.status) {
+        panic!("Contract deploy failed!")
+    }
+    let mut file = File::create("/dex-contracts").unwrap();
+    file.write_all(&output.stdout).unwrap();
+}
+
 // TODO: Fix send_erc20_bulk to make this method not so slow
 pub async fn send_erc20s_to_evm_users(
     web3: &Web3,
@@ -224,6 +269,51 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
         erc20_addresses,
         erc721_addresses,
         uniswap_liquidity_address: uniswap_liquidity,
+    }
+}
+
+pub struct DexAddresses {
+    pub dex: EthAddress,
+    pub query: EthAddress,
+    pub impact: EthAddress,
+    pub policy: EthAddress,
+}
+
+/// Parses the DEX contract addresses from the file created
+/// in deploy_dex()
+pub fn parse_dex_contract_addresses() -> DexAddresses {
+    let mut file =
+        File::open("/dex-contracts").expect("Failed to find dex contracts! did they not deploy?");
+    let mut output = String::new();
+    file.read_to_string(&mut output).unwrap();
+    let mut dex: EthAddress = EthAddress::default();
+    let mut query: EthAddress = EthAddress::default();
+    let mut impact: EthAddress = EthAddress::default();
+    let mut policy: EthAddress = EthAddress::default();
+    for line in output.lines() {
+        if line.contains("CrocSwapDex deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            dex = address_string.trim().parse().unwrap();
+            info!("found dex address it is {}", address_string);
+        } else if line.contains("CrocQuery deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            query = address_string.trim().parse().unwrap();
+            info!("found query address it is {}", address_string);
+        } else if line.contains("CrocImpact deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            impact = address_string.trim().parse().unwrap();
+            info!("found impact address it is {}", address_string);
+        } else if line.contains("CrocPolicy deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            policy = address_string.trim().parse().unwrap();
+            info!("found policy address it is {}", address_string);
+        }
+    }
+    DexAddresses {
+        dex,
+        query,
+        impact,
+        policy,
     }
 }
 
