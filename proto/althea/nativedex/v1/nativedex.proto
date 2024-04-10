@@ -1,0 +1,201 @@
+syntax = "proto3";
+package althea.nativedex.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/althea-net/althea-L1/x/nativedex/types";
+
+/* These proposals result in function calls on CrocPolicy using the following callpath indexes:
+ * 0 - Boot Path (UpgradeProxyProposal)
+ * 1 - Hot Proxy
+ * 2 - Warm Path
+ * 3 - Cold Proxy (CollectTreasuryProposal, )
+ * 4 - Long Proxy
+ * 5 - Micro Proxy
+ * 6 - Multicall Proxy
+ * 7 - Knockout LP Proxy
+ * 3500 - Knockout Flag Proxy
+ * 9999 - Safe Mode Proxy
+ */
+
+// UpgradeProxyProposal will replace one of the nativedex callpath contracts (or install a new one)
+// if passes, calls CrocPolicy.treasuryResolution(CrocSwapDex, 0, <ABI Encoded Bytes(21, <callpath_address>, <callpath_index>)>)
+// 
+// BE VERY CAREFUL EXECUTING THIS PROPOSAL, AS IT CAN COMPLETELY BREAK THE DEX CONTRACT
+message UpgradeProxyProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  UpgradeProxyMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+
+  // Developer note: in_safe_mode is not necessary for this proposal type because it executes on the BootPath
+}
+
+message UpgradeProxyMetadata {
+  option (gogoproto.equal) = false;
+
+  string callpath_address = 1; // the address of the contract to install
+
+  uint64 callpath_index = 2; // the callpath index to write to, see solidity-dex/contracts/mixins/StorageLayout.sol for the default values
+}
+
+// CollectTreasuryProposal will pay out protocol fees to the registered (and timelocked) `treasury_` account
+// If passes, calls CrocPolicy.treasuryResolution(CrocSwapDex, 3, <ABI Encoded Bytes(40, <token_address>)>)
+//
+// Note that by default the protocol fees will be set to zero, see the governance history or use CrocQuery with a pool
+// to determine the current protocol take
+message CollectTreasuryProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  CollectTreasuryMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+
+  bool in_safe_mode = 4; // must be true if the DEX is in safe mode, false otherwise
+}
+
+message CollectTreasuryMetadata {
+  option (gogoproto.equal) = false;
+
+  string token_address = 1; // the ERC20 address to collect into the `treasury_` account, (0x0 for the native token)
+}
+
+// SetTreasuryProposal will change the `treasury_` address
+// the treasury_ address will be restricted from receiving protocol fees for a period of time (stored in treasuryStartTime_)
+// If passes, calls CrocPolicy.treasuryResolution(CrocSwapDex, 3, <ABI Encoded Bytes(41, <treasury_address>)>)
+//
+// Note that by default the protocol fees will be set to zero, see the governance history or use CrocQuery with a pool
+// to determine the current protocol take
+message SetTreasuryProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  SetTreasuryMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+
+  bool in_safe_mode = 4; // must be true if the DEX is in safe mode, false otherwise
+}
+
+message SetTreasuryMetadata {
+  option (gogoproto.equal) = false;
+
+  string treasury_address = 1; // the address to set `treasury_` to
+}
+
+// AuthorityTransferProposal will change the `authority_` address, which can be used to upgrade or remove the CrocPolicy
+// contract (and therefore this module must be upgraded to work with the replacement, and configured as the new authority)
+// If passes, calls CrocPolicy.treasuryResolution(CrocSwapDex, 3, <ABI Encoded Bytes(20, <auth_address>)>)
+// 
+// BE VERY CAREFUL EXECUTING THIS PROPOSAL, AS IT CAN COMPLETELY DISABLE THE NATIVEDEX MODULE AND REMOVE STAKER AUTHORITY
+// OVER THE DEX CONTRACT
+message AuthorityTransferProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  AuthorityTransferMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+
+  bool in_safe_mode = 4; // must be true if the DEX is in safe mode, false otherwise
+}
+
+message AuthorityTransferMetadata {
+  option (gogoproto.equal) = false;
+
+  string auth_address = 1; // the address to set `authority_` to
+}
+
+
+// HotPathOpenProposal will change the `hotPathOpen_` flag, which controls if users are able to call swap directly on the dex contract
+// The primary purpose of this seems to be enabling upgradeability of the HotProxy contract, which would require users to switch
+// to calling CrocSwapDex.userCmd(1, <ABI Encoded Args>) instead of CrocSwapDex.swap(<args>) so that they call the new code.
+// If passes, calls CrocPolicy.treasuryResolution(CrocSwapDex, 3, <ABI Encoded Bytes(22, <open>)>)
+// 
+// BE VERY CAREFUL EXECUTING THIS PROPOSAL, AS IT CAN BREAK INFLEXIBLE DEX USER INTERFACES
+message HotPathOpenProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  HotPathOpenMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+
+  bool in_safe_mode = 4; // must be true if the DEX is in safe mode, false otherwise
+}
+
+message HotPathOpenMetadata {
+  option (gogoproto.equal) = false;
+  // If true, users can call swap directly on the dex contract.
+  // If false, they must call CrocSwapDex.userCmd(1, <ABI Encoded Args>)
+  bool open = 1;
+}
+
+// SetSafeModeProposal will lock down the DEX for emergency changes. This can also be used by the emergency multisig to halt the DEX more quickly.
+// When the DEX is in safe mode only a UpgradeProxy, CollectTreasury, SetTreasury, AuthorityTransfer, HotPathOpen, or SetSafeMode Proposal can be executed,
+// and these proposals can only be executed under the SafeMode or Boot Proxy callpaths.
+// If passes, calls CrocPolicy.treasuryResolution(CrocSwapDex, 3, <ABI Encoded Bytes(23, <open>)>)
+// 
+// BE VERY CAREFUL EXECUTING THIS PROPOSAL, IT SHOULD ONLY BE USED TO DISABLE THE DEX OR RECOVER FROM DISABLES
+message SetSafeModeProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  SetSafeModeMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+
+  bool in_safe_mode = 4; // must be true if the DEX is already in safe mode, false otherwise
+}
+
+message SetSafeModeMetadata {
+  option (gogoproto.equal) = false;
+  // If true, the DEX will be disabled
+  bool lock_dex = 1;
+}
+
+// TransferGovernanceProposal will update the governance role addresses on CrocPolicy.
+// If passes, calls CrocPolicy.transferGovernance(<ops>, <nativedex module address>, <emergency>)
+// 
+// BE VERY CAREFUL EXECUTING THIS PROPOSAL, THE OPS AND EMERGENCY ADDRESSES SHOULD BE CAREFULLY CHOSEN MULTISIGS
+message TransferGovernanceProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  TransferGovernanceMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+}
+
+message TransferGovernanceMetadata {
+  option (gogoproto.equal) = false;
+
+  string ops = 1; // The address to use for the Ops governance role, the least privileged role
+
+  string emergency = 2; // The address to use for the Emergency governance role, which can halt the DEX or perform Ops functions
+}

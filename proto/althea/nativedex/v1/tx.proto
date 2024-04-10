@@ -1,0 +1,8 @@
+syntax = "proto3";
+package althea.nativedex.v1;
+
+option go_package = "github.com/althea-net/althea-L1/x/nativedex/types";
+
+// Msg defines the Msg service.
+service Msg {
+}
