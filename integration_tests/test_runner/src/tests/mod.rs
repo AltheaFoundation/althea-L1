@@ -1,3 +1,4 @@
+pub mod dex;
 pub mod erc20_conversion;
 pub mod ica_host;
 pub mod liquid_accounts;

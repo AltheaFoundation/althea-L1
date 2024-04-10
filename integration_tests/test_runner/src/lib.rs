@@ -1,4 +1,5 @@
 pub mod bootstrapping;
+pub mod dex_utils;
 pub mod evm_utils;
 pub mod ibc_utils;
 pub mod tests;

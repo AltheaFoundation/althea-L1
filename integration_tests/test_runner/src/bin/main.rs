@@ -8,11 +8,14 @@ use deep_space::Coin;
 use deep_space::Contact;
 use deep_space::PrivateKey;
 use std::env;
+use test_runner::bootstrapping::deploy_dex;
 use test_runner::bootstrapping::parse_contract_addresses;
+use test_runner::bootstrapping::parse_dex_contract_addresses;
 use test_runner::bootstrapping::parse_ibc_validator_keys;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
 use test_runner::bootstrapping::start_ibc_relayer;
 use test_runner::bootstrapping::{deploy_contracts, get_keys};
+use test_runner::tests::dex::dex_test;
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
 use test_runner::tests::ica_host::ica_host_happy_path;
 use test_runner::tests::liquid_accounts::liquid_accounts_test;
@@ -57,10 +60,13 @@ pub async fn main() {
     if should_deploy_contracts() {
         info!("test-runner in contract deploying mode, deploying contracts, then exiting");
         deploy_contracts(&contact).await;
+        info!("Deploying DEX");
+        deploy_dex().await;
         return;
     }
 
     let contracts = parse_contract_addresses();
+    let dex_contracts = parse_dex_contract_addresses();
     // addresses of deployed ERC20 token contracts to be used for testing
     let erc20_addresses = contracts.erc20_addresses.clone();
 
@@ -208,6 +214,18 @@ pub async fn main() {
                 ibc_keys,
                 erc20_addresses,
                 EVM_USER_KEYS.clone(),
+            )
+            .await;
+            return;
+        } else if test_type == "DEX" {
+            info!("Start dex test");
+            dex_test(
+                &contact,
+                &web30,
+                keys,
+                EVM_USER_KEYS.clone(),
+                erc20_addresses,
+                dex_contracts,
             )
             .await;
             return;
