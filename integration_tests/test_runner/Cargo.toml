@@ -16,7 +16,7 @@ path = "src/bin/main.rs"
 
 [dependencies]
 
-althea_proto = "0.6"
+althea_proto = "0.7"
 prost = "0.12"
 prost-types = "0.12"
 bytes = "1"
