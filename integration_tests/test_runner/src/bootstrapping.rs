@@ -277,6 +277,7 @@ pub struct DexAddresses {
     pub query: EthAddress,
     pub impact: EthAddress,
     pub policy: EthAddress,
+    pub upgrade: EthAddress,
 }
 
 /// Parses the DEX contract addresses from the file created
@@ -290,6 +291,7 @@ pub fn parse_dex_contract_addresses() -> DexAddresses {
     let mut query: EthAddress = EthAddress::default();
     let mut impact: EthAddress = EthAddress::default();
     let mut policy: EthAddress = EthAddress::default();
+    let mut upgrade: EthAddress = EthAddress::default();
     for line in output.lines() {
         if line.contains("CrocSwapDex deployed at Address -") {
             let address_string = line.split('-').last().unwrap();
@@ -307,6 +309,10 @@ pub fn parse_dex_contract_addresses() -> DexAddresses {
             let address_string = line.split('-').last().unwrap();
             policy = address_string.trim().parse().unwrap();
             info!("found policy address it is {}", address_string);
+        } else if line.contains("ColdPathUpgrade deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            upgrade = address_string.trim().parse().unwrap();
+            info!("found upgrade address it is {}", address_string);
         }
     }
     DexAddresses {
@@ -314,6 +320,7 @@ pub fn parse_dex_contract_addresses() -> DexAddresses {
         query,
         impact,
         policy,
+        upgrade,
     }
 }
 

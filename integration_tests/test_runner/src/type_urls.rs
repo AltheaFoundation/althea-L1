@@ -1,3 +1,5 @@
+// Althea Msg Types
+
 // microtx
 pub const MSG_MICROTX_TYPE_URL: &str = "/althea.microtx.v1.MsgMicrotx";
 pub const MSG_LIQUIFY_TYPE_URL: &str = "/althea.microtx.v1.MsgLiquify";
@@ -7,6 +9,17 @@ pub const GENERIC_AUTHORIZATION_TYPE_URL: &str = "/cosmos.authz.v1beta1.GenericA
 pub const MSG_GRANT_TYPE_URL: &str = "/cosmos.authz.v1beta1.MsgGrant";
 pub const GRANT_TYPE_URL: &str = "/cosmos.authz.v1beta1.Grant";
 pub const MSG_EXEC_TYPE_URL: &str = "/cosmos.authz.v1beta1.MsgExec";
+
+// Althea Proposal Types
+pub const UPGRADE_PROXY_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.UpgradeProxyProposal";
+pub const COLLECT_TREASURY_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.CollectTreasuryProposal";
+pub const SET_TREASURY_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.SetTreasuryProposal";
+pub const AUTHORITY_TRANSFER_PROPOSAL_TYPE_URL: &str =
+    "/althea.nativedex.v1.AuthorityTransferProposal";
+pub const HOT_PATH_OPEN_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.HotPathOpenProposal";
+pub const SET_SAFE_MODE_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.SetSafeModeProposal";
+pub const TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL: &str =
+    "/althea.nativedex.v1.TransferGovernanceProposal";
 
 // bank msgs
 pub const MSG_SEND_TYPE_URL: &str = "/cosmos.bank.v1beta1.MsgSend";
