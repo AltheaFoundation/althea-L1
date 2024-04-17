@@ -130,6 +130,9 @@ import (
 	"github.com/althea-net/althea-L1/x/microtx"
 	microtxkeeper "github.com/althea-net/althea-L1/x/microtx/keeper"
 	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	"github.com/althea-net/althea-L1/x/nativedex"
+	nativedexkeeper "github.com/althea-net/althea-L1/x/nativedex/keeper"
+	nativedextypes "github.com/althea-net/althea-L1/x/nativedex/types"
 	"github.com/althea-net/althea-L1/x/onboarding"
 	onboardingkeeper "github.com/althea-net/althea-L1/x/onboarding/keeper"
 	onboardingtypes "github.com/althea-net/althea-L1/x/onboarding/types"
@@ -193,6 +196,7 @@ var (
 		lockup.AppModuleBasic{},
 		microtx.AppModuleBasic{},
 		onboarding.AppModuleBasic{},
+		nativedex.AppModuleBasic{},
 		evm.AppModuleBasic{},
 		erc20.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
@@ -214,6 +218,7 @@ var (
 		microtxtypes.ModuleName:        nil,
 		gasfreetypes.ModuleName:        nil,
 		onboardingtypes.ModuleName:     nil,
+		nativedextypes.ModuleName:      nil,
 		feemarkettypes.ModuleName:      nil,
 		icatypes.ModuleName:            nil,
 	}
@@ -272,6 +277,7 @@ type AltheaApp struct { // nolint: golint
 	MicrotxKeeper    *microtxkeeper.Keeper
 	GasfreeKeeper    *gasfreekeeper.Keeper
 	OnboardingKeeper *onboardingkeeper.Keeper
+	NativedexKeeper  *nativedexkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      *capabilitykeeper.ScopedKeeper
@@ -368,6 +374,9 @@ func (app AltheaApp) ValidateMembers() {
 	if app.OnboardingKeeper == nil {
 		panic("Nil OnboardingKeeper")
 	}
+	if app.NativedexKeeper == nil {
+		panic("Nil NativedexKeeper")
+	}
 
 	// scoped keepers
 	if app.ScopedIBCKeeper == nil {
@@ -422,7 +431,7 @@ func NewAltheaApp(
 		icahosttypes.StoreKey,
 
 		lockuptypes.StoreKey, microtxtypes.StoreKey, gasfreetypes.StoreKey,
-		onboardingtypes.StoreKey,
+		onboardingtypes.StoreKey, nativedextypes.StoreKey,
 	)
 	// Transient keys which only last for a block before being wiped
 	// Params uses thsi to track whether some parameter changed this block or not
@@ -656,6 +665,14 @@ func NewAltheaApp(
 		authtypes.FeeCollectorName,
 	)
 	app.CrisisKeeper = &crisisKeeper
+
+	// Nativedex allows management of the native DEX instance from the Cosmos side
+	nativedexKeeper := nativedexkeeper.NewKeeper(
+		keys[nativedextypes.StoreKey], appCodec, app.GetSubspace(nativedextypes.ModuleName),
+		app.Erc20Keeper,
+	)
+	app.NativedexKeeper = &nativedexKeeper
+
 	// Register custom governance proposal logic via router keys and handler functions
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
@@ -663,7 +680,8 @@ func NewAltheaApp(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(distrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(upgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(ibcKeeper.ClientKeeper)).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&erc20Keeper))
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&erc20Keeper)).
+		AddRoute(nativedextypes.RouterKey, nativedex.NewNativeDexProposalHandler(&nativedexKeeper))
 
 	govKeeper := govkeeper.NewKeeper(
 		appCodec,
@@ -787,6 +805,7 @@ func NewAltheaApp(
 		lockup.NewAppModule(lockupKeeper, bankKeeper),
 		microtx.NewAppModule(microtxKeeper, accountKeeper),
 		onboarding.NewAppModule(onboardingKeeper),
+		nativedex.NewAppModule(nativedexKeeper, accountKeeper),
 	)
 	app.MM = &mm
 
@@ -821,6 +840,7 @@ func NewAltheaApp(
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,
 		onboardingtypes.ModuleName,
+		nativedextypes.ModuleName,
 		icatypes.ModuleName,
 	)
 
@@ -850,6 +870,7 @@ func NewAltheaApp(
 		gasfreetypes.ModuleName,
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
+		nativedextypes.ModuleName,
 		erc20types.ModuleName,
 	)
 
@@ -878,6 +899,7 @@ func NewAltheaApp(
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,
 		onboardingtypes.ModuleName,
+		nativedextypes.ModuleName,
 		crisistypes.ModuleName,
 		icatypes.ModuleName,
 	)
@@ -1170,6 +1192,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(onboardingtypes.ModuleName)
+	paramsKeeper.Subspace(nativedextypes.ModuleName)
 
 	return paramsKeeper
 }
