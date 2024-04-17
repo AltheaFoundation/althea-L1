@@ -2,32 +2,200 @@ package cli
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
-	"github.com/Canto-Network/Canto/v5/x/govshuttle/types"
+	"github.com/spf13/cobra"
+
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+
+	"github.com/althea-net/althea-L1/x/nativedex/types"
 )
 
-// PARSING METADATA ACCORDING TO PROPOSAL STRUCT IN GOVTYPES TYPE IN NATIVEDEX
+type GenericProposalSetup struct {
+	ClientCtx   client.Context
+	Title       string
+	Description string
+	Deposit     sdk.Coins
+	From        sdk.AccAddress
+}
 
-func ParseTreasuryMetadata(cdc codec.JSONCodec, metadataFile string) (types.TreasuryProposalMetadata, error) {
-	propMetaData := types.TreasuryProposalMetadata{}
+func GenericProposalCmdSetup(cmd *cobra.Command) (setup GenericProposalSetup, err error) {
+	clientCtx, err := client.GetClientTxContext(cmd)
+	if err != nil {
+		return
+	}
 
-	contents, err := ioutil.ReadFile(filepath.Clean(metadataFile))
+	title, err := cmd.Flags().GetString(cli.FlagTitle)
+	if err != nil {
+		return
+	}
+
+	description, err := cmd.Flags().GetString(cli.FlagDescription)
+	if err != nil {
+		return
+	}
+
+	depositStr, err := cmd.Flags().GetString(cli.FlagDeposit)
+	if err != nil {
+		return
+	}
+
+	deposit, err := sdk.ParseCoinsNormalized(depositStr)
+	if err != nil {
+		return
+	}
+
+	from := clientCtx.GetFromAddress()
+
+	setup = GenericProposalSetup{
+		ClientCtx:   clientCtx,
+		Title:       title,
+		Description: description,
+		Deposit:     deposit,
+		From:        from,
+	}
+	return
+}
+
+func GenericProposalCmdBroadcast(cmd *cobra.Command, clientCtx client.Context, content govtypes.Content, deposit sdk.Coins, from sdk.AccAddress) error {
+
+	msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+	if err != nil {
+		return err
+	}
+
+	if err := msg.ValidateBasic(); err != nil {
+		return err
+	}
+
+	return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+}
+
+func AddGenericProposalCommandFlags(cmd *cobra.Command) {
+	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "1aalthea", "deposit of proposal")
+	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
+		panic(sdkerrors.Wrap(err, "No title provided"))
+	}
+	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
+		panic(sdkerrors.Wrap(err, "No description provided"))
+	}
+	if err := cmd.MarkFlagRequired(cli.FlagDeposit); err != nil {
+		panic(sdkerrors.Wrap(err, "No deposit provided"))
+	}
+}
+
+// Parse Metadata structs from the input files
+
+func ParseUpgradeProxyMetadata(cdc codec.JSONCodec, metadataFile string) (types.UpgradeProxyMetadata, error) {
+	propMetaData := types.UpgradeProxyMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
 	if err != nil {
 		return propMetaData, err
 	}
 
-	// if err = cdc.UnmarshalJSON(contents, &propMetaData); err != nil {
-	// 	return propMetaData, err
-	// }
-
 	if err = json.Unmarshal(contents, &propMetaData); err != nil {
-		return types.TreasuryProposalMetadata{}, err
+		return propMetaData, err
 	}
 
-	propMetaData.PropID = 0
+	return propMetaData, nil
+}
+
+func ParseCollectTreasuryMetadata(cdc codec.JSONCodec, metadataFile string) (types.CollectTreasuryMetadata, error) {
+	propMetaData := types.CollectTreasuryMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
+	if err != nil {
+		return propMetaData, err
+	}
+
+	if err = json.Unmarshal(contents, &propMetaData); err != nil {
+		return propMetaData, err
+	}
+
+	return propMetaData, nil
+}
+
+func ParseSetTreasuryMetadata(cdc codec.JSONCodec, metadataFile string) (types.SetTreasuryMetadata, error) {
+	propMetaData := types.SetTreasuryMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
+	if err != nil {
+		return propMetaData, err
+	}
+
+	if err = json.Unmarshal(contents, &propMetaData); err != nil {
+		return propMetaData, err
+	}
+
+	return propMetaData, nil
+}
+
+func ParseAuthorityTransferMetadata(cdc codec.JSONCodec, metadataFile string) (types.AuthorityTransferMetadata, error) {
+	propMetaData := types.AuthorityTransferMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
+	if err != nil {
+		return propMetaData, err
+	}
+
+	if err = json.Unmarshal(contents, &propMetaData); err != nil {
+		return propMetaData, err
+	}
+
+	return propMetaData, nil
+}
+
+func ParseHotPathOpenMetadata(cdc codec.JSONCodec, metadataFile string) (types.HotPathOpenMetadata, error) {
+	propMetaData := types.HotPathOpenMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
+	if err != nil {
+		return propMetaData, err
+	}
+
+	if err = json.Unmarshal(contents, &propMetaData); err != nil {
+		return propMetaData, err
+	}
+
+	return propMetaData, nil
+}
+
+func ParseSetSafeModeMetadata(cdc codec.JSONCodec, metadataFile string) (types.SetSafeModeMetadata, error) {
+	propMetaData := types.SetSafeModeMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
+	if err != nil {
+		return propMetaData, err
+	}
+
+	if err = json.Unmarshal(contents, &propMetaData); err != nil {
+		return propMetaData, err
+	}
+
+	return propMetaData, nil
+}
+
+func ParseTransferGovernanceMetadata(cdc codec.JSONCodec, metadataFile string) (types.TransferGovernanceMetadata, error) {
+	propMetaData := types.TransferGovernanceMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
+	if err != nil {
+		return propMetaData, err
+	}
+
+	if err = json.Unmarshal(contents, &propMetaData); err != nil {
+		return propMetaData, err
+	}
 
 	return propMetaData, nil
 }
