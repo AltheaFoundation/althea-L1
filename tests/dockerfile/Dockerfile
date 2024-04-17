@@ -13,10 +13,13 @@ RUN mkdir /ibc-relayer-logs && touch /ibc-relayer-logs/hermes-logs && touch /ibc
 # the actual source code for this repo, this **only** includes checked in files!
 # this is a bit of a pain but it does speed things up a lot
 ADD althea.tar.gz /
+RUN git clone https://github.com/AltheaFoundation/althea-dex.git /althea/solidity-dex
 # build the test runner specifically to cache a release artifact
 RUN pushd /althea/integration_tests && PATH=$PATH:$HOME/.cargo/bin cargo build --bin test-runner --release
 # generate artifacts for the ethereum contracts
 RUN pushd /althea/solidity/ && HUSKY_SKIP_INSTALL=1 npm install && npm run typechain
+# generate artifacts for the dex contracts
+RUN pushd /althea/solidity-dex/ && HUSKY_SKIP_INSTALL=1 npm install && npx hardhat compile
 # The althea bin now depends on the output of the contracts
 RUN pushd /althea && make contracts
 # build the althea chain binary
