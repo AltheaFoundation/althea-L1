@@ -224,7 +224,7 @@ $(BUILDDIR)/:
 
 COMPILED_CONTRACTS_GO_OUTPUT := contracts/compiled/
 
-contracts: contracts-clean contracts-go
+contracts: contracts-go
 
 contracts-clean:
 	@echo "Deleting and recreating compiled-contracts directory"
@@ -234,7 +234,7 @@ contracts-clean:
 contracts-go:
 	@echo "Formatting compiled contracts and placing in compiled-contracts"
 	@cd solidity; npm install
-	@cd solidity; npm run typechain
+	@cd solidity; npx hardhat compile
 	@scripts/compile-contracts-for-go.sh
 
 # Detects if the contracts must be compiled for Go, and potentially does so
