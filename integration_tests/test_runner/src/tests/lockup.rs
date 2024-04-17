@@ -185,7 +185,14 @@ pub async fn fail_to_send(
 
     let msg_send = create_bank_msg_send(sender, receiver.ethermint_address, amount.clone());
     let res = contact
-        .send_message(&[msg_send], None, &[], Some(OPERATION_TIMEOUT), sender)
+        .send_message(
+            &[msg_send],
+            None,
+            &[],
+            Some(OPERATION_TIMEOUT),
+            None,
+            sender,
+        )
         .await;
     res.expect_err("Successfully sent via bank MsgSend? Should not be possible!");
     let msg_multi_send =
@@ -196,6 +203,7 @@ pub async fn fail_to_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
+            None,
             sender,
         )
         .await;
@@ -203,7 +211,14 @@ pub async fn fail_to_send(
     let msg_microtx =
         create_microtx_msg_microtx(sender, receiver.ethermint_address, amount.clone());
     let res = contact
-        .send_message(&[msg_microtx], None, &[], Some(OPERATION_TIMEOUT), sender)
+        .send_message(
+            &[msg_microtx],
+            None,
+            &[],
+            Some(OPERATION_TIMEOUT),
+            None,
+            sender,
+        )
         .await;
     res.expect_err("Successfully sent via microtx MsgMicrotx? Should not be possible!");
     let msg_send_authorized = authorized_users[0];
@@ -222,6 +237,7 @@ pub async fn fail_to_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
+            None,
             msg_send_authorized.ethermint_key,
         )
         .await;
@@ -242,6 +258,7 @@ pub async fn fail_to_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
+            None,
             msg_multi_send_authorized.ethermint_key,
         )
         .await;
@@ -262,6 +279,7 @@ pub async fn fail_to_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
+            None,
             msg_microtx_authorized.ethermint_key,
         )
         .await;
@@ -335,6 +353,7 @@ pub async fn create_authz_bank_msg_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
+            None,
             sender.clone(),
         )
         .await;
@@ -373,6 +392,7 @@ pub async fn create_authz_bank_msg_multi_send(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
+            None,
             sender.clone(),
         )
         .await;
@@ -411,6 +431,7 @@ pub async fn create_authz_microtx_msg_microtx(
             None,
             &[],
             Some(OPERATION_TIMEOUT),
+            None,
             sender.clone(),
         )
         .await;

@@ -133,6 +133,7 @@ pub async fn erc20_register_and_round_trip_test(
                 denom: STAKING_TOKEN.clone(),
             }],
             Some(OPERATION_TIMEOUT),
+            None,
             recvr.ethermint_key,
         )
         .await;
@@ -159,6 +160,7 @@ pub async fn erc20_register_and_round_trip_test(
                 denom: STAKING_TOKEN.clone(),
             }],
             Some(OPERATION_TIMEOUT),
+            None,
             recvr.ethermint_key,
         )
         .await;
@@ -251,6 +253,7 @@ pub async fn erc20_register_and_round_trip_test(
                 denom: STAKING_TOKEN.clone(),
             }],
             Some(OPERATION_TIMEOUT),
+            None,
             transfer_recvr.ethermint_key,
         )
         .await;
@@ -278,6 +281,7 @@ pub async fn erc20_register_and_round_trip_test(
                 denom: STAKING_TOKEN.clone(),
             }],
             Some(OPERATION_TIMEOUT),
+            None,
             transfer_recvr.ethermint_key,
         )
         .await;
@@ -410,6 +414,7 @@ pub async fn coin_register_and_round_trip_test(
                 denom: STAKING_TOKEN.clone(),
             }],
             Some(OPERATION_TIMEOUT),
+            None,
             recvr.ethermint_key,
         )
         .await;

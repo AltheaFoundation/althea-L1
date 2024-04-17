@@ -166,6 +166,7 @@ pub async fn register_interchain_account(
             None,
             &[fee],
             Some(OPERATION_TIMEOUT),
+            None,
             owner_key,
         )
         .await
@@ -458,6 +459,7 @@ pub async fn send_microtx_via_ica(
             None,
             &[ctrl_fee],
             Some(OPERATION_TIMEOUT),
+            None,
             ica_owner,
         )
         .await

@@ -138,6 +138,7 @@ pub async fn send_ibc_transfer(
             Some("Test Relaying".to_string()),
             &[fee_coin],
             Some(OPERATION_TIMEOUT),
+            None,
             sender,
         )
         .await
@@ -201,6 +202,7 @@ pub async fn send_and_assert_ibc_transfer(
             Some("Test Relaying".to_string()),
             &[fee_coin],
             Some(OPERATION_TIMEOUT),
+            None,
             sender,
         )
         .await;

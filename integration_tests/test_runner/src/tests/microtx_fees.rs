@@ -56,6 +56,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
                 .to_address(&ADDRESS_PREFIX)
                 .unwrap(),
             None,
+            None,
             validator_keys[0].validator_key,
         )
         .await;
@@ -176,6 +177,7 @@ pub async fn exec_and_check(
                 None,
                 &[zero_fee.clone()],
                 Some(OPERATION_TIMEOUT),
+                None,
                 sender.ethermint_key,
             )
             .await;
