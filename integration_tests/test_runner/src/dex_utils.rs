@@ -12,6 +12,24 @@ use web30::{
 
 use crate::utils::OPERATION_TIMEOUT;
 
+// Callpath Indices
+pub const BOOT_PATH: u16 = 0;
+pub const HOT_PROXY: u16 = 1;
+pub const WARM_PATH: u16 = 2;
+pub const COLD_PATH: u16 = 3;
+pub const LONG_PATH: u16 = 4;
+pub const MICRO_PATHS: u16 = 5;
+pub const KNOCKOUT_LIQ_PATH: u16 = 7;
+pub const KNOCKOUT_FLAG_PATH: u16 = 3500;
+pub const SAFE_MODE_PATH: u16 = 9999;
+
+lazy_static! {
+    pub static ref MIN_TICK: Int256 = Int256::from(-665454i64);
+    pub static ref MAX_TICK: Int256 = Int256::from(831818i64);
+    pub static ref MIN_PRICE: Uint256 = Uint256::from(65538u32);
+    pub static ref MAX_PRICE: Uint256 = Uint256::from(21267430153580247136652501917186561137u128);
+}
+
 // ABI result parsing notes:
 // a struct with static fields is returned like a static tuple, (static fields have no tail)
 // enc(X1, ..., Xk) = head(X(1)) ... head(X(k)) tail(X(1)) ... tail(X(k)) = enc(X1) ... enc(Xk)
@@ -464,6 +482,7 @@ pub async fn croc_query_conc_rewards(
     })
 }
 
+/// Specifies a swap() call on the DEX contract
 #[derive(Debug, Clone)]
 pub struct SwapArgs {
     pub base: EthAddress,
@@ -524,11 +543,14 @@ pub async fn dex_swap(
     web30.wait_for_transaction(txhash, timeout, None).await
 }
 
+/// Specifies a userCmd call to be made on the DEX contract
 #[derive(Debug, Clone)]
 pub struct UserCmdArgs {
     pub callpath: u16,
     pub cmd: Vec<AbiToken>,
 }
+
+/// Calls any userCmd on the DEX contract
 pub async fn dex_user_cmd(
     web30: &Web3,
     dex_contract: EthAddress,
@@ -555,11 +577,16 @@ pub async fn dex_user_cmd(
         .await?;
     web30.wait_for_transaction(txhash, timeout, None).await
 }
+
+/// Specifies a protocolCmd call to be made on the DEX contract
+/// If CrocPolicy is set up then this call will fail
 #[derive(Debug, Clone)]
 pub struct ProtocolCmdArgs {
     pub callpath: u16,
     pub cmd: Vec<AbiToken>,
+    pub sudo: bool,
 }
+/// Calls any protocolCmd on the DEX contract
 pub async fn dex_protocol_cmd(
     web30: &Web3,
     dex_contract: EthAddress,
@@ -573,8 +600,8 @@ pub async fn dex_protocol_cmd(
 
     let cmd = clarity::abi::encode_tokens(&cmd_args.cmd);
     let payload = clarity::abi::encode_call(
-        "protocolCmd(uint16,bytes)",
-        &[cmd_args.callpath.into(), cmd.into()],
+        "protocolCmd(uint16,bytes,bool)",
+        &[cmd_args.callpath.into(), cmd.into(), cmd_args.sudo.into()],
     )?;
     let native_in = native_in.unwrap_or(0u8.into());
     let txhash = web30
@@ -585,4 +612,70 @@ pub async fn dex_protocol_cmd(
         )
         .await?;
     web30.wait_for_transaction(txhash, timeout, None).await
+}
+
+/// Conveniently wraps dex_protocol_cmd() to invoke an authority transfer, useful when setting up CrocPolicy
+pub async fn dex_authority_transfer(
+    web30: &Web3,
+    dex_contract: EthAddress,
+    new_auth: EthAddress,
+    wallet: PrivateKey,
+    timeout: Option<Duration>,
+) -> Result<TransactionResponse, Web3Error> {
+    let code: Uint256 = 20u8.into();
+
+    // ABI: authorityTransfer (uint8 cmd_code, address auth)
+    let cmd_args = vec![code.into(), new_auth.into()];
+
+    dex_protocol_cmd(
+        web30,
+        dex_contract,
+        wallet,
+        ProtocolCmdArgs {
+            callpath: COLD_PATH,
+            cmd: cmd_args,
+            sudo: true,
+        },
+        None,
+        timeout,
+    )
+    .await
+}
+
+pub async fn dex_query_safe_mode(
+    web30: &Web3,
+    dex_contract: EthAddress,
+    caller: Option<EthAddress>,
+) -> Result<bool, Web3Error> {
+    // ABI: bool internal inSafeMode_
+    let caller = caller.unwrap_or(dex_contract);
+    let payload = clarity::abi::encode_call("safeMode()", &[])?;
+
+    let query_res = web30
+        .simulate_transaction(
+            TransactionRequest::quick_tx(caller, dex_contract, payload),
+            None,
+        )
+        .await?;
+
+    Ok(query_res[31] > 0u8)
+}
+
+pub async fn dex_query_authority(
+    web30: &Web3,
+    dex_contract: EthAddress,
+    caller: Option<EthAddress>,
+) -> Result<EthAddress, Web3Error> {
+    // ABI: bool internal inSafeMode_
+    let caller = caller.unwrap_or(dex_contract);
+    let payload = clarity::abi::encode_call("authority()", &[])?;
+
+    let query_res = web30
+        .simulate_transaction(
+            TransactionRequest::quick_tx(caller, dex_contract, payload),
+            None,
+        )
+        .await?;
+
+    Ok(EthAddress::from_slice(&query_res[12..32])?)
 }
