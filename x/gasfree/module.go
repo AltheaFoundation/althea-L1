@@ -18,9 +18,9 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/althea-net/althea-L1/x/gasfree/keeper"
-	"github.com/althea-net/althea-L1/x/gasfree/types"
-	"github.com/althea-net/althea-L1/x/microtx/client/cli"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/types"
+	"github.com/AltheaFoundation/althea-L1/x/microtx/client/cli"
 )
 
 // type check to ensure the interface is properly implemented

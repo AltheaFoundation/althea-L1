@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/althea-net/althea-L1/config"
+	"github.com/AltheaFoundation/althea-L1/config"
 )
 
 // Assert that the mint keeper and the Althea-Chain config match on their definitions of the BaseDenom

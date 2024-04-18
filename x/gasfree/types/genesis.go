@@ -7,7 +7,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // DefaultGenesisState creates a simple GenesisState suitible for testing

@@ -4,9 +4,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	gasfreekeeper "github.com/althea-net/althea-L1/x/gasfree/keeper"
-	microtxkeeper "github.com/althea-net/althea-L1/x/microtx/keeper"
-	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
+	microtxkeeper "github.com/AltheaFoundation/althea-L1/x/microtx/keeper"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // nolint: exhaustruct

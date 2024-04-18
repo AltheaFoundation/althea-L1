@@ -3,7 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/althea-net/althea-L1/x/onboarding/types"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 // GetParams returns the total set of onboarding parameters.

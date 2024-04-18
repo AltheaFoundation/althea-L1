@@ -10,7 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	"github.com/althea-net/althea-L1/x/nativedex/types"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
 type (

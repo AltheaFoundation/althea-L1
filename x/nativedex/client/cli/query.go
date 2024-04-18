@@ -7,7 +7,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 
-	"github.com/althea-net/althea-L1/x/nativedex/types"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module

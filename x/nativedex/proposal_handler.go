@@ -6,9 +6,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/althea-net/althea-L1/contracts"
-	"github.com/althea-net/althea-L1/x/nativedex/keeper"
-	"github.com/althea-net/althea-L1/x/nativedex/types"
+	"github.com/AltheaFoundation/althea-L1/contracts"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
 // Callpaths to be used in governance proposals

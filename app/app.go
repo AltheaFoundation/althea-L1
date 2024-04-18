@@ -118,24 +118,24 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 
-	"github.com/althea-net/althea-L1/app/ante"
-	altheaappparams "github.com/althea-net/althea-L1/app/params"
-	altheacfg "github.com/althea-net/althea-L1/config"
-	"github.com/althea-net/althea-L1/x/gasfree"
-	gasfreekeeper "github.com/althea-net/althea-L1/x/gasfree/keeper"
-	gasfreetypes "github.com/althea-net/althea-L1/x/gasfree/types"
-	lockup "github.com/althea-net/althea-L1/x/lockup"
-	lockupkeeper "github.com/althea-net/althea-L1/x/lockup/keeper"
-	lockuptypes "github.com/althea-net/althea-L1/x/lockup/types"
-	"github.com/althea-net/althea-L1/x/microtx"
-	microtxkeeper "github.com/althea-net/althea-L1/x/microtx/keeper"
-	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
-	"github.com/althea-net/althea-L1/x/nativedex"
-	nativedexkeeper "github.com/althea-net/althea-L1/x/nativedex/keeper"
-	nativedextypes "github.com/althea-net/althea-L1/x/nativedex/types"
-	"github.com/althea-net/althea-L1/x/onboarding"
-	onboardingkeeper "github.com/althea-net/althea-L1/x/onboarding/keeper"
-	onboardingtypes "github.com/althea-net/althea-L1/x/onboarding/types"
+	"github.com/AltheaFoundation/althea-L1/app/ante"
+	altheaappparams "github.com/AltheaFoundation/althea-L1/app/params"
+	altheacfg "github.com/AltheaFoundation/althea-L1/config"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree"
+	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
+	gasfreetypes "github.com/AltheaFoundation/althea-L1/x/gasfree/types"
+	lockup "github.com/AltheaFoundation/althea-L1/x/lockup"
+	lockupkeeper "github.com/AltheaFoundation/althea-L1/x/lockup/keeper"
+	lockuptypes "github.com/AltheaFoundation/althea-L1/x/lockup/types"
+	"github.com/AltheaFoundation/althea-L1/x/microtx"
+	microtxkeeper "github.com/AltheaFoundation/althea-L1/x/microtx/keeper"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex"
+	nativedexkeeper "github.com/AltheaFoundation/althea-L1/x/nativedex/keeper"
+	nativedextypes "github.com/AltheaFoundation/althea-L1/x/nativedex/types"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding"
+	onboardingkeeper "github.com/AltheaFoundation/althea-L1/x/onboarding/keeper"
+	onboardingtypes "github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 func init() {
@@ -212,6 +212,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
+		evmtypes.FeeBurner:             {authtypes.Burner},
 		minttypes.ModuleName:           {authtypes.Minter},
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		lockuptypes.ModuleName:         nil,
@@ -226,6 +227,7 @@ var (
 	// module accounts that are allowed to receive tokens
 	allowedReceivingModAcc = map[string]bool{
 		distrtypes.ModuleName: true,
+		evmtypes.FeeBurner:    true,
 	}
 
 	// enable checks that run on the first BeginBlocker execution after an upgrade/genesis init/node restart

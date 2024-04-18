@@ -8,7 +8,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
 
-	"github.com/althea-net/althea-L1/x/onboarding/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/keeper"
 )
 
 // nolint: exhaustruct

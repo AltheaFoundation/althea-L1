@@ -19,9 +19,9 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 
-	althea "github.com/althea-net/althea-L1/app"
-	altheaconfig "github.com/althea-net/althea-L1/config"
-	"github.com/althea-net/althea-L1/x/onboarding/types"
+	althea "github.com/AltheaFoundation/althea-L1/app"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 type KeeperTestSuite struct {

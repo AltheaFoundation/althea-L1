@@ -20,9 +20,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
-	"github.com/althea-net/althea-L1/x/onboarding/client/cli"
-	"github.com/althea-net/althea-L1/x/onboarding/keeper"
-	"github.com/althea-net/althea-L1/x/onboarding/types"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/client/cli"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 // type check to ensure the interface is properly implemented

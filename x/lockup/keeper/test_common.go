@@ -46,7 +46,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/althea-net/althea-L1/x/lockup/types"
+	"github.com/AltheaFoundation/althea-L1/x/lockup/types"
 )
 
 // TestInput stores the various keepers required to test lockup

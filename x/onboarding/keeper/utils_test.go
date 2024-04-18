@@ -11,7 +11,7 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 
-	"github.com/althea-net/althea-L1/x/onboarding/types"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 // nolint: exhaustruct

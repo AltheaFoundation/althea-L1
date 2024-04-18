@@ -13,8 +13,8 @@ import (
 
 	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
 
-	"github.com/althea-net/althea-L1/ibcutils"
-	"github.com/althea-net/althea-L1/x/onboarding/types"
+	"github.com/AltheaFoundation/althea-L1/ibcutils"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 // OnRecvPacket performs an IBC receive callback.

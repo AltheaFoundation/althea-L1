@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/althea-net/althea-L1/x/nativedex/types"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
 // nolint: exhaustruct

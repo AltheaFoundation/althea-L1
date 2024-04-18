@@ -1,8 +1,9 @@
 package client
 
 import (
-	"github.com/althea-net/althea-L1/x/nativedex/client/cli"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
+
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/client/cli"
 )
 
 var (

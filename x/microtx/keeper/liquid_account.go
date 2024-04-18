@@ -17,7 +17,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/althea-net/althea-L1/x/microtx/types"
+	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // Default gas limit for eth txs from the module account

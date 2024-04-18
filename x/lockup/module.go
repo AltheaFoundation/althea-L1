@@ -18,8 +18,8 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/althea-net/althea-L1/x/lockup/keeper"
-	"github.com/althea-net/althea-L1/x/lockup/types"
+	"github.com/AltheaFoundation/althea-L1/x/lockup/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/lockup/types"
 )
 
 // type check to ensure the interface is properly implemented

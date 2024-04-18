@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	althea "github.com/althea-net/althea-L1/app"
+	althea "github.com/AltheaFoundation/althea-L1/app"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"

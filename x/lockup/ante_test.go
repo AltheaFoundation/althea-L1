@@ -14,9 +14,9 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/althea-net/althea-L1/x/lockup/keeper"
-	"github.com/althea-net/althea-L1/x/lockup/types"
-	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	"github.com/AltheaFoundation/althea-L1/x/lockup/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/lockup/types"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 func TestLockAnteHandler(t *testing.T) {

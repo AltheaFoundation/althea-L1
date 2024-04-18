@@ -8,8 +8,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	altheaconfig "github.com/althea-net/althea-L1/config"
-	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // ----------------

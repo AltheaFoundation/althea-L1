@@ -41,10 +41,10 @@ import (
 
 	cantoante "github.com/Canto-Network/Canto/v5/app/ante"
 
-	althea "github.com/althea-net/althea-L1/app"
-	ante "github.com/althea-net/althea-L1/app/ante"
-	altheaconfig "github.com/althea-net/althea-L1/config"
-	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	althea "github.com/AltheaFoundation/althea-L1/app"
+	ante "github.com/AltheaFoundation/althea-L1/app/ante"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 type AnteTestSuite struct {

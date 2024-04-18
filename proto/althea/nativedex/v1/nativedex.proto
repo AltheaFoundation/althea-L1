@@ -4,7 +4,7 @@ package althea.nativedex.v1;
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 
-option go_package = "github.com/althea-net/althea-L1/x/nativedex/types";
+option go_package = "github.com/AltheaFoundation/althea-L1/x/nativedex/types";
 
 /* These proposals result in function calls on CrocPolicy using the following callpath indexes:
  * 0 - Boot Path (UpgradeProxyProposal)

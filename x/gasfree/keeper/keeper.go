@@ -7,7 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	"github.com/althea-net/althea-L1/x/gasfree/types"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/types"
 )
 
 type Keeper struct {

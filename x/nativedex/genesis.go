@@ -4,8 +4,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 
-	"github.com/althea-net/althea-L1/x/nativedex/keeper"
-	"github.com/althea-net/althea-L1/x/nativedex/types"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

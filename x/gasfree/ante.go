@@ -4,7 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/althea-net/althea-L1/x/gasfree/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 )
 
 // NewSelectiveBypassDecorator returns an AnteDecorator which will not execute the

@@ -17,10 +17,10 @@ import (
 	"github.com/evmos/ethermint/tests"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	althea "github.com/althea-net/althea-L1/app"
-	altheaconfig "github.com/althea-net/althea-L1/config"
-	"github.com/althea-net/althea-L1/x/onboarding"
-	"github.com/althea-net/althea-L1/x/onboarding/types"
+	althea "github.com/AltheaFoundation/althea-L1/app"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 type GenesisTestSuite struct {

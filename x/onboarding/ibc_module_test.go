@@ -18,9 +18,9 @@ import (
 
 	"github.com/Canto-Network/Canto/v5/contracts"
 
-	althea "github.com/althea-net/althea-L1/app"
-	ibctesting "github.com/althea-net/althea-L1/ibcutils/testing"
-	onboardingtest "github.com/althea-net/althea-L1/x/onboarding/testutil"
+	althea "github.com/AltheaFoundation/althea-L1/app"
+	ibctesting "github.com/AltheaFoundation/althea-L1/ibcutils/testing"
+	onboardingtest "github.com/AltheaFoundation/althea-L1/x/onboarding/testutil"
 )
 
 var (

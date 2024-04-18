@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/althea-net/althea-L1/x/nativedex/types"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
 type msgServer struct {

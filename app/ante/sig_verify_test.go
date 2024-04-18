@@ -11,7 +11,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
-	altheaconfig "github.com/althea-net/althea-L1/config"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
 )
 
 // We duplicate some of the SDK-level tests in the event that changes to the local antehandler definition break

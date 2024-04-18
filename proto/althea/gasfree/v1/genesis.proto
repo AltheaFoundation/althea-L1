@@ -1,7 +1,7 @@
 syntax = "proto3";
 package althea.gasfree.v1;
 
-option go_package = "github.com/althea-net/althea-L1/x/gasfree/types";
+option go_package = "github.com/AltheaFoundation/althea-L1/x/gasfree/types";
 
 // Params struct
 message Params {

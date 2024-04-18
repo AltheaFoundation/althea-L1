@@ -42,7 +42,7 @@ import (
 	ethermint "github.com/evmos/ethermint/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	altheaconfig "github.com/althea-net/althea-L1/config"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
 )
 
 var MaxAccounts = 10

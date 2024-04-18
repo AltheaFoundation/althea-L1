@@ -20,10 +20,10 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/althea-net/althea-L1/x/microtx/client/cli"
-	"github.com/althea-net/althea-L1/x/microtx/client/rest"
-	"github.com/althea-net/althea-L1/x/microtx/keeper"
-	"github.com/althea-net/althea-L1/x/microtx/types"
+	"github.com/AltheaFoundation/althea-L1/x/microtx/client/cli"
+	"github.com/AltheaFoundation/althea-L1/x/microtx/client/rest"
+	"github.com/AltheaFoundation/althea-L1/x/microtx/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // type check to ensure the interface is properly implemented

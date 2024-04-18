@@ -3,7 +3,7 @@ package ante_test
 import (
 	"math/big"
 
-	altheaconfig "github.com/althea-net/althea-L1/config"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"

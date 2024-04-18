@@ -5,7 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 
-	"github.com/althea-net/althea-L1/x/gasfree/types"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/types"
 )
 
 // GetQueryCmd bundles all the query subcmds together so they appear under the `query` or `q` subcommand

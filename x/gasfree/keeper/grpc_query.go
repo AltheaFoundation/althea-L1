@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/althea-net/althea-L1/x/gasfree/types"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/types"
 )
 
 // nolint: exhaustruct

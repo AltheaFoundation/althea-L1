@@ -36,8 +36,8 @@ import (
 	"github.com/evmos/ethermint/x/evm/statedb"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	althea "github.com/althea-net/althea-L1/app"
-	altheaconfig "github.com/althea-net/althea-L1/config"
+	althea "github.com/AltheaFoundation/althea-L1/app"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
 )
 
 type GasfreeTestSuite struct {

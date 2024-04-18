@@ -9,7 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 
-	ibcgotesting "github.com/althea-net/althea-L1/ibcutils/testing"
+	ibcgotesting "github.com/AltheaFoundation/althea-L1/ibcutils/testing"
 )
 
 // RelayPacket attempts to relay the packet first on EndpointA and then on EndpointB
@@ -28,6 +28,7 @@ func RelayPacket(path *ibcgotesting.Path, packet channeltypes.Packet) (*sdk.Resu
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("Acks: %v\n", path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketAcks(path.EndpointB.Chain.GetContext()))
 
 		ack, err := ibcgotesting.ParseAckFromEvents(res.GetEvents())
 		if err != nil {

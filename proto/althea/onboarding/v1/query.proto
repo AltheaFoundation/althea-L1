@@ -5,7 +5,7 @@ import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "althea/onboarding/v1/genesis.proto";
 
-option go_package = "github.com/althea-net/althea-L1/x/onboarding/types";
+option go_package = "github.com/AltheaFoundation/althea-L1/x/onboarding/types";
 
 // Query defines the gRPC querier service.
 service Query {

@@ -23,9 +23,9 @@ import (
 	"github.com/Canto-Network/Canto/v5/contracts"
 	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
 
-	"github.com/althea-net/althea-L1/x/onboarding/keeper"
-	onboardingtest "github.com/althea-net/althea-L1/x/onboarding/testutil"
-	onboardingtypes "github.com/althea-net/althea-L1/x/onboarding/types"
+	"github.com/AltheaFoundation/althea-L1/x/onboarding/keeper"
+	onboardingtest "github.com/AltheaFoundation/althea-L1/x/onboarding/testutil"
+	onboardingtypes "github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 var (

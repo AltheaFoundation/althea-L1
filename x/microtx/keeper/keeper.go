@@ -15,8 +15,8 @@ import (
 	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 
-	gasfreekeeper "github.com/althea-net/althea-L1/x/gasfree/keeper"
-	"github.com/althea-net/althea-L1/x/microtx/types"
+	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // Keeper maintains the link to storage and exposes getter/setter methods for the various parts of the state machine

@@ -11,7 +11,7 @@ import (
 	"github.com/evmos/ethermint/tests"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	altheaconfig "github.com/althea-net/althea-L1/config"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
 )
 
 // These tests have been copied from ethermint but duplicated here to ensure that

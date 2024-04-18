@@ -1,25 +1,25 @@
-module github.com/althea-net/althea-L1
+module github.com/AltheaFoundation/althea-L1
 
 go 1.19
 
 require (
-	github.com/Canto-Network/Canto/v5 v5.1.1
+	github.com/Canto-Network/Canto/v5 v5.2.0
 	github.com/cosmos/cosmos-sdk v0.45.16
 	github.com/cosmos/ibc-go/v4 v4.3.1
-	github.com/evmos/ethermint v0.19.5-fix // fixes account creation
+	github.com/evmos/ethermint v0.19.9
 )
 
 replace (
 	// Canto unfortunately has their module listed as .../Canto/v2 @ versions v3.0.0, v4.0.0, and v5.0.0
-	// This replace fixes that issue until they can sort out their go.mod at various versions
-	github.com/Canto-Network/Canto/v5 => github.com/althea-net/canto/v5 v5.1.1
+	// and the v5.x.x releases declare the version as .../Canto/v6
+	github.com/Canto-Network/Canto/v5 => github.com/AltheaFoundation/canto/v5 v5.2.0
 	github.com/btcsuite/btcutil => github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23 v0.0.0-20221014140410-2582f0aab7b2
 	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.45.16
 
 	github.com/cosmos/cosmos-sdk/simapp => cosmossdk.io/simapp v0.0.0-20230531154223-5097b0c22672
 	// Ethermint's older versions are not compatible with the end of line sdk v0.45.x
-	github.com/evmos/ethermint => github.com/althea-net/ethermint v0.19.5-fix // fixes account creation
+	github.com/evmos/ethermint => github.com/AltheaFoundation/ethermint v0.19.9
 
 	github.com/gogo/grpc => google.golang.org/grpc v1.33.2
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
@@ -37,7 +37,6 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.5.0
@@ -49,10 +48,7 @@ require (
 	google.golang.org/grpc v1.54.0
 )
 
-require (
-	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
-)
+require github.com/stretchr/objx v0.5.0 // indirect
 
 require (
 	cosmossdk.io/api v0.2.6 // indirect
@@ -161,7 +157,7 @@ require (
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/onsi/gomega v1.20.0
+	github.com/onsi/gomega v1.20.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
@@ -172,7 +168,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/regen-network/cosmos-proto v0.3.1 // indirect
+	github.com/regen-network/cosmos-proto v0.3.1
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rs/cors v1.8.3 // indirect

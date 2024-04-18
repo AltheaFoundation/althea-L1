@@ -17,9 +17,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 
-	"github.com/althea-net/althea-L1/x/nativedex/client/cli"
-	"github.com/althea-net/althea-L1/x/nativedex/keeper"
-	"github.com/althea-net/althea-L1/x/nativedex/types"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/client/cli"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
 var (

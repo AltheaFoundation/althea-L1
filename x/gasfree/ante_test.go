@@ -4,9 +4,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	"github.com/althea-net/althea-L1/x/gasfree"
-	"github.com/althea-net/althea-L1/x/gasfree/types"
-	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/types"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // --------------

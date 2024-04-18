@@ -8,8 +8,8 @@ import (
 	sdkante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/althea-net/althea-L1/config"
-	"github.com/althea-net/althea-L1/x/microtx/types"
+	"github.com/AltheaFoundation/althea-L1/config"
+	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // BasisPointDivisor used in calculating the MsgMicrotx fee amount to deduct

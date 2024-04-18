@@ -32,8 +32,8 @@ import (
 	ethermint "github.com/evmos/ethermint/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
-	althea "github.com/althea-net/althea-L1/app"
-	altheaconfig "github.com/althea-net/althea-L1/config"
+	althea "github.com/AltheaFoundation/althea-L1/app"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
 )
 
 var DefaultTestingAppInit func() (TestingApp, map[string]json.RawMessage) = SetupTestingApp

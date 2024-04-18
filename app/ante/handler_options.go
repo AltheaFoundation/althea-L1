@@ -17,9 +17,9 @@ import (
 
 	vestingtypes "github.com/Canto-Network/Canto/v5/x/vesting/types"
 
-	"github.com/althea-net/althea-L1/x/gasfree"
-	gasfreekeeper "github.com/althea-net/althea-L1/x/gasfree/keeper"
-	microtxkeeper "github.com/althea-net/althea-L1/x/microtx/keeper"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree"
+	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
+	microtxkeeper "github.com/AltheaFoundation/althea-L1/x/microtx/keeper"
 )
 
 // HandlerOptions defines the list of module keepers required to run the canto
@@ -140,7 +140,7 @@ func newCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		// Note: signature verification uses EIP instead of the cosmos signature validator
-		ethante.NewEip712SigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
+		ethante.NewEip712SigVerificationDecorator(options.AccountKeeper, options.SignModeHandler, ""), // Pass no chain id to have it parsed from the Cosmos chain id
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewAnteDecorator(options.IBCKeeper),
 		ethante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),

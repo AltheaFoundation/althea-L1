@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	altheacfg "github.com/althea-net/althea-L1/config"
+	altheacfg "github.com/AltheaFoundation/althea-L1/config"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"

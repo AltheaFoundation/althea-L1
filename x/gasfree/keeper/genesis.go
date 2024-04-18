@@ -3,7 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/althea-net/althea-L1/x/gasfree/types"
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/types"
 )
 
 // InitGenesis starts a chain from a genesis state

@@ -9,8 +9,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	altheaconfig "github.com/althea-net/althea-L1/config"
-	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 // --------------
