@@ -7,7 +7,6 @@ use althea_proto::canto::erc20::v1::{
     query_client::QueryClient as Erc20QueryClient, RegisterCoinProposal, RegisterErc20Proposal,
 };
 use althea_proto::canto::erc20::v1::{MsgConvertErc20, QueryTokenPairRequest, TokenPair};
-use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::query_client::QueryClient as BankQueryClient;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{DenomUnit, Metadata};
 use althea_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
@@ -26,10 +25,7 @@ use prost_types::Any;
 use tonic::transport::Channel;
 use web30::client::Web3;
 
-use crate::ibc_utils::{
-    get_denom_trace_for_hash, get_hash_for_denom_trace, get_ibc_balance,
-    send_and_assert_ibc_transfer, send_ibc_transfer,
-};
+use crate::ibc_utils::{get_hash_for_denom_trace, send_ibc_transfer};
 use crate::type_urls::MSG_CONVERT_ERC20_TYPE_URL;
 use crate::utils::{
     get_chain_id, one_atom, one_eth, one_hundred_atom, one_hundred_eth, send_funds_bulk,

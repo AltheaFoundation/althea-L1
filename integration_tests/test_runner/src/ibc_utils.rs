@@ -12,7 +12,6 @@ use althea_proto::cosmos_sdk_proto::ibc::core::channel::v1::{
     QueryChannelClientStateRequest, QueryChannelsRequest,
 };
 use althea_proto::cosmos_sdk_proto::ibc::lightclients::tendermint::v1::ClientState;
-use clarity::Uint256;
 use deep_space::client::type_urls::MSG_TRANSFER_TYPE_URL;
 use deep_space::error::CosmosGrpcError;
 use deep_space::utils::decode_any;

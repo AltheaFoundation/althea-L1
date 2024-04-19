@@ -213,12 +213,16 @@ pub async fn set_thresholds(
     )?;
 
     let transfer_res = web30
-        .send_transaction(
-            liquid_account_contract,
-            payload,
-            0u8.into(),
-            owner_or_approved,
-            vec![],
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(
+                    liquid_account_contract,
+                    payload,
+                    0u8.into(),
+                    owner_or_approved,
+                    vec![],
+                )
+                .await?,
         )
         .await?;
 
@@ -243,12 +247,16 @@ pub async fn withdraw_liquid_account_balances(
     let payload = clarity::abi::encode_call("withdrawBalances(address[])", &[erc20s.into()])?;
 
     let transfer_res = web30
-        .send_transaction(
-            liquid_account_contract,
-            payload,
-            0u8.into(),
-            owner_or_approved,
-            vec![],
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(
+                    liquid_account_contract,
+                    payload,
+                    0u8.into(),
+                    owner_or_approved,
+                    vec![],
+                )
+                .await?,
         )
         .await?;
 
@@ -277,12 +285,16 @@ pub async fn withdraw_liquid_account_balances_to(
     )?;
 
     let transfer_res = web30
-        .send_transaction(
-            liquid_account_contract,
-            payload,
-            0u8.into(),
-            owner_or_approved,
-            vec![],
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(
+                    liquid_account_contract,
+                    payload,
+                    0u8.into(),
+                    owner_or_approved,
+                    vec![],
+                )
+                .await?,
         )
         .await?;
 
@@ -350,7 +362,11 @@ pub async fn send_erc721(
     )?;
 
     let transfer_res = web30
-        .send_transaction(erc721_address, payload, 0u8.into(), from, vec![])
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(erc721_address, payload, 0u8.into(), from, vec![])
+                .await?,
+        )
         .await?;
 
     web30
@@ -376,7 +392,11 @@ pub async fn approve_erc721(
     )?;
 
     let approve_res = web30
-        .send_transaction(erc721_address, payload, 0u8.into(), approver, vec![])
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(erc721_address, payload, 0u8.into(), approver, vec![])
+                .await?,
+        )
         .await?;
 
     web30.wait_for_transaction(approve_res, timeout, None).await
@@ -399,7 +419,11 @@ pub async fn approve_erc721_for_all(
     )?;
 
     let transfer_res = web30
-        .send_transaction(erc721_address, payload, 0u8.into(), approver, vec![])
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(erc721_address, payload, 0u8.into(), approver, vec![])
+                .await?,
+        )
         .await?;
 
     web30
