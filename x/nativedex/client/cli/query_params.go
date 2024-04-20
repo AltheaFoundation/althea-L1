@@ -12,6 +12,7 @@ import (
 )
 
 func CmdQueryParams() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "params",
 		Short: "shows the parameters of the module",

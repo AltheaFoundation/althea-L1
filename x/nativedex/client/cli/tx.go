@@ -14,7 +14,9 @@ import (
 )
 
 // NewUpgradeProxyProposalCmd implements the command to submit a UpgradeProxyProposal
+// nolint: dupl
 func NewUpgradeProxyProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "upgrade-proxy [metadata]",
 		Args:  cobra.ExactArgs(1),
@@ -55,7 +57,9 @@ Where metadata.json contains (example):
 }
 
 // NewCollectTreasuryProposalCmd implements the command to submit a CollectTreasuryProposal
+// nolint: dupl
 func NewCollectTreasuryProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "collect-treasury [metadata] [in-safe-mode bool]",
 		Args:  cobra.ExactArgs(1),
@@ -99,7 +103,9 @@ Where metadata.json contains (example):
 }
 
 // NewSetTreasuryProposalCmd implements the command to submit a SetTreasuryProposal
+// nolint: dupl
 func NewSetTreasuryProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "set-treasury [metadata] [in-safe-mode bool]",
 		Args:  cobra.ExactArgs(1),
@@ -111,7 +117,7 @@ The proposal details must be supplied via a JSON file.`,
 Where metadata.json contains (example):
 
 {
-	"PARAM": "",
+	"TreasuryAddress": "<hex address>",
 }`, version.AppName,
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -143,7 +149,9 @@ Where metadata.json contains (example):
 }
 
 // NewAuthorityTransferProposalCmd implements the command to submit a AuthorityTransferProposal
+// nolint: dupl
 func NewAuthorityTransferProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "authority-transfer [metadata] [in-safe-mode bool]",
 		Args:  cobra.ExactArgs(1),
@@ -156,7 +164,7 @@ The proposal details must be supplied via a JSON file.`,
 Where metadata.json contains (example):
 
 {
-	"PARAM": "",
+	"AuthAddress": "<hex address>",
 }`, version.AppName,
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -188,7 +196,9 @@ Where metadata.json contains (example):
 }
 
 // NewHotPathOpenProposalCmd implements the command to submit a HotPathOpenProposal
+// nolint: dupl
 func NewHotPathOpenProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "hot-path-open [metadata] [in-safe-mode bool]",
 		Args:  cobra.ExactArgs(1),
@@ -200,7 +210,7 @@ The proposal details must be supplied via a JSON file.`,
 Where metadata.json contains (example):
 
 {
-	"PARAM": "",
+	"Open": "<true/false>",
 }`, version.AppName,
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -232,7 +242,9 @@ Where metadata.json contains (example):
 }
 
 // NewSetSafeModeProposalCmd implements the command to submit a SetSafeModeProposal
+// nolint: dupl
 func NewSetSafeModeProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "set-safe-mode [metadata] [in-safe-mode bool]",
 		Args:  cobra.ExactArgs(1),
@@ -244,7 +256,7 @@ The proposal details must be supplied via a JSON file.`,
 Where metadata.json contains (example):
 
 {
-	"PARAM": "",
+	"LockDex": "<true/false>",
 }`, version.AppName,
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -276,7 +288,9 @@ Where metadata.json contains (example):
 }
 
 // NewTransferGovernanceProposalCmd implements the command to submit a TransferGovernanceProposal
+// nolint: dupl
 func NewTransferGovernanceProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "transfer-governance [metadata]",
 		Args:  cobra.ExactArgs(1),
@@ -287,7 +301,8 @@ func NewTransferGovernanceProposalCmd() *cobra.Command {
 Where metadata.json contains (example):
 
 {
-	"PARAM": "",
+	"Ops": "<hex address>",
+	"Emergency": "<hex address>",
 }`, version.AppName,
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {

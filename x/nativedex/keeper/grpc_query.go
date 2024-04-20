@@ -10,6 +10,7 @@ import (
 	"github.com/althea-net/althea-L1/x/nativedex/types"
 )
 
+// nolint: exhaustruct
 var _ types.QueryServer = Keeper{}
 
 func (k Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {

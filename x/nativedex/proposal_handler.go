@@ -50,6 +50,7 @@ func NewNativeDexProposalHandler(k *keeper.Keeper) govtypes.Handler {
 	}
 }
 
+// nolint: dupl
 func handleUpgradeProxyProposal(ctx sdk.Context, k *keeper.Keeper, p *types.UpgradeProxyProposal) error {
 	err := p.ValidateBasic()
 	if err != nil {
@@ -75,6 +76,7 @@ func handleUpgradeProxyProposal(ctx sdk.Context, k *keeper.Keeper, p *types.Upgr
 	return nil
 }
 
+// nolint: dupl
 func handleCollectTreasuryProposal(ctx sdk.Context, k *keeper.Keeper, p *types.CollectTreasuryProposal) error {
 	err := p.ValidateBasic()
 	if err != nil {
@@ -103,6 +105,7 @@ func handleCollectTreasuryProposal(ctx sdk.Context, k *keeper.Keeper, p *types.C
 	return nil
 }
 
+// nolint: dupl
 func handleSetTreasuryProposal(ctx sdk.Context, k *keeper.Keeper, p *types.SetTreasuryProposal) error {
 	err := p.ValidateBasic()
 	if err != nil {
@@ -130,6 +133,7 @@ func handleSetTreasuryProposal(ctx sdk.Context, k *keeper.Keeper, p *types.SetTr
 	return nil
 }
 
+// nolint: dupl
 func handleAuthorityTransferProposal(ctx sdk.Context, k *keeper.Keeper, p *types.AuthorityTransferProposal) error {
 	err := p.ValidateBasic()
 	if err != nil {
@@ -157,6 +161,7 @@ func handleAuthorityTransferProposal(ctx sdk.Context, k *keeper.Keeper, p *types
 	return nil
 }
 
+// nolint: dupl
 func handleHotPathOpenProposal(ctx sdk.Context, k *keeper.Keeper, p *types.HotPathOpenProposal) error {
 	err := p.ValidateBasic()
 	if err != nil {
@@ -184,6 +189,7 @@ func handleHotPathOpenProposal(ctx sdk.Context, k *keeper.Keeper, p *types.HotPa
 	return nil
 }
 
+// nolint: dupl
 func handleSetSafeModeProposal(ctx sdk.Context, k *keeper.Keeper, p *types.SetSafeModeProposal) error {
 	err := p.ValidateBasic()
 	if err != nil {
@@ -211,6 +217,7 @@ func handleSetSafeModeProposal(ctx sdk.Context, k *keeper.Keeper, p *types.SetSa
 	return nil
 }
 
+// nolint: dupl
 func handleTransferGovernanceProposal(ctx sdk.Context, k *keeper.Keeper, p *types.TransferGovernanceProposal) error {
 	err := p.ValidateBasic()
 	if err != nil {

@@ -14,4 +14,5 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
+// nolint: exhaustruct
 var _ types.MsgServer = msgServer{}

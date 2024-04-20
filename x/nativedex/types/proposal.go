@@ -22,6 +22,7 @@ const (
 
 var AcceptableCallpathIndexes []uint64 = []uint64{1, 2, 3, 4, 5, 6, 7, 3500, 9999}
 
+// nolint: exhaustruct
 var (
 	_ govtypes.Content = &UpgradeProxyProposal{}
 	_ govtypes.Content = &CollectTreasuryProposal{}
@@ -33,6 +34,7 @@ var (
 )
 
 // Register Compound Proposal type as a valid proposal type in goveranance module
+// nolint: exhaustruct
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeUpgradeProxy)
 	govtypes.RegisterProposalTypeCodec(&UpgradeProxyProposal{}, "nativedex/UpgradeProxyProposal")
