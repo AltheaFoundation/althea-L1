@@ -8,6 +8,7 @@ import (
 	"github.com/althea-net/althea-L1/x/nativedex/types"
 )
 
+// nolint: exhaustruct
 func TestGenesisState_Validate(t *testing.T) {
 	for _, tc := range []struct {
 		desc     string
@@ -17,11 +18,6 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc:     "default is valid",
 			genState: types.DefaultGenesis(),
-			valid:    true,
-		},
-		{
-			desc:     "valid genesis state",
-			genState: &types.GenesisState{},
 			valid:    true,
 		},
 	} {

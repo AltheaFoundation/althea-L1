@@ -8,12 +8,10 @@ import (
 )
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	// this line is used by starport scaffolding # 2
 }
 
+// nolint: exhaustruct
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	// this line is used by starport scaffolding # 3
-
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
 		&UpgradeProxyProposal{},

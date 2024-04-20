@@ -96,6 +96,7 @@ func AddGenericProposalCommandFlags(cmd *cobra.Command) {
 // Parse Metadata structs from the input files
 
 func ParseUpgradeProxyMetadata(cdc codec.JSONCodec, metadataFile string) (types.UpgradeProxyMetadata, error) {
+	// nolint: exhaustruct
 	propMetaData := types.UpgradeProxyMetadata{}
 
 	contents, err := os.ReadFile(filepath.Clean(metadataFile))
@@ -111,6 +112,7 @@ func ParseUpgradeProxyMetadata(cdc codec.JSONCodec, metadataFile string) (types.
 }
 
 func ParseCollectTreasuryMetadata(cdc codec.JSONCodec, metadataFile string) (types.CollectTreasuryMetadata, error) {
+	// nolint: exhaustruct
 	propMetaData := types.CollectTreasuryMetadata{}
 
 	contents, err := os.ReadFile(filepath.Clean(metadataFile))
@@ -126,6 +128,7 @@ func ParseCollectTreasuryMetadata(cdc codec.JSONCodec, metadataFile string) (typ
 }
 
 func ParseSetTreasuryMetadata(cdc codec.JSONCodec, metadataFile string) (types.SetTreasuryMetadata, error) {
+	// nolint: exhaustruct
 	propMetaData := types.SetTreasuryMetadata{}
 
 	contents, err := os.ReadFile(filepath.Clean(metadataFile))
@@ -141,6 +144,7 @@ func ParseSetTreasuryMetadata(cdc codec.JSONCodec, metadataFile string) (types.S
 }
 
 func ParseAuthorityTransferMetadata(cdc codec.JSONCodec, metadataFile string) (types.AuthorityTransferMetadata, error) {
+	// nolint: exhaustruct
 	propMetaData := types.AuthorityTransferMetadata{}
 
 	contents, err := os.ReadFile(filepath.Clean(metadataFile))
@@ -156,6 +160,7 @@ func ParseAuthorityTransferMetadata(cdc codec.JSONCodec, metadataFile string) (t
 }
 
 func ParseHotPathOpenMetadata(cdc codec.JSONCodec, metadataFile string) (types.HotPathOpenMetadata, error) {
+	// nolint: exhaustruct
 	propMetaData := types.HotPathOpenMetadata{}
 
 	contents, err := os.ReadFile(filepath.Clean(metadataFile))
@@ -171,6 +176,7 @@ func ParseHotPathOpenMetadata(cdc codec.JSONCodec, metadataFile string) (types.H
 }
 
 func ParseSetSafeModeMetadata(cdc codec.JSONCodec, metadataFile string) (types.SetSafeModeMetadata, error) {
+	// nolint: exhaustruct
 	propMetaData := types.SetSafeModeMetadata{}
 
 	contents, err := os.ReadFile(filepath.Clean(metadataFile))
@@ -186,6 +192,7 @@ func ParseSetSafeModeMetadata(cdc codec.JSONCodec, metadataFile string) (types.S
 }
 
 func ParseTransferGovernanceMetadata(cdc codec.JSONCodec, metadataFile string) (types.TransferGovernanceMetadata, error) {
+	// nolint: exhaustruct
 	propMetaData := types.TransferGovernanceMetadata{}
 
 	contents, err := os.ReadFile(filepath.Clean(metadataFile))

@@ -298,6 +298,7 @@ type AltheaApp struct { // nolint: golint
 }
 
 // ValidateMembers checks for unexpected values, typically nil values needed for the chain to operate
+// nolint: gocyclo
 func (app AltheaApp) ValidateMembers() {
 	if app.legacyAmino == nil {
 		panic("Nil legacyAmino!")

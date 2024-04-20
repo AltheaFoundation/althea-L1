@@ -23,7 +23,9 @@ import (
 )
 
 var (
-	_ module.AppModule      = AppModule{}
+	// nolint: exhaustruct
+	_ module.AppModule = AppModule{}
+	// nolint: exhaustruct
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
@@ -108,6 +110,7 @@ func NewAppModule(
 	ak authkeeper.AccountKeeper,
 ) AppModule {
 	return AppModule{
+		// nolint: exhaustruct
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
 		accountKeeper:  ak,

@@ -7,17 +7,20 @@ import (
 )
 
 var (
-	Uint8Type, _   = abi.NewType("uint8", "", nil)
-	Uint16Type, _  = abi.NewType("uint16", "", nil)
-	Uint32Type, _  = abi.NewType("uint32", "", nil)
-	Uint64Type, _  = abi.NewType("uint64", "", nil)
-	AddressType, _ = abi.NewType("address", "", nil)
-	BoolType, _    = abi.NewType("bool", "", nil)
+	Uint8Type, u8err    = abi.NewType("uint8", "", nil)
+	Uint16Type, u16err  = abi.NewType("uint16", "", nil)
+	Uint32Type, u32err  = abi.NewType("uint32", "", nil)
+	Uint64Type, u64err  = abi.NewType("uint64", "", nil)
+	AddressType, adrerr = abi.NewType("address", "", nil)
+	BoolType, boolerr   = abi.NewType("bool", "", nil)
 )
 
 var typeMap map[string]abi.Type = map[string]abi.Type{}
 
 func init() {
+	if u8err != nil || u16err != nil || u32err != nil || u64err != nil || adrerr != nil || boolerr != nil {
+		panic(fmt.Sprintf("failed to create ABI types: %v, %v, %v, %v, %v, %v", u8err, u16err, u32err, u64err, adrerr, boolerr))
+	}
 	typeMap["bool"] = BoolType
 	typeMap["uint8"] = Uint8Type
 	typeMap["uint16"] = Uint16Type
@@ -40,6 +43,7 @@ func GetTypeArguments(names []string) ([]abi.Argument, error) {
 		if err != nil {
 			return nil, err
 		}
+		// nolint: exhaustruct
 		args[i] = abi.Argument{Type: t, Name: ""}
 	}
 	return args, nil
