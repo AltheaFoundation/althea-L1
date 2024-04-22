@@ -1,0 +1,3 @@
+[submodule "solidity-dex"]
+	path = solidity-dex
+	url = https://github.com/AltheaFoundation/althea-dex
