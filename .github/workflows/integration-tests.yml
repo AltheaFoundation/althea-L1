@@ -157,6 +157,6 @@ jobs:
           restore-keys: |
             integration-test-cache-
       - name: Starts the onboarding module permissively, but removes the channel from the whilelist after a transfer
-        run: tests/all-up-test.sh TEST_NAME
+        run: tests/all-up-test.sh ONBOARDING_DELIST_AFTER
         env:
           NO_IMAGE_BUILD: True
