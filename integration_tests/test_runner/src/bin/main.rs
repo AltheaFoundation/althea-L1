@@ -211,6 +211,8 @@ pub async fn main() {
             )
             .await;
             return;
+        } else {
+            panic!("Unknown test type: {:?}", test_type);
         }
     }
 
