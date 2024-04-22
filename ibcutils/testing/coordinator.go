@@ -135,27 +135,6 @@ func (coord *Coordinator) CreateConnections(path *Path) {
 	require.NoError(coord.T, err)
 }
 
-// CreateMockChannels constructs and executes channel handshake messages to create OPEN
-// channels that use a mock application module that returns nil on all callbacks. This
-// function is expects the channels to be successfully opened otherwise testing will
-// fail.
-func (coord *Coordinator) CreateMockChannels(path *Path) {
-	path.EndpointA.ChannelConfig.PortID = MockPort
-	path.EndpointB.ChannelConfig.PortID = MockPort
-
-	coord.CreateChannels(path)
-}
-
-// CreateTransferChannels constructs and executes channel handshake messages to create OPEN
-// ibc-transfer channels on chainA and chainB. The function expects the channels to be
-// successfully opened otherwise testing will fail.
-func (coord *Coordinator) CreateTransferChannels(path *Path) {
-	path.EndpointA.ChannelConfig.PortID = TransferPort
-	path.EndpointB.ChannelConfig.PortID = TransferPort
-
-	coord.CreateChannels(path)
-}
-
 // CreateChannel constructs and executes channel handshake messages in order to create
 // OPEN channels on chainA and chainB. The function expects the channels to be successfully
 // opened otherwise testing will fail.
@@ -204,54 +183,4 @@ func (coord *Coordinator) CommitBlock(chains ...*TestChain) {
 		chain.NextBlock()
 	}
 	coord.IncrementTime()
-}
-
-// CommitNBlocks commits n blocks to state and updates the block height by 1 for each commit.
-func (coord *Coordinator) CommitNBlocks(chain *TestChain, n uint64) {
-	for i := uint64(0); i < n; i++ {
-		// nolint: exhaustruct
-		chain.App.BeginBlock(abci.RequestBeginBlock{Header: chain.CurrentHeader})
-		chain.App.Commit()
-		chain.NextBlock()
-		coord.IncrementTime()
-	}
-}
-
-// ConnOpenInitOnBothChains initializes a connection on both endpoints with the state INIT
-// using the OpenInit handshake call.
-func (coord *Coordinator) ConnOpenInitOnBothChains(path *Path) error {
-	if err := path.EndpointA.ConnOpenInit(); err != nil {
-		return err
-	}
-
-	if err := path.EndpointB.ConnOpenInit(); err != nil {
-		return err
-	}
-
-	if err := path.EndpointA.UpdateClient(); err != nil {
-		return err
-	}
-
-	return path.EndpointB.UpdateClient()
-}
-
-// ChanOpenInitOnBothChains initializes a channel on the source chain and counterparty chain
-// with the state INIT using the OpenInit handshake call.
-func (coord *Coordinator) ChanOpenInitOnBothChains(path *Path) error {
-	// NOTE: only creation of a capability for a transfer or mock port is supported
-	// Other applications must bind to the port in InitGenesis or modify this code.
-
-	if err := path.EndpointA.ChanOpenInit(); err != nil {
-		return err
-	}
-
-	if err := path.EndpointB.ChanOpenInit(); err != nil {
-		return err
-	}
-
-	if err := path.EndpointA.UpdateClient(); err != nil {
-		return err
-	}
-
-	return path.EndpointB.UpdateClient()
 }

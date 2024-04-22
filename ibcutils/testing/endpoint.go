@@ -31,21 +31,6 @@ type Endpoint struct {
 	ChannelConfig    *ChannelConfig
 }
 
-// NewEndpoint constructs a new endpoint without the counterparty.
-// CONTRACT: the counterparty endpoint must be set by the caller.
-func NewEndpoint(
-	chain *TestChain, clientConfig ClientConfig,
-	connectionConfig *ConnectionConfig, channelConfig *ChannelConfig,
-) *Endpoint {
-	// nolint: exhaustruct
-	return &Endpoint{
-		Chain:            chain,
-		ClientConfig:     clientConfig,
-		ConnectionConfig: connectionConfig,
-		ChannelConfig:    channelConfig,
-	}
-}
-
 // NewDefaultEndpoint constructs a new endpoint using default values.
 // CONTRACT: the counterparty endpoitn must be set by the caller.
 func NewDefaultEndpoint(chain *TestChain) *Endpoint {
@@ -349,45 +334,6 @@ func (endpoint *Endpoint) ChanOpenConfirm() error {
 	return endpoint.Chain.sendMsgs(msg)
 }
 
-// ChanCloseInit will construct and execute a MsgChannelCloseInit on the associated endpoint.
-//
-// NOTE: does not work with ibc-transfer module
-func (endpoint *Endpoint) ChanCloseInit() error {
-	msg := channeltypes.NewMsgChannelCloseInit(
-		endpoint.ChannelConfig.PortID, endpoint.ChannelID,
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-	return endpoint.Chain.sendMsgs(msg)
-}
-
-// SendPacket sends a packet through the channel keeper using the associated endpoint
-// The counterparty client is updated so proofs can be sent to the counterparty chain.
-func (endpoint *Endpoint) SendPacket(packet exported.PacketI) error {
-	channelCap := endpoint.Chain.GetChannelCapability(packet.GetSourcePort(), packet.GetSourceChannel())
-
-	// no need to send message, acting as a module
-	err := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(endpoint.Chain.GetContext(), channelCap, packet)
-	if err != nil {
-		return err
-	}
-
-	// commit changes since no message was sent
-	endpoint.Chain.Coordinator.CommitBlock(endpoint.Chain)
-
-	return endpoint.Counterparty.UpdateClient()
-}
-
-// RecvPacket receives a packet on the associated endpoint.
-// The counterparty client is updated.
-func (endpoint *Endpoint) RecvPacket(packet channeltypes.Packet) error {
-	_, err := endpoint.RecvPacketWithResult(packet)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // RecvPacketWithResult receives a packet on the associated endpoint and the result
 // of the transaction is returned. The counterparty client is updated.
 func (endpoint *Endpoint) RecvPacketWithResult(packet channeltypes.Packet) (*sdk.Result, error) {
@@ -410,23 +356,6 @@ func (endpoint *Endpoint) RecvPacketWithResult(packet channeltypes.Packet) (*sdk
 	return res, nil
 }
 
-// WriteAcknowledgement writes an acknowledgement on the channel associated with the endpoint.
-// The counterparty client is updated.
-func (endpoint *Endpoint) WriteAcknowledgement(ack exported.Acknowledgement, packet exported.PacketI) error {
-	channelCap := endpoint.Chain.GetChannelCapability(packet.GetDestPort(), packet.GetDestChannel())
-
-	// no need to send message, acting as a handler
-	err := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.WriteAcknowledgement(endpoint.Chain.GetContext(), channelCap, packet, ack)
-	if err != nil {
-		return err
-	}
-
-	// commit changes since no message was sent
-	endpoint.Chain.Coordinator.CommitBlock(endpoint.Chain)
-
-	return endpoint.Counterparty.UpdateClient()
-}
-
 // AcknowledgePacket sends a MsgAcknowledgement to the channel associated with the endpoint.
 func (endpoint *Endpoint) AcknowledgePacket(packet channeltypes.Packet, ack []byte) error {
 	// get proof of acknowledgement on counterparty
@@ -438,113 +367,6 @@ func (endpoint *Endpoint) AcknowledgePacket(packet channeltypes.Packet, ack []by
 	return endpoint.Chain.sendMsgs(ackMsg)
 }
 
-// TimeoutPacket sends a MsgTimeout to the channel associated with the endpoint.
-func (endpoint *Endpoint) TimeoutPacket(packet channeltypes.Packet) error {
-	// get proof for timeout based on channel order
-	var packetKey []byte
-
-	switch endpoint.ChannelConfig.Order {
-	case channeltypes.ORDERED:
-		packetKey = host.NextSequenceRecvKey(packet.GetDestPort(), packet.GetDestChannel())
-	case channeltypes.UNORDERED:
-		packetKey = host.PacketReceiptKey(packet.GetDestPort(), packet.GetDestChannel(), packet.GetSequence())
-	default:
-		return fmt.Errorf("unsupported order type %s", endpoint.ChannelConfig.Order)
-	}
-
-	proof, proofHeight := endpoint.Counterparty.QueryProof(packetKey)
-	nextSeqRecv, found := endpoint.Counterparty.Chain.App.GetIBCKeeper().ChannelKeeper.GetNextSequenceRecv(endpoint.Counterparty.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID)
-	require.True(endpoint.Chain.T, found)
-
-	timeoutMsg := channeltypes.NewMsgTimeout(
-		packet, nextSeqRecv,
-		proof, proofHeight, endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	return endpoint.Chain.sendMsgs(timeoutMsg)
-}
-
-// TimeoutOnClose sends a MsgTimeoutOnClose to the channel associated with the endpoint.
-func (endpoint *Endpoint) TimeoutOnClose(packet channeltypes.Packet) error {
-	// get proof for timeout based on channel order
-	var packetKey []byte
-
-	switch endpoint.ChannelConfig.Order {
-	case channeltypes.ORDERED:
-		packetKey = host.NextSequenceRecvKey(packet.GetDestPort(), packet.GetDestChannel())
-	case channeltypes.UNORDERED:
-		packetKey = host.PacketReceiptKey(packet.GetDestPort(), packet.GetDestChannel(), packet.GetSequence())
-	default:
-		return fmt.Errorf("unsupported order type %s", endpoint.ChannelConfig.Order)
-	}
-
-	proof, proofHeight := endpoint.Counterparty.QueryProof(packetKey)
-
-	channelKey := host.ChannelKey(packet.GetDestPort(), packet.GetDestChannel())
-	proofClosed, _ := endpoint.Counterparty.QueryProof(channelKey)
-
-	nextSeqRecv, found := endpoint.Counterparty.Chain.App.GetIBCKeeper().ChannelKeeper.GetNextSequenceRecv(endpoint.Counterparty.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID)
-	require.True(endpoint.Chain.T, found)
-
-	timeoutOnCloseMsg := channeltypes.NewMsgTimeoutOnClose(
-		packet, nextSeqRecv,
-		proof, proofClosed, proofHeight, endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	return endpoint.Chain.sendMsgs(timeoutOnCloseMsg)
-}
-
-// SetChannelClosed sets a channel state to CLOSED.
-func (endpoint *Endpoint) SetChannelClosed() error {
-	channel := endpoint.GetChannel()
-
-	channel.State = channeltypes.CLOSED
-	endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SetChannel(endpoint.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID, channel)
-
-	endpoint.Chain.Coordinator.CommitBlock(endpoint.Chain)
-
-	return endpoint.Counterparty.UpdateClient()
-}
-
-// GetClientState retrieves the Client State for this endpoint. The
-// client state is expected to exist otherwise testing will fail.
-func (endpoint *Endpoint) GetClientState() exported.ClientState {
-	return endpoint.Chain.GetClientState(endpoint.ClientID)
-}
-
-// SetClientState sets the client state for this endpoint.
-func (endpoint *Endpoint) SetClientState(clientState exported.ClientState) {
-	endpoint.Chain.App.GetIBCKeeper().ClientKeeper.SetClientState(endpoint.Chain.GetContext(), endpoint.ClientID, clientState)
-}
-
-// GetConsensusState retrieves the Consensus State for this endpoint at the provided height.
-// The consensus state is expected to exist otherwise testing will fail.
-func (endpoint *Endpoint) GetConsensusState(height exported.Height) exported.ConsensusState {
-	consensusState, found := endpoint.Chain.GetConsensusState(endpoint.ClientID, height)
-	require.True(endpoint.Chain.T, found)
-
-	return consensusState
-}
-
-// SetConsensusState sets the consensus state for this endpoint.
-func (endpoint *Endpoint) SetConsensusState(consensusState exported.ConsensusState, height exported.Height) {
-	endpoint.Chain.App.GetIBCKeeper().ClientKeeper.SetClientConsensusState(endpoint.Chain.GetContext(), endpoint.ClientID, height, consensusState)
-}
-
-// GetConnection retrieves an IBC Connection for the endpoint. The
-// connection is expected to exist otherwise testing will fail.
-func (endpoint *Endpoint) GetConnection() connectiontypes.ConnectionEnd {
-	connection, found := endpoint.Chain.App.GetIBCKeeper().ConnectionKeeper.GetConnection(endpoint.Chain.GetContext(), endpoint.ConnectionID)
-	require.True(endpoint.Chain.T, found)
-
-	return connection
-}
-
-// SetConnection sets the connection for this endpoint.
-func (endpoint *Endpoint) SetConnection(connection connectiontypes.ConnectionEnd) {
-	endpoint.Chain.App.GetIBCKeeper().ConnectionKeeper.SetConnection(endpoint.Chain.GetContext(), endpoint.ConnectionID, connection)
-}
-
 // GetChannel retrieves an IBC Channel for the endpoint. The channel
 // is expected to exist otherwise testing will fail.
 func (endpoint *Endpoint) GetChannel() channeltypes.Channel {
@@ -552,21 +374,4 @@ func (endpoint *Endpoint) GetChannel() channeltypes.Channel {
 	require.True(endpoint.Chain.T, found)
 
 	return channel
-}
-
-// SetChannel sets the channel for this endpoint.
-func (endpoint *Endpoint) SetChannel(channel channeltypes.Channel) {
-	endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SetChannel(endpoint.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID, channel)
-}
-
-// QueryClientStateProof performs and abci query for a client stat associated
-// with this endpoint and returns the ClientState along with the proof.
-func (endpoint *Endpoint) QueryClientStateProof() (exported.ClientState, []byte) {
-	// retrieve client state to provide proof for
-	clientState := endpoint.GetClientState()
-
-	clientKey := host.FullClientStateKey(endpoint.ClientID)
-	proofClient, _ := endpoint.QueryProof(clientKey)
-
-	return clientState, proofClient
 }

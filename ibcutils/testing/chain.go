@@ -1,7 +1,6 @@
 package ibctesting
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 	"time"
@@ -17,13 +16,10 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
 	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v4/modules/core/exported"
@@ -315,42 +311,6 @@ func (chain *TestChain) QueryProofAtHeight(key []byte, height int64) ([]byte, cl
 	return proof, clienttypes.NewHeight(revision, uint64(res.Height)+1)
 }
 
-// QueryUpgradeProof performs an abci query with the given key and returns the proto encoded merkle proof
-// for the query and the height at which the proof will succeed on a tendermint verifier.
-func (chain *TestChain) QueryUpgradeProof(key []byte, height uint64) ([]byte, clienttypes.Height) {
-	res := chain.App.Query(abci.RequestQuery{
-		Path:   "store/upgrade/key",
-		Height: int64(height - 1),
-		Data:   key,
-		Prove:  true,
-	})
-
-	merkleProof, err := commitmenttypes.ConvertProofs(res.ProofOps)
-	require.NoError(chain.T, err)
-
-	proof, err := chain.App.AppCodec().Marshal(&merkleProof)
-	require.NoError(chain.T, err)
-
-	revision := clienttypes.ParseChainID(chain.ChainID)
-
-	// proof height + 1 is returned as the proof created corresponds to the height the proof
-	// was created in the IAVL tree. Tendermint and subsequently the clients that rely on it
-	// have heights 1 above the IAVL tree. Thus we return proof height + 1
-	return proof, clienttypes.NewHeight(revision, uint64(res.Height+1))
-}
-
-// QueryConsensusStateProof performs an abci query for a consensus state
-// stored on the given clientID. The proof and consensusHeight are returned.
-func (chain *TestChain) QueryConsensusStateProof(clientID string) ([]byte, clienttypes.Height) {
-	clientState := chain.GetClientState(clientID)
-
-	consensusHeight := clientState.GetLatestHeight().(clienttypes.Height)
-	consensusKey := host.FullConsensusStateKey(clientID, consensusHeight)
-	proofConsensus, _ := chain.QueryProof(consensusKey)
-
-	return proofConsensus, consensusHeight
-}
-
 // NextBlock sets the last header to the current header and increments the current header to be
 // at the next block height. It does not update the time as that is handled by the Coordinator.
 //
@@ -429,12 +389,6 @@ func (chain *TestChain) GetClientState(clientID string) exported.ClientState {
 	return clientState
 }
 
-// GetConsensusState retrieves the consensus state for the provided clientID and height.
-// It will return a success boolean depending on if consensus state exists or not.
-func (chain *TestChain) GetConsensusState(clientID string, height exported.Height) (exported.ConsensusState, bool) {
-	return chain.App.GetIBCKeeper().ClientKeeper.GetClientConsensusState(chain.GetContext(), clientID, height)
-}
-
 // GetValsAtHeight will return the validator set of the chain at a given height. It will return
 // a success boolean depending on if the validator set exists or not at that height.
 func (chain *TestChain) GetValsAtHeight(height int64) (*tmtypes.ValidatorSet, bool) {
@@ -450,15 +404,6 @@ func (chain *TestChain) GetValsAtHeight(height int64) (*tmtypes.ValidatorSet, bo
 		panic(err)
 	}
 	return tmtypes.NewValidatorSet(tmValidators), true
-}
-
-// GetAcknowledgement retrieves an acknowledgement for the provided packet. If the
-// acknowledgement does not exist then testing will fail.
-func (chain *TestChain) GetAcknowledgement(packet exported.PacketI) []byte {
-	ack, found := chain.App.GetIBCKeeper().ChannelKeeper.GetPacketAcknowledgement(chain.GetContext(), packet.GetDestPort(), packet.GetDestChannel(), packet.GetSequence())
-	require.True(chain.T, found)
-
-	return ack
 }
 
 // GetPrefix returns the prefix for used by a chain in connection creation
@@ -510,12 +455,6 @@ func (chain *TestChain) ConstructUpdateTMClientHeaderWithTrustedHeight(counterpa
 	header.TrustedValidators = trustedVals
 
 	return header, nil
-}
-
-// ExpireClient fast forwards the chain's block time by the provided amount of time which will
-// expire any clients with a trusting period less than or equal to this amount of time.
-func (chain *TestChain) ExpireClient(amount time.Duration) {
-	chain.Coordinator.IncrementTimeBy(amount)
 }
 
 // CurrentTMClientHeader creates a TM header using the current header parameters
@@ -592,104 +531,6 @@ func MakeBlockID(hash []byte, partSetSize uint32, partSetHash []byte) tmtypes.Bl
 			Hash:  partSetHash,
 		},
 	}
-}
-
-// CreateSortedSignerArray takes two PrivValidators, and the corresponding Validator structs
-// (including voting power). It returns a signer array of PrivValidators that matches the
-// sorting of ValidatorSet.
-// The sorting is first by .VotingPower (descending), with secondary index of .Address (ascending).
-func CreateSortedSignerArray(altPrivVal, suitePrivVal tmtypes.PrivValidator,
-	altVal, suiteVal *tmtypes.Validator,
-) []tmtypes.PrivValidator {
-	switch {
-	case altVal.VotingPower > suiteVal.VotingPower:
-		return []tmtypes.PrivValidator{altPrivVal, suitePrivVal}
-	case altVal.VotingPower < suiteVal.VotingPower:
-		return []tmtypes.PrivValidator{suitePrivVal, altPrivVal}
-	default:
-		if bytes.Compare(altVal.Address, suiteVal.Address) == -1 {
-			return []tmtypes.PrivValidator{altPrivVal, suitePrivVal}
-		}
-		return []tmtypes.PrivValidator{suitePrivVal, altPrivVal}
-	}
-}
-
-// CreatePortCapability binds and claims a capability for the given portID if it does not
-// already exist. This function will fail testing on any resulting error.
-// NOTE: only creation of a capability for a transfer or mock port is supported
-// Other applications must bind to the port in InitGenesis or modify this code.
-func (chain *TestChain) CreatePortCapability(scopedKeeper capabilitykeeper.ScopedKeeper, portID string) {
-	// check if the portId is already binded, if not bind it
-	_, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.PortPath(portID))
-	if !ok {
-		// create capability using the IBC capability keeper
-		cap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), host.PortPath(portID))
-		require.NoError(chain.T, err)
-
-		// claim capability using the scopedKeeper
-		err = scopedKeeper.ClaimCapability(chain.GetContext(), cap, host.PortPath(portID))
-		require.NoError(chain.T, err)
-	}
-
-	chain.App.Commit()
-
-	chain.NextBlock()
-}
-
-// GetPortCapability returns the port capability for the given portID. The capability must
-// exist, otherwise testing will fail.
-func (chain *TestChain) GetPortCapability(portID string) *capabilitytypes.Capability {
-	cap, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.PortPath(portID))
-	require.True(chain.T, ok)
-
-	return cap
-}
-
-// CreateChannelCapability binds and claims a capability for the given portID and channelID
-// if it does not already exist. This function will fail testing on any resulting error. The
-// scoped keeper passed in will claim the new capability.
-func (chain *TestChain) CreateChannelCapability(scopedKeeper capabilitykeeper.ScopedKeeper, portID, channelID string) {
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	// check if the portId is already binded, if not bind it
-	_, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), capName)
-	if !ok {
-		cap, err := chain.App.GetScopedIBCKeeper().NewCapability(chain.GetContext(), capName)
-		require.NoError(chain.T, err)
-		err = scopedKeeper.ClaimCapability(chain.GetContext(), cap, capName)
-		require.NoError(chain.T, err)
-	}
-
-	chain.App.Commit()
-
-	chain.NextBlock()
-}
-
-// GetChannelCapability returns the channel capability for the given portID and channelID.
-// The capability must exist, otherwise testing will fail.
-func (chain *TestChain) GetChannelCapability(portID, channelID string) *capabilitytypes.Capability {
-	cap, ok := chain.App.GetScopedIBCKeeper().GetCapability(chain.GetContext(), host.ChannelCapabilityPath(portID, channelID))
-	require.True(chain.T, ok)
-
-	return cap
-}
-
-// GetTimeoutHeight is a convenience function which returns a IBC packet timeout height
-// to be used for testing. It returns the current IBC height + 100 blocks
-func (chain *TestChain) GetTimeoutHeight() clienttypes.Height {
-	return clienttypes.NewHeight(clienttypes.ParseChainID(chain.ChainID), uint64(chain.GetContext().BlockHeight())+100)
-}
-
-func NewTransferPath(chainA, chainB *TestChain) *Path {
-	path := NewPath(chainA, chainB)
-	path.EndpointA.ChannelConfig.PortID = TransferPort
-	path.EndpointB.ChannelConfig.PortID = TransferPort
-
-	path.EndpointA.ChannelConfig.Order = channeltypes.UNORDERED
-	path.EndpointB.ChannelConfig.Order = channeltypes.UNORDERED
-	path.EndpointA.ChannelConfig.Version = "ics20-1"
-	path.EndpointB.ChannelConfig.Version = "ics20-1"
-
-	return path
 }
 
 // SignAndDeliver signs and delivers a transaction. No simulation occurs as the
