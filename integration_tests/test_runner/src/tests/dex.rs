@@ -413,9 +413,9 @@ async fn safe_mode_operations(
     )
     .await;
     if in_safe_mode {
-        test_swap.expect("Swap should succeed in safe mode");
-    } else {
         test_swap.expect_err("Swap should fail in safe mode");
+    } else {
+        test_swap.expect("Swap should succeed outside of safe mode");
     }
     let set_liq_res = dex_protocol_cmd(
         web3,
