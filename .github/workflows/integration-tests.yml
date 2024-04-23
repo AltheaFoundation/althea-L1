@@ -160,3 +160,45 @@ jobs:
         run: tests/all-up-test.sh ONBOARDING_DELIST_AFTER
         env:
           NO_IMAGE_BUILD: True
+  DEX:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Performs basic DEX tests
+        run: tests/all-up-test.sh DEX
+        env:
+          NO_IMAGE_BUILD: True
+  DEX_UPGRADE:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Tests the DEX callpath upgrade functionality
+        run: tests/all-up-test.sh DEX_UPGRADE
+        env:
+          NO_IMAGE_BUILD: True
+  DEX_SAFE_MODE:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Tests the DEX safe mode lockdown functionality
+        run: tests/all-up-test.sh DEX_SAFE_MODE
+        env:
+          NO_IMAGE_BUILD: True

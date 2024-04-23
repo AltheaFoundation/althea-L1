@@ -272,6 +272,7 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct DexAddresses {
     pub dex: EthAddress,
     pub query: EthAddress,

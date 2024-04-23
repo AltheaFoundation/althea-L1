@@ -55,58 +55,19 @@ pub async fn dex_test(
     let dex = dex_result.unwrap();
     assert_eq!(dex, dex_contracts.dex, "Dex contract address mismatch");
 
-    let tokens = erc20_contracts[0..2].to_vec();
-    let (pool_base, pool_quote) = if tokens[0] < tokens[1] {
-        (tokens[0], tokens[1])
-    } else {
-        (tokens[1], tokens[0])
-    };
+    let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
 
-    let safe_mode = dex_query_safe_mode(web3, dex, Some(evm_user.eth_address))
-        .await
-        .expect("Unable to query safe mode");
-    if safe_mode {
-        info!("Dex is in safe mode, disabling safe mode");
-        submit_and_pass_safe_mode_proposal(contact, &validator_keys, false, true).await;
-    }
-
-    let pool = croc_query_pool_params(
+    basic_dex_setup(
+        contact,
         web3,
+        dex_contracts.dex,
         dex_contracts.query,
-        Some(evm_user.eth_address),
+        evm_user,
+        &validator_keys,
         pool_base,
         pool_quote,
-        *POOL_IDX,
     )
     .await;
-    if pool.is_ok() && pool.unwrap().tick_size != 0 {
-        info!("Pool already created, approving use of base and quote tokens");
-        web3.approve_erc20_transfers(pool_base, evm_privkey, dex, Some(OPERATION_TIMEOUT), vec![])
-            .await
-            .expect("Could not approve base token");
-        web3.approve_erc20_transfers(
-            pool_quote,
-            evm_privkey,
-            dex,
-            Some(OPERATION_TIMEOUT),
-            vec![],
-        )
-        .await
-        .expect("Could not approve base token");
-    } else {
-        info!("Creating pool");
-        init_pool(
-            web3,
-            evm_user.eth_privkey,
-            dex_contracts.dex,
-            pool_base,
-            pool_quote,
-            None,
-            None,
-        )
-        .await
-        .expect("Could not create pool");
-    }
 
     let tick = croc_query_curve_tick(
         web3,
@@ -251,6 +212,46 @@ pub async fn dex_test(
 
     info!("Disabling safe mode");
     submit_and_pass_safe_mode_proposal(contact, &validator_keys, false, true).await;
+}
+
+pub async fn dex_upgrade_test(
+    contact: &Contact,
+    web3: &Web3,
+    validator_keys: Vec<ValidatorKeys>,
+    evm_user_keys: Vec<EthermintUserKey>,
+    erc20_contracts: Vec<EthAddress>,
+    dex_contracts: DexAddresses,
+) {
+    let evm_user = evm_user_keys.first().unwrap();
+    let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
+
+    basic_dex_setup(
+        contact,
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user,
+        &validator_keys,
+        pool_base,
+        pool_quote,
+    )
+    .await;
+
+    let evm_user = evm_user_keys.first().unwrap();
+    let evm_privkey = evm_user.eth_privkey;
+    // Here we init a new pool using the callpath instaleld in the upgrade proposal (index 33). We want to use the same tokens, so we need to use a different
+    // pool index
+    init_pool(
+        web3,
+        evm_privkey,
+        dex_contracts.dex,
+        pool_base,
+        pool_quote,
+        Some(36001u64.into()),
+        Some(33),
+    )
+    .await
+    .expect_err("Callpath should not have been installed yet");
 
     info!("Testing upgrade proposal");
     submit_and_pass_upgrade_proxy_proposal(contact, &validator_keys, 33, dex_contracts.upgrade)
@@ -282,6 +283,191 @@ pub async fn dex_test(
     .await
     .expect("Could not query pool");
     assert!(params.tick_size != 0, "Pool not created");
+}
+
+pub async fn dex_safe_mode_test(
+    contact: &Contact,
+    web3: &Web3,
+    validator_keys: Vec<ValidatorKeys>,
+    evm_user_keys: Vec<EthermintUserKey>,
+    erc20_contracts: Vec<EthAddress>,
+    dex_contracts: DexAddresses,
+) {
+    let evm_user = evm_user_keys.first().unwrap();
+    let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
+
+    basic_dex_setup(
+        contact,
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user,
+        &validator_keys,
+        pool_base,
+        pool_quote,
+    )
+    .await;
+
+    // Submit and pass ParamChangeProposal to use these contracts with the nativedex module
+    submit_and_pass_nativedex_config_proposal(
+        contact,
+        &validator_keys,
+        dex_contracts.dex,
+        dex_contracts.policy,
+    )
+    .await;
+
+    info!("Testing safe mode");
+    submit_and_pass_safe_mode_proposal(contact, &validator_keys, true, false).await;
+
+    safe_mode_operations(
+        true,
+        web3,
+        dex_contracts.clone(),
+        evm_user_keys.clone(),
+        &validator_keys,
+        pool_base,
+        pool_quote,
+    )
+    .await;
+    info!("Disabling safe mode");
+    submit_and_pass_safe_mode_proposal(contact, &validator_keys, false, true).await;
+    safe_mode_operations(
+        true,
+        web3,
+        dex_contracts,
+        evm_user_keys,
+        &validator_keys,
+        pool_base,
+        pool_quote,
+    )
+    .await;
+}
+
+pub fn pool_tokens(erc20_contracts: Vec<EthAddress>) -> (EthAddress, EthAddress) {
+    let tokens = erc20_contracts[0..2].to_vec();
+    if tokens[0] < tokens[1] {
+        (tokens[0], tokens[1])
+    } else {
+        (tokens[1], tokens[0])
+    }
+}
+
+async fn safe_mode_operations(
+    in_safe_mode: bool,
+    web3: &Web3,
+    dex_contracts: DexAddresses,
+    evm_user_keys: Vec<EthermintUserKey>,
+    _validator_keys: &[ValidatorKeys],
+    pool_base: EthAddress,
+    pool_quote: EthAddress,
+) {
+    let test_swap = dex_swap(
+        web3,
+        dex_contracts.dex,
+        evm_user_keys.first().unwrap().eth_privkey,
+        SwapArgs {
+            base: pool_base,
+            quote: pool_quote,
+            pool_idx: *POOL_IDX,
+            is_buy: false,
+            in_base_qty: true,
+            qty: one_eth(),
+            tip: 0u16,
+            limit_price: 18446744073u128.into(),
+            min_out: 0u8.into(),
+            reserve_flags: 0u8,
+        },
+        None,
+        Some(OPERATION_TIMEOUT),
+    )
+    .await;
+    if in_safe_mode {
+        test_swap.expect("Swap should succeed in safe mode");
+    } else {
+        test_swap.expect_err("Swap should fail in safe mode");
+    }
+    let set_liq_res = dex_protocol_cmd(
+        web3,
+        dex_contracts.dex,
+        *MINER_PRIVATE_KEY,
+        ProtocolCmdArgs {
+            callpath: COLD_PATH,
+            cmd: vec![Uint256::from(112u8).into(), Uint256::from(10u128).into()],
+            sudo: false,
+        },
+        None,
+        None,
+    )
+    .await;
+    if in_safe_mode {
+        set_liq_res.expect_err("Non sudo command should fail in safe mode");
+    } else {
+        set_liq_res.expect("Non sudo command should succeed outside of safe mode");
+    }
+}
+#[allow(clippy::too_many_arguments)]
+pub async fn basic_dex_setup(
+    contact: &Contact,
+    web3: &Web3,
+    dex: EthAddress,
+    query: EthAddress,
+    evm_user: &EthermintUserKey,
+    validator_keys: &[ValidatorKeys],
+    pool_base: EthAddress,
+    pool_quote: EthAddress,
+) {
+    let safe_mode = dex_query_safe_mode(web3, dex, Some(evm_user.eth_address))
+        .await
+        .expect("Unable to query safe mode");
+    if safe_mode {
+        info!("Dex is in safe mode, disabling safe mode");
+        submit_and_pass_safe_mode_proposal(contact, &validator_keys, false, true).await;
+    }
+
+    let pool = croc_query_pool_params(
+        web3,
+        query,
+        Some(evm_user.eth_address),
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+    )
+    .await;
+    if pool.is_ok() && pool.unwrap().tick_size != 0 {
+        info!("Pool already created, approving use of base and quote tokens");
+        web3.approve_erc20_transfers(
+            pool_base,
+            evm_user.eth_privkey,
+            dex,
+            Some(OPERATION_TIMEOUT),
+            vec![],
+        )
+        .await
+        .expect("Could not approve base token");
+        web3.approve_erc20_transfers(
+            pool_quote,
+            evm_user.eth_privkey,
+            dex,
+            Some(OPERATION_TIMEOUT),
+            vec![],
+        )
+        .await
+        .expect("Could not approve base token");
+    } else {
+        info!("Creating pool");
+        init_pool(
+            web3,
+            evm_user.eth_privkey,
+            dex,
+            pool_base,
+            pool_quote,
+            None,
+            None,
+        )
+        .await
+        .expect("Could not create pool");
+    }
 }
 
 pub async fn init_pool(
