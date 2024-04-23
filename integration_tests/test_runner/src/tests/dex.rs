@@ -62,6 +62,7 @@ pub async fn dex_test(
         web3,
         dex_contracts.dex,
         dex_contracts.query,
+        dex_contracts.policy,
         evm_user,
         &validator_keys,
         pool_base,
@@ -144,23 +145,6 @@ pub async fn dex_test(
 
     info!("Successfully minted position");
 
-    let current_auth = dex_query_authority(web3, dex_contracts.dex, Some(evm_user.eth_address))
-        .await
-        .expect("Unable to query current authority");
-    if current_auth != dex_contracts.policy {
-        // Transfer authority to the CrocPolicy contract, so nativedex governance can manage the DEX
-        dex_authority_transfer(
-            web3,
-            dex_contracts.dex,
-            dex_contracts.policy,
-            *MINER_PRIVATE_KEY,
-            Some(OPERATION_TIMEOUT),
-        )
-        .await
-        .expect("Unable to transfer dex ownership to the CrocPolicy contract");
-        info!("Transferred DEX authority_ address to CrocPolicy contract for nativedex governance control");
-    }
-
     info!("Attempt to steal DEX control away from CrocPolicy contract");
     dex_protocol_cmd(
         web3,
@@ -230,6 +214,7 @@ pub async fn dex_upgrade_test(
         web3,
         dex_contracts.dex,
         dex_contracts.query,
+        dex_contracts.policy,
         evm_user,
         &validator_keys,
         pool_base,
@@ -301,6 +286,7 @@ pub async fn dex_safe_mode_test(
         web3,
         dex_contracts.dex,
         dex_contracts.query,
+        dex_contracts.policy,
         evm_user,
         &validator_keys,
         pool_base,
@@ -412,19 +398,36 @@ pub async fn basic_dex_setup(
     web3: &Web3,
     dex: EthAddress,
     query: EthAddress,
+    policy: EthAddress,
     evm_user: &EthermintUserKey,
     validator_keys: &[ValidatorKeys],
     pool_base: EthAddress,
     pool_quote: EthAddress,
 ) {
+    let current_auth = dex_query_authority(web3, dex, Some(evm_user.eth_address))
+        .await
+        .expect("Unable to query current authority");
+    if current_auth != policy {
+        // Transfer authority to the CrocPolicy contract, so nativedex governance can manage the DEX
+        dex_authority_transfer(
+            web3,
+            dex,
+            policy,
+            *MINER_PRIVATE_KEY,
+            Some(OPERATION_TIMEOUT),
+        )
+        .await
+        .expect("Unable to transfer dex ownership to the CrocPolicy contract");
+        info!("Transferred DEX authority_ address to CrocPolicy contract for nativedex governance control");
+    }
+
     let safe_mode = dex_query_safe_mode(web3, dex, Some(evm_user.eth_address))
         .await
         .expect("Unable to query safe mode");
     if safe_mode {
         info!("Dex is in safe mode, disabling safe mode");
-        submit_and_pass_safe_mode_proposal(contact, &validator_keys, false, true).await;
+        submit_and_pass_safe_mode_proposal(contact, validator_keys, false, true).await;
     }
-
     let pool = croc_query_pool_params(
         web3,
         query,
