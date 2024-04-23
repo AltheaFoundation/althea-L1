@@ -247,8 +247,6 @@ ifeq ("$(ls ${COMPILED_CONTRACTS_GO_OUTPUT})", "")
 	    @cd solidity; npm install
 	    @cd solidity; npm run typechain
 		@scripts/compile-contracts-for-go.sh
-		@cd solidity-dex; npm install
-		@cd solidity-dex; npx hardhat compile
 else
 		@echo "Detected compiled contract interfaces for Go"
 endif
