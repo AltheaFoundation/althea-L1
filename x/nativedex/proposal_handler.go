@@ -226,7 +226,9 @@ func handleTransferGovernanceProposal(ctx sdk.Context, k *keeper.Keeper, p *type
 	md := p.GetMetadata()
 	// This proposal does not directly work on the DEX, so no callpath nor cmd_code are used
 	// CrocPolicy ABI: transferGovernance (address ops, address treasury, address emergency)
-	_, err = k.EVMKeeper.CallEVM(ctx, contracts.CrocPolicyContract.ABI, types.ModuleEVMAddress, k.GetVerifiedCrocPolicyAddress(ctx), true, "transferGovernance", md.Ops, types.ModuleEVMAddress, md.Emergency)
+	ops := common.HexToAddress(md.Ops)
+	emergency := common.HexToAddress(md.Emergency)
+	_, err = k.EVMKeeper.CallEVM(ctx, contracts.CrocPolicyContract.ABI, types.ModuleEVMAddress, k.GetVerifiedCrocPolicyAddress(ctx), true, "transferGovernance", ops, types.ModuleEVMAddress, emergency)
 	if err != nil {
 		ctx.Logger().Error("Unable to call CrocPolicy.transferGovernance() for TransferGovernanceProposal", "err", err)
 		return err

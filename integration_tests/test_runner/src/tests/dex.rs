@@ -1,16 +1,18 @@
 //! Contains usage tests for the Ambient (CrocSwap) dex deployment
 
+use std::time::Duration;
+
 use crate::bootstrapping::DexAddresses;
 use crate::dex_utils::{
     croc_query_curve_tick, croc_query_dex, croc_query_pool_params, croc_query_price,
     croc_query_range_position, dex_authority_transfer, dex_protocol_cmd, dex_query_authority,
-    dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, COLD_PATH,
-    WARM_PATH,
+    dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
+    COLD_PATH, WARM_PATH,
 };
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL,
     SET_SAFE_MODE_PROPOSAL_TYPE_URL, SET_TREASURY_PROPOSAL_TYPE_URL,
-    UPGRADE_PROXY_PROPOSAL_TYPE_URL,
+    TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL, UPGRADE_PROXY_PROPOSAL_TYPE_URL,
 };
 use crate::utils::{
     encode_any, one_atom, one_eth, vote_yes_on_proposals, wait_for_proposals_to_execute,
@@ -198,6 +200,7 @@ pub async fn dex_upgrade_test(
     dex_contracts: DexAddresses,
 ) {
     let evm_user = evm_user_keys.first().unwrap();
+    let emergency_user = evm_user_keys.last().unwrap();
     let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
 
     basic_dex_setup(
@@ -228,6 +231,55 @@ pub async fn dex_upgrade_test(
     )
     .await
     .expect_err("Callpath should not have been installed yet");
+
+    // Try to upgrade the dex contract with the Ops address, not in sudo mode
+    bad_upgrade_proxy_call(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.upgrade,
+        33,
+        *MINER_PRIVATE_KEY,
+        Some(OPERATION_TIMEOUT),
+        false,
+    )
+    .await
+    .expect_err("Expected bad upgrade call to fail");
+    // ... and in sudo mode
+    bad_upgrade_proxy_call(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.upgrade,
+        33,
+        *MINER_PRIVATE_KEY,
+        Some(OPERATION_TIMEOUT),
+        true,
+    )
+    .await
+    .expect_err("Expected bad upgrade call to fail");
+    // Try to upgrade the dex contract with the Emergency address, not in sudo mode
+    bad_upgrade_proxy_call(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.upgrade,
+        33,
+        emergency_user.eth_privkey,
+        Some(OPERATION_TIMEOUT),
+        false,
+    )
+    .await
+    .expect_err("Expected bad upgrade call to fail");
+    // ... and in sudo mode
+    bad_upgrade_proxy_call(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.upgrade,
+        33,
+        emergency_user.eth_privkey,
+        Some(OPERATION_TIMEOUT),
+        true,
+    )
+    .await
+    .expect_err("Expected bad upgrade call to fail");
 
     info!("Testing upgrade proposal");
     submit_and_pass_upgrade_proxy_proposal(contact, &validator_keys, 33, dex_contracts.upgrade)
@@ -311,7 +363,7 @@ pub async fn dex_safe_mode_test(
     info!("Disabling safe mode");
     submit_and_pass_safe_mode_proposal(contact, &validator_keys, false, true).await;
     safe_mode_operations(
-        true,
+        false,
         web3,
         dex_contracts,
         evm_user_keys,
@@ -771,7 +823,7 @@ pub async fn submit_and_pass_transfer_governance_proposal(
             emergency: emergency.to_string(),
         }),
     };
-    let any = encode_any(proposal, HOT_PATH_OPEN_PROPOSAL_TYPE_URL.to_string());
+    let any = encode_any(proposal, TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL.to_string());
     let res = contact
         .create_gov_proposal(
             any,
@@ -784,4 +836,33 @@ pub async fn submit_and_pass_transfer_governance_proposal(
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
     info!("Gov proposal executed with {:?}", res);
+}
+
+pub async fn bad_upgrade_proxy_call(
+    web30: &Web3,
+    dex_contract: EthAddress,
+    upgrade: EthAddress,
+    callpath: u16,
+    wallet: PrivateKey,
+    timeout: Option<Duration>,
+    sudo: bool,
+) -> Result<TransactionResponse, Web3Error> {
+    let code: Uint256 = 21u8.into();
+
+    // ABI: upgradeProxy (code uint8, contract address, callpath_index uint16)
+    let cmd_args = vec![code.into(), upgrade.into(), Uint256::from(callpath).into()];
+
+    dex_protocol_cmd(
+        web30,
+        dex_contract,
+        wallet,
+        ProtocolCmdArgs {
+            callpath: BOOT_PATH,
+            cmd: cmd_args,
+            sudo,
+        },
+        None,
+        timeout,
+    )
+    .await
 }
