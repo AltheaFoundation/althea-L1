@@ -37,6 +37,7 @@ import (
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
@@ -103,7 +104,6 @@ import (
 	erc20client "github.com/Canto-Network/Canto/v5/x/erc20/client"
 	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
 	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
-	"github.com/Canto-Network/Canto/v5/x/vesting"
 
 	ethermintsrvflags "github.com/evmos/ethermint/server/flags"
 	ethtypes "github.com/evmos/ethermint/types"
