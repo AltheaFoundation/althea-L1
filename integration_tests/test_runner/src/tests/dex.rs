@@ -160,15 +160,6 @@ pub async fn dex_test(
     )
     .await
     .expect_err("Miner should not be able to take control away from CrocPolicy");
-    // Submit and pass ParamChangeProposal to use these contracts with the nativedex module
-    submit_and_pass_nativedex_config_proposal(
-        contact,
-        &validator_keys,
-        dex_contracts.dex,
-        dex_contracts.policy,
-    )
-    .await;
-
     info!("Testing safe mode");
     submit_and_pass_safe_mode_proposal(contact, &validator_keys, true, false).await;
 
@@ -278,6 +269,7 @@ pub async fn dex_safe_mode_test(
     erc20_contracts: Vec<EthAddress>,
     dex_contracts: DexAddresses,
 ) {
+    let emergency_user = evm_user_keys.last().unwrap();
     let evm_user = evm_user_keys.first().unwrap();
     let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
 
@@ -294,12 +286,12 @@ pub async fn dex_safe_mode_test(
     )
     .await;
 
-    // Submit and pass ParamChangeProposal to use these contracts with the nativedex module
-    submit_and_pass_nativedex_config_proposal(
+    // Set the Ops and Emergency roles on CrocPolicy: ops = Miner, emergency = last evm user
+    submit_and_pass_transfer_governance_proposal(
         contact,
         &validator_keys,
-        dex_contracts.dex,
-        dex_contracts.policy,
+        *MINER_ETH_ADDRESS,
+        emergency_user.eth_address,
     )
     .await;
 
@@ -419,6 +411,8 @@ pub async fn basic_dex_setup(
         .await
         .expect("Unable to transfer dex ownership to the CrocPolicy contract");
         info!("Transferred DEX authority_ address to CrocPolicy contract for nativedex governance control");
+        // Submit and pass ParamChangeProposal to use these contracts with the nativedex module
+        submit_and_pass_nativedex_config_proposal(contact, validator_keys, dex, policy).await;
     }
 
     let safe_mode = dex_query_safe_mode(web3, dex, Some(evm_user.eth_address))
