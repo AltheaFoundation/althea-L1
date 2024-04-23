@@ -113,7 +113,11 @@ pub async fn erc20_register_and_round_trip_test(
         .expect("Unable to send evm user any {STAKING_TOKEN}");
 
     // First try to send far too many tokens to cosmos and expect error
-    let bad_amount: Uint256 = one_eth() * 10000u32.into();
+    let bad_amount = web3
+        .get_erc20_balance(*registered_erc20, recvr.eth_address)
+        .await
+        .expect("Could not get erc20 balance")
+        + one_eth() * 10u32.into();
     let bad_erc20_to_cosmos_msg = MsgConvertErc20 {
         amount: bad_amount.to_string(),
         contract_address: registered_erc20.to_string(),
