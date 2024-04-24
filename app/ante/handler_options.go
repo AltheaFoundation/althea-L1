@@ -8,14 +8,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
 	ibcante "github.com/cosmos/ibc-go/v4/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
 
 	ethante "github.com/evmos/ethermint/app/ante"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
-
-	vestingtypes "github.com/Canto-Network/Canto/v5/x/vesting/types"
 
 	"github.com/AltheaFoundation/althea-L1/x/gasfree"
 	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
@@ -29,7 +28,6 @@ type HandlerOptions struct {
 	BankKeeper      evmtypes.BankKeeper
 	IBCKeeper       *ibckeeper.Keeper
 	FeeMarketKeeper evmtypes.FeeMarketKeeper
-	StakingKeeper   vestingtypes.StakingKeeper
 	EvmKeeper       *evmkeeper.Keeper
 	FeegrantKeeper  ante.FeegrantKeeper
 	SignModeHandler authsigning.SignModeHandler
@@ -47,9 +45,6 @@ func (options HandlerOptions) Validate() error {
 	}
 	if options.BankKeeper == nil {
 		return sdkerrors.Wrap(sdkerrors.ErrLogic, "bank keeper is required for AnteHandler")
-	}
-	if options.StakingKeeper == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrLogic, "staking keeper is required for AnteHandler")
 	}
 	if options.SignModeHandler == nil {
 		return sdkerrors.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
@@ -81,7 +76,6 @@ func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		NewEthSetPubkeyDecorator(options.AccountKeeper, options.EvmKeeper),
 		NewSetAccountTypeDecorator(options.AccountKeeper, options.EvmKeeper.AccountProtoFn),
 		ethante.NewCanTransferDecorator(options.EvmKeeper),
-		NewEthVestingTransactionDecorator(options.AccountKeeper),
 		ethante.NewEthGasConsumeDecorator(options.EvmKeeper, options.MaxTxGasWanted),
 		ethante.NewEthIncrementSenderSequenceDecorator(options.AccountKeeper),
 		ethante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
@@ -107,7 +101,6 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		gasfree.NewSelectiveBypassDecorator(*options.GasfreeKeeper, ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper)),
 		// Charge gas fees for gasfree messages
 		NewChargeGasfreeFeesDecorator(options.AccountKeeper, *options.GasfreeKeeper, *options.MicrotxKeeper),
-		NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.Cdc),
 		NewValidatorCommissionDecorator(options.Cdc),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
@@ -133,7 +126,6 @@ func newCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
 		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper),
-		NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.Cdc),
 		NewValidatorCommissionDecorator(options.Cdc),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),

@@ -1212,7 +1212,6 @@ func (app *AltheaApp) NewAnteHandlerOptions(appOpts servertypes.AppOptions) ante
 		BankKeeper:      app.BankKeeper,
 		IBCKeeper:       app.IbcKeeper,
 		FeeMarketKeeper: app.FeemarketKeeper,
-		StakingKeeper:   app.StakingKeeper,
 		EvmKeeper:       app.EvmKeeper,
 		FeegrantKeeper:  nil,
 		SignModeHandler: app.EncodingConfig.TxConfig.SignModeHandler(),
