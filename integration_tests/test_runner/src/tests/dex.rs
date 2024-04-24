@@ -7,8 +7,9 @@ use crate::dex_utils::{
     croc_query_curve_tick, croc_query_dex, croc_query_pool_params, croc_query_price,
     croc_query_range_position, dex_authority_transfer, dex_protocol_cmd, dex_query_authority,
     dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
-    COLD_PATH, WARM_PATH,
+    COLD_PATH, MIN_PRICE, WARM_PATH,
 };
+use crate::evm_utils::get_erc20_allowance;
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL,
     SET_SAFE_MODE_PROPOSAL_TYPE_URL, SET_TREASURY_PROPOSAL_TYPE_URL,
@@ -203,6 +204,8 @@ pub async fn dex_upgrade_test(
     let emergency_user = evm_user_keys.last().unwrap();
     let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
 
+    let evm_privkey = evm_user.eth_privkey;
+
     basic_dex_setup(
         contact,
         web3,
@@ -216,8 +219,6 @@ pub async fn dex_upgrade_test(
     )
     .await;
 
-    let evm_user = evm_user_keys.first().unwrap();
-    let evm_privkey = evm_user.eth_privkey;
     // Here we init a new pool using the callpath instaleld in the upgrade proposal (index 33). We want to use the same tokens, so we need to use a different
     // pool index
     init_pool(
@@ -337,6 +338,63 @@ pub async fn dex_safe_mode_test(
         pool_quote,
     )
     .await;
+    let tick = croc_query_curve_tick(
+        web3,
+        dex_contracts.query,
+        Some(evm_user.eth_address),
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+    )
+    .await
+    .expect("Could not get curve tick for pool");
+
+    let price = croc_query_price(
+        web3,
+        dex_contracts.query,
+        Some(evm_user.eth_address),
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+    )
+    .await
+    .expect("Could not get curve price for pool");
+
+    let bid_tick = tick - 75u8.into();
+    let ask_tick = tick + 75u8.into();
+    let min_price = price - 1000u128.into();
+    let max_price = price + 1000u128.into();
+    // uint8 code, address base, address quote, uint256 poolIdx,
+    //  int24 bidTick, int24 askTick, uint128 liq,
+    //  uint128 limitLower, uint128 limitHigher, //  uint8 reserveFlags, address lpConduit
+
+    let mint_ranged_pos_args = UserCmdArgs {
+        callpath: WARM_PATH, // Warm Path index
+        cmd: vec![
+            Uint256::from(1u8).into(),            // Mint Ranged Liq
+            pool_base.into(),                     // base
+            pool_quote.into(),                    // quote
+            (*POOL_IDX).into(),                   // poolIdx
+            bid_tick.into(),                      // bid (lower) tick
+            ask_tick.into(),                      // ask (upper) tick
+            (one_atom() * 1024u32.into()).into(), // liq
+            min_price.into(),                     // limitLower
+            max_price.into(),                     // limitHigher
+            Uint256::from(0u8).into(),            // reserveFlags
+            EthAddress::default().into(),         // lpConduit
+        ],
+    };
+    info!("Minting position in pool: {mint_ranged_pos_args:?}");
+    dex_user_cmd(
+        web3,
+        dex_contracts.dex,
+        evm_user.eth_privkey,
+        mint_ranged_pos_args,
+        None,
+        None,
+    )
+    .await
+    .expect("Failed to mint position in pool");
 
     // Set the Ops and Emergency roles on CrocPolicy: ops = Miner, emergency = last evm user
     submit_and_pass_transfer_governance_proposal(
@@ -362,16 +420,13 @@ pub async fn dex_safe_mode_test(
     .await;
     info!("Disabling safe mode");
     submit_and_pass_safe_mode_proposal(contact, &validator_keys, false, true).await;
-    safe_mode_operations(
-        false,
-        web3,
-        dex_contracts,
-        evm_user_keys,
-        &validator_keys,
-        pool_base,
-        pool_quote,
-    )
-    .await;
+
+    assert!(
+        !dex_query_safe_mode(web3, dex_contracts.dex, Some(evm_user.eth_address))
+            .await
+            .expect("Unable to query safe mode"),
+        "dex should not be in safe mode"
+    );
 }
 
 pub fn pool_tokens(erc20_contracts: Vec<EthAddress>) -> (EthAddress, EthAddress) {
@@ -392,19 +447,24 @@ async fn safe_mode_operations(
     pool_base: EthAddress,
     pool_quote: EthAddress,
 ) {
+    let user = evm_user_keys.first().unwrap();
+    info!("Safe mode ops: locked={}, base balance={:?} base allowance={:?} quote balance={:?} quote allowance={:?}", in_safe_mode,
+        web3.get_erc20_balance(pool_base, user.eth_address).await, get_erc20_allowance(web3, pool_base, user.eth_address, dex_contracts.dex, None).await,
+        web3.get_erc20_balance(pool_quote, user.eth_address).await, get_erc20_allowance(web3, pool_quote, user.eth_address, dex_contracts.dex, None).await,
+    );
     let test_swap = dex_swap(
         web3,
         dex_contracts.dex,
-        evm_user_keys.first().unwrap().eth_privkey,
+        user.eth_privkey,
         SwapArgs {
             base: pool_base,
             quote: pool_quote,
             pool_idx: *POOL_IDX,
             is_buy: false,
-            in_base_qty: true,
-            qty: one_eth(),
-            tip: 0u16,
-            limit_price: 18446744073u128.into(),
+            in_base_qty: false,
+            qty: one_atom(),
+            tip: 0,
+            limit_price: *MIN_PRICE,
             min_out: 0u8.into(),
             reserve_flags: 0u8,
         },
@@ -412,6 +472,7 @@ async fn safe_mode_operations(
         Some(OPERATION_TIMEOUT),
     )
     .await;
+
     if in_safe_mode {
         test_swap.expect_err("Swap should fail in safe mode");
     } else {

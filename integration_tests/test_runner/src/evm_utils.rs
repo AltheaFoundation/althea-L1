@@ -303,6 +303,29 @@ pub async fn withdraw_liquid_account_balances_to(
         .await
 }
 
+/// Queries the allowance granted by a token `owner` to a `spender` contract
+/// web30 provides a similar function but does not actually return the raw response
+pub async fn get_erc20_allowance(
+    web30: &Web3,
+    erc20: EthAddress,
+    owner: EthAddress,
+    approved: EthAddress,
+    querier: Option<EthAddress>,
+) -> Result<Uint256, Web3Error> {
+    let caller = querier.unwrap_or(owner);
+
+    // ABI: allowance(address owner, address spender) returns (uint256)
+    let payload = clarity::abi::encode_call(
+        "allowance(address,address)",
+        &[owner.into(), approved.into()],
+    )?;
+    let allowance_res = web30
+        .simulate_transaction(TransactionRequest::quick_tx(caller, erc20, payload), None)
+        .await?;
+
+    Ok(Uint256::from_be_bytes(&allowance_res))
+}
+
 // ==========================================================================================================================================
 //                                                    ERC721 CONVENIENCE QUERY FUNCTIONS
 // ==========================================================================================================================================
