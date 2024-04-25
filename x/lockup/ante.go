@@ -12,6 +12,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authz "github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
 	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 
 	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
@@ -118,11 +119,19 @@ func (lad LockAnteDecorator) isAcceptable(ctx sdk.Context, msg sdk.Msg) error {
 	lockedTokenDenomsSet := lad.lockupKeeper.GetLockedTokenDenomsSet(ctx)
 	lockedMsgTypesSet := lad.lockupKeeper.GetLockedMessageTypesSet(ctx)
 	exemptSet := lad.lockupKeeper.GetLockExemptAddressesSet(ctx)
-	if _, typePresent := lockedMsgTypesSet[sdk.MsgTypeURL(msg)]; typePresent {
+
+	msgType := sdk.MsgTypeURL(msg)
+	if _, typePresent := lockedMsgTypesSet[msgType]; typePresent {
 		// Check that any locked msg is permissible on a type-case basis
 		if allow, err := allowMessage(msg, exemptSet, lockedTokenDenomsSet); !allow {
 			return sdkerrors.Wrap(err, fmt.Sprintf("Transaction blocked because of message %v", msg))
 		}
+	}
+	if msgType == "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress" {
+		return sdkerrors.Wrap(types.ErrLocked, "The chain is locked, only exempt addresses may submit this Msg type")
+	}
+	if msgType == "/cosmos.authz.v1beta1.MsgExec" {
+		return sdkerrors.Wrap(types.ErrLocked, "The chain is locked, recursively MsgExec-wrapped Msgs are not allowed")
 	}
 
 	return nil
