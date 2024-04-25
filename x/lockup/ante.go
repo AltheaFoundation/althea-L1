@@ -133,6 +133,9 @@ func (lad LockAnteDecorator) isAcceptable(ctx sdk.Context, msg sdk.Msg) error {
 	if msgType == "/cosmos.authz.v1beta1.MsgExec" {
 		return sdkerrors.Wrap(types.ErrLocked, "The chain is locked, recursively MsgExec-wrapped Msgs are not allowed")
 	}
+	if msgType == "/ethermint.evm.v1.MsgEthereumTx" {
+		return sdkerrors.Wrap(types.ErrLocked, "The chain is locked, only exempt addresses may submit this Msg type")
+	}
 
 	return nil
 }
