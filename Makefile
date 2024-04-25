@@ -57,7 +57,7 @@ all: install
 install: go.sum install-core
 
 # does not run go mod verify
-install-core: contracts-auto
+install-core:
 		export GOFLAGS='-buildmode=pie'
 		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
@@ -67,11 +67,11 @@ go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
 		GO111MODULE=on go mod verify
 
-test: contracts-auto
+test:
 	@go test -mod=readonly $(PACKAGES)
 
 # look into .golangci.yml for enabling / disabling linters
-lint: contracts-auto
+lint:
 	@echo "--> Running linter"
 	@golangci-lint run
 	@go mod verify
@@ -219,44 +219,10 @@ $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
 ###############################################################################
-###                           EVM Contracts                                 ###
-###############################################################################
-
-COMPILED_CONTRACTS_GO_OUTPUT := contracts/compiled/
-
-contracts: contracts-go
-
-contracts-clean:
-	@echo "Deleting and recreating compiled-contracts directory"
-	@rm -fr $(COMPILED_CONTRACTS_GO_OUTPUT)
-	@mkdir -p ${COMPILED_CONTRACTS_GO_OUTPUT}
-
-contracts-go:
-	@echo "Formatting compiled contracts and placing in compiled-contracts"
-	@cd solidity; npm install
-	@cd solidity; npx hardhat compile
-	@scripts/compile-contracts-for-go.sh
-
-# Detects if the contracts must be compiled for Go, and potentially does so
-# If you need to overwrite the compiled-for-go contracts, use contracts instead
-# since that will clean then compile
-# Note that this depends on the solidity contracts being compiled already via hardhat
-contracts-auto:
-ifeq ("$(ls ${COMPILED_CONTRACTS_GO_OUTPUT})", "")
-		@echo "Compiled contracts folder is empty, compiling now"
-	    @cd solidity; npm install
-	    @cd solidity; npm run typechain
-		@scripts/compile-contracts-for-go.sh
-else
-		@echo "Detected compiled contract interfaces for Go"
-endif
-
-
-###############################################################################
 ###                           MISC DIRECTIVES                               ###
 ###############################################################################
 
 tools: proto-tools buf
 
-clean: proto-tools-clean contracts-clean
+clean: proto-tools-clean
 	rm -rf $(BUILDDIR)/ artifacts/
