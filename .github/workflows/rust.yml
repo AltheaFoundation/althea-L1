@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
-          working-directory: integration_tests/
+          workspaces: integration_tests/
       - name: Build Integration Tests
         run: cd integration_tests && cargo check --all --verbose
   test:
@@ -24,9 +24,9 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v2
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
-          working-directory: integration_tests/
+          workspaces: integration_tests/
       - name: Run Orchestrator tests
         run: cd integration_tests && cargo test --all --release --verbose
   rustfmt:
@@ -41,9 +41,9 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v2
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
-          working-directory: integration_tests/
+          workspaces: integration_tests/
       - name: Check for Clippy lints
         run: rustup component add clippy && cd integration_tests && cargo clippy --all --all-targets --all-features -- -D warnings
   audit:
@@ -51,8 +51,8 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v2
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
-          working-directory: integration_tests/
+          workspaces: integration_tests/
       - name: Run Cargo Audit
         run: cargo install cargo-audit && cd integration_tests && cargo audit
