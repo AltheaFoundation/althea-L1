@@ -25,6 +25,10 @@ pub const TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL: &str =
 pub const MSG_SEND_TYPE_URL: &str = "/cosmos.bank.v1beta1.MsgSend";
 pub const MSG_MULTI_SEND_TYPE_URL: &str = "/cosmos.bank.v1beta1.MsgMultiSend";
 
+// distribution msgs
+pub const MSG_SET_WITHDRAW_ADDRESS_TYPE_URL: &str =
+    "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress";
+
 // cosmos-sdk proposals
 pub const PARAMETER_CHANGE_PROPOSAL_TYPE_URL: &str =
     "/cosmos.params.v1beta1.ParameterChangeProposal";

@@ -2,7 +2,8 @@ use std::time::SystemTime;
 
 use crate::type_urls::{
     GENERIC_AUTHORIZATION_TYPE_URL, MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MICROTX_TYPE_URL,
-    MSG_MULTI_SEND_TYPE_URL, MSG_SEND_TYPE_URL, MSG_TRANSFER_TYPE_URL,
+    MSG_MULTI_SEND_TYPE_URL, MSG_SEND_TYPE_URL, MSG_SET_WITHDRAW_ADDRESS_TYPE_URL,
+    MSG_TRANSFER_TYPE_URL,
 };
 use crate::utils::{
     create_parameter_change_proposal, encode_any, footoken_metadata, get_user_key, one_atom,
@@ -15,6 +16,7 @@ use althea_proto::cosmos_sdk_proto::cosmos::authz::v1beta1::{
 };
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{Input, MsgMultiSend, MsgSend, Output};
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
+use althea_proto::cosmos_sdk_proto::cosmos::distribution::v1beta1::MsgSetWithdrawAddress;
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParamChange;
 use clarity::Uint256;
 use deep_space::error::CosmosGrpcError;
@@ -182,6 +184,22 @@ pub async fn fail_to_send(
         denom: STAKING_TOKEN.clone(),
         amount: one_atom().to_string(),
     };
+    let msg_set_withdraw_address =
+        create_distribution_msg_set_withdraw_address(sender, receiver.ethermint_address);
+    let res = contact
+        .send_message(
+            &[msg_set_withdraw_address],
+            None,
+            &[],
+            Some(OPERATION_TIMEOUT),
+            None,
+            sender,
+        )
+        .await;
+    info!("Set withdraw address: {:?}", res);
+    res.expect_err(
+        "Successfully submitted distribution MsgSetWithdrawAddress? Should not be possible!",
+    );
 
     let msg_send = create_bank_msg_send(sender, receiver.ethermint_address, amount.clone());
     let res = contact
@@ -242,6 +260,28 @@ pub async fn fail_to_send(
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgSend)? Should not be possible!");
+    let double_authz_send = create_double_authz_bank_msg_send(
+        contact,
+        sender,
+        msg_send_authorized,
+        receiver.ethermint_address,
+        amount.clone(),
+    )
+    .await
+    .unwrap();
+    let res = contact
+        .send_message(
+            &[double_authz_send.clone()],
+            None,
+            &[],
+            Some(OPERATION_TIMEOUT),
+            None,
+            msg_send_authorized.ethermint_key,
+        )
+        .await;
+    info!("Double wrapped Msg Send: {:?}", res);
+    res.expect_err("Successfully sent double-wrapped MsgSend? Should not be possible!");
+
     let msg_multi_send_authorized = authorized_users[1];
     let authz_multi_send = create_authz_bank_msg_multi_send(
         contact,
@@ -332,6 +372,18 @@ pub fn create_microtx_msg_microtx(
     Msg::new(MSG_MICROTX_TYPE_URL, send)
 }
 
+/// Creates a x/distribution MsgSetWithdrawAddress, which could allow tokens to be transferred in a roundabout way
+pub fn create_distribution_msg_set_withdraw_address(
+    sender: impl PrivateKey,
+    withdraw_addr: Address,
+) -> Msg {
+    let send = MsgSetWithdrawAddress {
+        delegator_address: sender.to_address(&ADDRESS_PREFIX).unwrap().to_string(),
+        withdraw_address: withdraw_addr.to_string(),
+    };
+    Msg::new(MSG_SET_WITHDRAW_ADDRESS_TYPE_URL, send)
+}
+
 /// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
 /// an authz MsgExec-wrapped bank MsgSend and returns that as well
 pub async fn create_authz_bank_msg_send(
@@ -369,6 +421,52 @@ pub async fn create_authz_bank_msg_send(
     let exec_msg = Msg::new(MSG_EXEC_TYPE_URL, exec);
 
     Ok(exec_msg)
+}
+
+/// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
+/// an authz MsgExec-wrapped bank MsgSend and wraps that again in an authz MsgExec to send to the chain
+pub async fn create_double_authz_bank_msg_send(
+    contact: &Contact,
+    sender: impl PrivateKey,
+    authorizee: EthermintUserKey,
+    receiver: Address,
+    amount: ProtoCoin,
+) -> Result<Msg, CosmosGrpcError> {
+    let grant_msg_send = create_authorization(
+        sender.clone(),
+        authorizee.ethermint_address,
+        MSG_SEND_TYPE_URL.to_string(),
+    );
+
+    let res = contact
+        .send_message(
+            &[grant_msg_send],
+            None,
+            &[],
+            Some(OPERATION_TIMEOUT),
+            None,
+            sender.clone(),
+        )
+        .await;
+    info!("Granted MsgSend authorization with response {:?}", res);
+    res?;
+
+    let send = create_bank_msg_send(sender.clone(), receiver, amount);
+    let send_any: prost_types::Any = send.into();
+    let exec = MsgExec {
+        grantee: authorizee.ethermint_address.to_string(),
+        msgs: vec![send_any],
+    };
+    let exec_msg = Msg::new(MSG_EXEC_TYPE_URL, exec);
+    let exec_any: prost_types::Any = exec_msg.into();
+
+    let double_exec = MsgExec {
+        grantee: authorizee.ethermint_address.to_string(),
+        msgs: vec![exec_any],
+    };
+    let double_exec_msg = Msg::new(MSG_EXEC_TYPE_URL, double_exec);
+
+    Ok(double_exec_msg)
 }
 
 /// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
