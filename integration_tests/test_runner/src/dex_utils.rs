@@ -333,7 +333,6 @@ pub async fn croc_query_range_position(
     // ABI: queryRangePosition (address owner, address base, address quote, uint256 poolIdx, int24 lowerTick, int24 upperTick)
     // returns (uint128 liq, uint64 fee, uint32 timestamp, bool atomic)
     let caller = caller.unwrap_or(owner);
-    // TODO: This probably won't work until Clarity is updated with Int256 support
     let payload = clarity::abi::encode_call(
         "queryRangePosition(address,address,address,uint256,int24,int24)",
         &[
@@ -398,7 +397,6 @@ pub async fn croc_query_ambient_position(
     // ABI: queryAmbientPosition (address owner, address base, address quote, uint256 poolIdx)
     // returns (uint128 seeds, uint32 timestamp) {
     let caller = caller.unwrap_or(owner);
-    // TODO: This probably won't work until Clarity is updated with Int256 support
     let payload = clarity::abi::encode_call(
         "queryAmbientPosition(address,address,address,uint256)",
         &[owner.into(), base.into(), quote.into(), pool_idx.into()],
@@ -448,7 +446,6 @@ pub async fn croc_query_conc_rewards(
     // ABI: queryConcRewards (address owner, address base, address quote, uint256 poolIdx, int24 lowerTick, int24 upperTick)
     // returns (uint128 liqRewards, uint128 baseRewards, uint128 quoteRewards)
     let caller = caller.unwrap_or(owner);
-    // TODO: This probably won't work until Clarity is updated with Int256 support
     let payload = clarity::abi::encode_call(
         "queryConcRewards(address,address,address,uint256,int24,int24)",
         &[
@@ -586,8 +583,10 @@ pub struct ProtocolCmdArgs {
     pub cmd: Vec<AbiToken>,
     pub sudo: bool,
 }
+
 /// Calls any protocolCmd on the DEX contract
-pub async fn dex_protocol_cmd(
+/// NOTE: if CrocPolicy is set up, this call will fail and CrocPolicy must be used instead
+pub async fn dex_direct_protocol_cmd(
     web30: &Web3,
     dex_contract: EthAddress,
     wallet: PrivateKey,
@@ -627,7 +626,7 @@ pub async fn dex_authority_transfer(
     // ABI: authorityTransfer (uint8 cmd_code, address auth)
     let cmd_args = vec![code.into(), new_auth.into()];
 
-    dex_protocol_cmd(
+    dex_direct_protocol_cmd(
         web30,
         dex_contract,
         wallet,
@@ -678,4 +677,76 @@ pub async fn dex_query_authority(
         .await?;
 
     Ok(EthAddress::from_slice(&query_res[12..32])?)
+}
+
+/// Specifies an opsResolution call to be made on the CrocPolicy contract
+#[derive(Debug, Clone)]
+pub struct OpsResolutionArgs {
+    pub minion: EthAddress, // Use the DEX address
+    pub callpath: u16,
+    pub cmd: Vec<AbiToken>,
+    // sudo: bool, // Ops resolutions are not allowed to invoke sudo commands
+}
+/// Calls a non-sudo protocolCmd via CrocPolicy
+/// NOTE: CrocPolicy MUST be the DEX `authority_` for this to work, and the wallet must be one of the Ops/Treasury/Emergency roles
+pub async fn croc_policy_ops_resolution(
+    web30: &Web3,
+    croc_policy_contract: EthAddress,
+    wallet: PrivateKey,
+    cmd_args: OpsResolutionArgs,
+    native_in: Option<Uint256>,
+    timeout: Option<Duration>,
+) -> Result<TransactionResponse, Web3Error> {
+    let timeout = timeout.unwrap_or(OPERATION_TIMEOUT);
+    // ABI: opsResolution (address minion, uint16 proxyPath, bytes cmd)
+
+    let cmd = clarity::abi::encode_tokens(&cmd_args.cmd);
+    let payload = clarity::abi::encode_call(
+        "opsResolution(address,uint16,bytes)",
+        &[cmd_args.minion.into(), cmd_args.callpath.into(), cmd.into()],
+    )?;
+    let native_in = native_in.unwrap_or(0u8.into());
+    let txhash = web30
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(croc_policy_contract, payload, native_in, wallet, vec![])
+                .await?,
+        )
+        .await?;
+    web30.wait_for_transaction(txhash, timeout, None).await
+}
+
+/// Executes a treasuryResolution directly on the CrocPolicy contract (i.e. not using nativedex governance)
+/// NOTE: CrocPolicy MUST be the DEX `authority_` for this to work, and the wallet must be the Treasury role
+pub async fn croc_policy_treasury_resolution(
+    web30: &Web3,
+    croc_policy_contract: EthAddress,
+    dex_contract: EthAddress,
+    wallet: PrivateKey,
+    cmd_args: ProtocolCmdArgs,
+    native_in: Option<Uint256>,
+    timeout: Option<Duration>,
+) -> Result<TransactionResponse, Web3Error> {
+    let timeout = timeout.unwrap_or(OPERATION_TIMEOUT);
+    // ABI: treasuryResolution (address minion, uint16 proxyPath, bytes cmd, bool sudo)
+
+    let cmd = clarity::abi::encode_tokens(&cmd_args.cmd);
+    let payload = clarity::abi::encode_call(
+        "treasuryResolution(address,uint16,bytes,bool)",
+        &[
+            dex_contract.into(),
+            cmd_args.callpath.into(),
+            cmd.into(),
+            cmd_args.sudo.into(),
+        ],
+    )?;
+    let native_in = native_in.unwrap_or(0u8.into());
+    let txhash = web30
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(croc_policy_contract, payload, native_in, wallet, vec![])
+                .await?,
+        )
+        .await?;
+    web30.wait_for_transaction(txhash, timeout, None).await
 }

@@ -4,12 +4,12 @@ use std::time::Duration;
 
 use crate::bootstrapping::DexAddresses;
 use crate::dex_utils::{
-    croc_query_curve_tick, croc_query_dex, croc_query_pool_params, croc_query_price,
-    croc_query_range_position, dex_authority_transfer, dex_protocol_cmd, dex_query_authority,
-    dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
-    COLD_PATH, MIN_PRICE, WARM_PATH,
+    croc_policy_ops_resolution, croc_policy_treasury_resolution, croc_query_curve_tick,
+    croc_query_dex, croc_query_pool_params, croc_query_range_position, dex_authority_transfer,
+    dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd,
+    OpsResolutionArgs, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE,
+    MIN_PRICE, WARM_PATH,
 };
-use crate::evm_utils::get_erc20_allowance;
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL,
     SET_SAFE_MODE_PROPOSAL_TYPE_URL, SET_TREASURY_PROPOSAL_TYPE_URL,
@@ -33,6 +33,7 @@ use clarity::{Address as EthAddress, PrivateKey, Uint256};
 use deep_space::{Coin, Contact};
 use num::ToPrimitive;
 
+use rand::Rng;
 use web30::client::Web3;
 use web30::jsonrpc::error::Web3Error;
 use web30::types::TransactionResponse;
@@ -84,53 +85,11 @@ pub async fn dex_test(
     .await
     .expect("Could not get curve tick for pool");
 
-    let price = croc_query_price(
-        web3,
-        dex_contracts.query,
-        Some(evm_user.eth_address),
-        pool_base,
-        pool_quote,
-        *POOL_IDX,
-    )
-    .await
-    .expect("Could not get curve price for pool");
-
     let bid_tick = tick - 75u8.into();
     let ask_tick = tick + 75u8.into();
-    let min_price = price - 1000u128.into();
-    let max_price = price + 1000u128.into();
     // uint8 code, address base, address quote, uint256 poolIdx,
     //  int24 bidTick, int24 askTick, uint128 liq,
     //  uint128 limitLower, uint128 limitHigher, //  uint8 reserveFlags, address lpConduit
-
-    let mint_ranged_pos_args = UserCmdArgs {
-        callpath: WARM_PATH, // Warm Path index
-        cmd: vec![
-            Uint256::from(11u8).into(),   // Mint Ranged Liq in base token code
-            pool_base.into(),             // base
-            pool_quote.into(),            // quote
-            (*POOL_IDX).into(),           // poolIdx
-            bid_tick.into(),              // bid (lower) tick
-            ask_tick.into(),              // ask (upper) tick
-            1_000_000u128.into(),         // liq (in base token)
-            min_price.into(),             // limitLower
-            max_price.into(),             // limitHigher
-            Uint256::from(0u8).into(),    // reserveFlags
-            EthAddress::default().into(), // lpConduit
-        ],
-    };
-    info!("Minting position in pool: {mint_ranged_pos_args:?}");
-    dex_user_cmd(
-        web3,
-        dex_contracts.dex,
-        evm_privkey,
-        mint_ranged_pos_args,
-        None,
-        None,
-    )
-    .await
-    .expect("Failed to mint position in pool");
-
     let range_pos = croc_query_range_position(
         web3,
         dex_contracts.query,
@@ -144,52 +103,56 @@ pub async fn dex_test(
     )
     .await
     .expect("Could not query position");
-    info!("Range position: {:?}", range_pos);
+    if range_pos.liq > 0u8.into() {
+        info!("Range position already exists: {:?}", range_pos);
+    } else {
+        let mint_ranged_pos_args = UserCmdArgs {
+            callpath: WARM_PATH, // Warm Path index
+            cmd: vec![
+                Uint256::from(1u8).into(),            // Mint Ranged Liq in base token code
+                pool_base.into(),                     // base
+                pool_quote.into(),                    // quote
+                (*POOL_IDX).into(),                   // poolIdx
+                bid_tick.into(),                      // bid (lower) tick
+                ask_tick.into(),                      // ask (upper) tick
+                (one_eth() * 10240u32.into()).into(), // liq (in liquidity units, which must be a multiple of 1024)
+                (*MIN_PRICE).into(),                  // limitLower
+                (*MAX_PRICE).into(),                  // limitHigher
+                Uint256::from(0u8).into(),            // reserveFlags
+                EthAddress::default().into(),         // lpConduit
+            ],
+        };
+        info!("Minting position in both tokens: {mint_ranged_pos_args:?}");
+        dex_user_cmd(
+            web3,
+            dex_contracts.dex,
+            evm_privkey,
+            mint_ranged_pos_args,
+            None,
+            None,
+        )
+        .await
+        .expect("Failed to mint position in pool");
+        let range_pos = croc_query_range_position(
+            web3,
+            dex_contracts.query,
+            None,
+            evm_user.eth_address,
+            pool_base,
+            pool_quote,
+            *POOL_IDX,
+            bid_tick,
+            ask_tick,
+        )
+        .await
+        .expect("Could not query position");
+        assert!(range_pos.liq > 0u8.into());
+    }
 
-    info!("Successfully minted position");
+    // Finally, perform many smaller swaps to ensure the pool is working as expected
+    swap_many(web3, dex_contracts, pool_base, pool_quote, evm_user, 30).await;
 
-    info!("Attempt to steal DEX control away from CrocPolicy contract");
-    dex_protocol_cmd(
-        web3,
-        dex_contracts.dex,
-        *MINER_PRIVATE_KEY,
-        ProtocolCmdArgs {
-            callpath: COLD_PATH,
-            cmd: vec![Uint256::from(20u16).into(), (*MINER_ETH_ADDRESS).into()],
-            sudo: true,
-        },
-        None,
-        None,
-    )
-    .await
-    .expect_err("Miner should not be able to take control away from CrocPolicy");
-    info!("Testing safe mode");
-    submit_and_pass_safe_mode_proposal(contact, &validator_keys, true, false).await;
-
-    let test_swap = dex_swap(
-        web3,
-        dex_contracts.dex,
-        evm_user_keys.first().unwrap().eth_privkey,
-        SwapArgs {
-            base: pool_base,
-            quote: pool_quote,
-            pool_idx: *POOL_IDX,
-            is_buy: false,
-            in_base_qty: true,
-            qty: one_eth(),
-            tip: 0u16,
-            limit_price: 18446744073u128.into(),
-            min_out: 0u8.into(),
-            reserve_flags: 0u8,
-        },
-        None,
-        Some(OPERATION_TIMEOUT),
-    )
-    .await;
-    test_swap.expect_err("Swap should fail in safe mode");
-
-    info!("Disabling safe mode");
-    submit_and_pass_safe_mode_proposal(contact, &validator_keys, false, true).await;
+    info!("Successfully tested DEX");
 }
 
 pub async fn dex_upgrade_test(
@@ -312,6 +275,39 @@ pub async fn dex_upgrade_test(
     .await
     .expect("Could not query pool");
     assert!(params.tick_size != 0, "Pool not created");
+
+    info!("Attempt to steal DEX control away from CrocPolicy contract");
+    dex_direct_protocol_cmd(
+        web3,
+        dex_contracts.dex,
+        *MINER_PRIVATE_KEY,
+        ProtocolCmdArgs {
+            callpath: COLD_PATH,
+            cmd: vec![Uint256::from(20u16).into(), (*MINER_ETH_ADDRESS).into()],
+            sudo: true,
+        },
+        None,
+        None,
+    )
+    .await
+    .expect_err("Miner should not be able to take control away from CrocPolicy");
+    croc_policy_treasury_resolution(
+        web3,
+        dex_contracts.policy,
+        dex_contracts.dex,
+        *MINER_PRIVATE_KEY,
+        ProtocolCmdArgs {
+            callpath: COLD_PATH,
+            cmd: vec![Uint256::from(20u16).into(), (*MINER_ETH_ADDRESS).into()],
+            sudo: true,
+        },
+        None,
+        None,
+    )
+    .await
+    .expect_err("Miner should not be able to take control away from CrocPolicy");
+
+    info!("Successfully tested DEX upgrade via nativedex governance");
 }
 
 pub async fn dex_safe_mode_test(
@@ -349,39 +345,26 @@ pub async fn dex_safe_mode_test(
     .await
     .expect("Could not get curve tick for pool");
 
-    let price = croc_query_price(
-        web3,
-        dex_contracts.query,
-        Some(evm_user.eth_address),
-        pool_base,
-        pool_quote,
-        *POOL_IDX,
-    )
-    .await
-    .expect("Could not get curve price for pool");
-
     let bid_tick = tick - 75u8.into();
     let ask_tick = tick + 75u8.into();
-    let min_price = price - 1000u128.into();
-    let max_price = price + 1000u128.into();
-    // uint8 code, address base, address quote, uint256 poolIdx,
-    //  int24 bidTick, int24 askTick, uint128 liq,
-    //  uint128 limitLower, uint128 limitHigher, //  uint8 reserveFlags, address lpConduit
 
+    // These paramers mint a position in the base token (11) active from bid tick to ask tick with as many tokens it takes to 1 billion lots of liquidity
+    // but the tx will be reverted if the price at execution is outside of [MIN_PRICE, MAX_PRICE]
+    let liquidity_amount: Uint256 = Uint256::from(1_000_000_000u32) * 1024u32.into();
     let mint_ranged_pos_args = UserCmdArgs {
         callpath: WARM_PATH, // Warm Path index
         cmd: vec![
-            Uint256::from(1u8).into(),            // Mint Ranged Liq
-            pool_base.into(),                     // base
-            pool_quote.into(),                    // quote
-            (*POOL_IDX).into(),                   // poolIdx
-            bid_tick.into(),                      // bid (lower) tick
-            ask_tick.into(),                      // ask (upper) tick
-            (one_atom() * 1024u32.into()).into(), // liq
-            min_price.into(),                     // limitLower
-            max_price.into(),                     // limitHigher
-            Uint256::from(0u8).into(),            // reserveFlags
-            EthAddress::default().into(),         // lpConduit
+            Uint256::from(11u8).into(),   // Mint Ranged Liq with base token
+            pool_base.into(),             // base
+            pool_quote.into(),            // quote
+            (*POOL_IDX).into(),           // poolIdx
+            bid_tick.into(),              // bid (lower) tick
+            ask_tick.into(),              // ask (upper) tick
+            liquidity_amount.into(),      // liq
+            (*MIN_PRICE).into(),          // limitLower
+            (*MAX_PRICE).into(),          // limitHigher
+            Uint256::from(0u8).into(),    // reserveFlags
+            EthAddress::default().into(), // lpConduit
         ],
     };
     info!("Minting position in pool: {mint_ranged_pos_args:?}");
@@ -427,6 +410,19 @@ pub async fn dex_safe_mode_test(
             .expect("Unable to query safe mode"),
         "dex should not be in safe mode"
     );
+
+    safe_mode_operations(
+        false,
+        web3,
+        dex_contracts.clone(),
+        evm_user_keys.clone(),
+        &validator_keys,
+        pool_base,
+        pool_quote,
+    )
+    .await;
+
+    info!("Successfully tested DEX safe mode");
 }
 
 pub fn pool_tokens(erc20_contracts: Vec<EthAddress>) -> (EthAddress, EthAddress) {
@@ -435,6 +431,90 @@ pub fn pool_tokens(erc20_contracts: Vec<EthAddress>) -> (EthAddress, EthAddress)
         (tokens[0], tokens[1])
     } else {
         (tokens[1], tokens[0])
+    }
+}
+
+async fn swap_many(
+    web3: &Web3,
+    dex_contracts: DexAddresses,
+    pool_base: EthAddress,
+    pool_quote: EthAddress,
+    evm_user: &EthermintUserKey,
+    swaps: usize,
+) {
+    let mut is_buy = true; // Switch direction frequently, starting with base for quote
+    let mut rng = rand::thread_rng();
+
+    for _ in 0..swaps {
+        let qty_multi: u32 = rng.gen();
+        let qty = one_atom() * qty_multi.into();
+        let pre_swap_base = web3
+            .get_erc20_balance(pool_base, evm_user.eth_address)
+            .await
+            .expect("Unable to get erc20 balance");
+        let pre_swap_quote = web3
+            .get_erc20_balance(pool_quote, evm_user.eth_address)
+            .await
+            .expect("Unable to get erc20 balance");
+        // Swap quote for base, expecting one atom of base out
+        let swap_args = SwapArgs {
+            base: pool_base,
+            quote: pool_quote,
+            pool_idx: *POOL_IDX,
+            is_buy,
+            in_base_qty: is_buy, // Always specify the input qty, not the output
+            qty,
+            tip: 0,
+            limit_price: if is_buy { *MAX_PRICE } else { *MIN_PRICE }, // Eliminate price checking failures
+            min_out: 0u8.into(), // Eliminate output checking failures
+            reserve_flags: 0u8,
+        };
+
+        info!(
+            "Swapping {} for {}",
+            qty.to_string() + if is_buy { "base" } else { "quote" },
+            if is_buy { "quote" } else { "base" }.to_string()
+        );
+        dex_swap(
+            web3,
+            dex_contracts.dex,
+            evm_user.eth_privkey,
+            swap_args,
+            None,
+            Some(OPERATION_TIMEOUT),
+        )
+        .await
+        .expect("Unable to swap quote for base");
+        let post_swap_base = web3
+            .get_erc20_balance(pool_base, evm_user.eth_address)
+            .await
+            .expect("Unable to get erc20 balance");
+        let post_swap_quote = web3
+            .get_erc20_balance(pool_quote, evm_user.eth_address)
+            .await
+            .expect("Unable to get erc20 balance");
+
+        if is_buy {
+            assert!(
+                post_swap_base < pre_swap_base && pre_swap_base - post_swap_base == qty,
+                "Swap did not decrease base token balance"
+            );
+            assert!(
+                post_swap_quote > pre_swap_quote,
+                "Swap did not increase quote token balance"
+            );
+        } else {
+            assert!(
+                post_swap_quote < pre_swap_quote && pre_swap_quote - post_swap_quote == qty,
+                "Swap did not decrease quote token balance"
+            );
+            assert!(
+                post_swap_base > pre_swap_base,
+                "Swap did not increase base token balance"
+            );
+        }
+
+        is_buy = !is_buy;
     }
 }
 
@@ -448,26 +528,26 @@ async fn safe_mode_operations(
     pool_quote: EthAddress,
 ) {
     let user = evm_user_keys.first().unwrap();
-    info!("Safe mode ops: locked={}, base balance={:?} base allowance={:?} quote balance={:?} quote allowance={:?}", in_safe_mode,
-        web3.get_erc20_balance(pool_base, user.eth_address).await, get_erc20_allowance(web3, pool_base, user.eth_address, dex_contracts.dex, None).await,
-        web3.get_erc20_balance(pool_quote, user.eth_address).await, get_erc20_allowance(web3, pool_quote, user.eth_address, dex_contracts.dex, None).await,
-    );
+
+    // These swap args perform a swap from quote to base token (is_buy) with 1_000_000 (qty) of quote tokens input (in_base_qty), and the transaction will revert if
+    // the swap results in less than 0 base tokens out or if the price goes below MIN_PRICE (below because is_buy = false)
+    let swap_args = SwapArgs {
+        base: pool_base,
+        quote: pool_quote,
+        pool_idx: *POOL_IDX,
+        is_buy: false,
+        in_base_qty: false,
+        qty: one_atom(),
+        tip: 0,
+        limit_price: *MIN_PRICE,
+        min_out: 0u8.into(),
+        reserve_flags: 0u8,
+    };
     let test_swap = dex_swap(
         web3,
         dex_contracts.dex,
         user.eth_privkey,
-        SwapArgs {
-            base: pool_base,
-            quote: pool_quote,
-            pool_idx: *POOL_IDX,
-            is_buy: false,
-            in_base_qty: false,
-            qty: one_atom(),
-            tip: 0,
-            limit_price: *MIN_PRICE,
-            min_out: 0u8.into(),
-            reserve_flags: 0u8,
-        },
+        swap_args,
         None,
         Some(OPERATION_TIMEOUT),
     )
@@ -478,14 +558,14 @@ async fn safe_mode_operations(
     } else {
         test_swap.expect("Swap should succeed outside of safe mode");
     }
-    let set_liq_res = dex_protocol_cmd(
+    let set_liq_res = croc_policy_ops_resolution(
         web3,
-        dex_contracts.dex,
+        dex_contracts.policy,
         *MINER_PRIVATE_KEY,
-        ProtocolCmdArgs {
+        OpsResolutionArgs {
+            minion: dex_contracts.dex,
             callpath: COLD_PATH,
             cmd: vec![Uint256::from(112u8).into(), Uint256::from(10u128).into()],
-            sudo: false,
         },
         None,
         None,
@@ -913,7 +993,7 @@ pub async fn bad_upgrade_proxy_call(
     // ABI: upgradeProxy (code uint8, contract address, callpath_index uint16)
     let cmd_args = vec![code.into(), upgrade.into(), Uint256::from(callpath).into()];
 
-    dex_protocol_cmd(
+    dex_direct_protocol_cmd(
         web30,
         dex_contract,
         wallet,

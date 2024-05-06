@@ -8,7 +8,7 @@ use num::ToPrimitive;
 use web30::{
     client::Web3,
     jsonrpc::error::Web3Error,
-    types::{TransactionRequest, TransactionResponse},
+    types::{SendTxOption, TransactionRequest, TransactionResponse},
 };
 
 use crate::utils::OPERATION_TIMEOUT;
@@ -324,6 +324,30 @@ pub async fn get_erc20_allowance(
         .await?;
 
     Ok(Uint256::from_be_bytes(&allowance_res))
+}
+pub async fn approve_erc20_spender(
+    web30: &Web3,
+    erc20: EthAddress,
+    eth_private_key: EthPrivateKey,
+    spender: EthAddress,
+    amount: Uint256,
+    timeout: Option<Duration>,
+    options: Vec<SendTxOption>,
+) -> Result<Uint256, Web3Error> {
+    let payload =
+        clarity::abi::encode_call("approve(address,uint256)", &[spender.into(), amount.into()])?;
+
+    let tx = web30
+        .prepare_transaction(erc20, payload, 0u32.into(), eth_private_key, options)
+        .await?;
+    let txid = web30.eth_send_raw_transaction(tx.to_bytes()).await?;
+
+    // wait for transaction to enter the chain if the user has requested it
+    if let Some(timeout) = timeout {
+        web30.wait_for_transaction(txid, timeout, None).await?;
+    }
+
+    Ok(txid)
 }
 
 // ==========================================================================================================================================

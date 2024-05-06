@@ -16,24 +16,24 @@ path = "src/bin/main.rs"
 
 [dependencies]
 
-althea_proto = "0.7"
+althea_proto = {workspace = true}
 prost = "0.12"
 prost-types = "0.12"
 bytes = "1"
-deep_space = {version = "2", features = ["althea", "ethermint"]}
+deep_space = {workspace = true}
 serde_derive = "1.0"
-clarity = "1"
-web30 = "1"
+clarity = {workspace = true}
+web30 = {workspace = true}
+num256 = {workspace = true}
 docopt = "1"
 serde = "1.0"
-actix = "0.13"
-actix-rt = "2.2"
+actix = {workspace = true}
+actix-rt = {workspace = true}
 lazy_static = "1"
 url = "2"
-num = "0.4.0"
-num256 = "0.5"
-log = "0.4"
-env_logger = "0.9"
+num = {workspace = true}
+log = {workspace = true}
+env_logger = {workspace = true}
 tokio = "1.4.0"
 rand = "0.8"
 tonic = "0.10"
