@@ -327,3 +327,44 @@ Where metadata.json contains (example):
 	AddGenericProposalCommandFlags(cmd)
 	return cmd
 }
+
+// NewOpsProposalCmd implements the command to submit a OpsProposal
+// nolint: dupl
+func NewOpsProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
+	cmd := &cobra.Command{
+		Use:   "ops [metadata]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit an Ops proposal",
+		Long:  `Submit a proposal to perform a non-sudo protocolCmd() call on the native DEX`,
+		Example: fmt.Sprintf(`$ %s tx gov submit-proposal ops <path/to/metadata.json> --from=<key_or_address> --title=<title> --description=<description> --chain-id=<chain-id> --deposit=<deposit>
+
+Where metadata.json contains (example):
+
+{
+	"Callpath": "3",
+	"CmdArgs": "[<ABI Encoded arguments for the protocolCmd() call>]",
+}`, version.AppName,
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			setup, err := GenericProposalCmdSetup(cmd)
+			if err != nil {
+				return sdkerrors.Wrap(err, "invalid arguments to command")
+			}
+			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
+
+			propMetaData, err := ParseOpsMetadata(clientCtx.Codec, args[0])
+			if err != nil {
+				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+			}
+
+			content := types.NewOpsProposal(title, description, propMetaData)
+
+			return GenericProposalCmdBroadcast(cmd, clientCtx, content, deposit, from)
+		},
+	}
+
+	AddGenericProposalCommandFlags(cmd)
+	return cmd
+}

@@ -43,6 +43,8 @@ func NewNativeDexProposalHandler(k *keeper.Keeper) govtypes.Handler {
 			return handleSetSafeModeProposal(ctx, k, c)
 		case *types.TransferGovernanceProposal:
 			return handleTransferGovernanceProposal(ctx, k, c)
+		case *types.OpsProposal:
+			return handleOpsProposal(ctx, k, c)
 
 		default:
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s proposal content type: %T", types.ModuleName, c)
@@ -231,6 +233,23 @@ func handleTransferGovernanceProposal(ctx sdk.Context, k *keeper.Keeper, p *type
 	_, err = k.EVMKeeper.CallEVM(ctx, contracts.CrocPolicyContract.ABI, types.ModuleEVMAddress, k.GetVerifiedCrocPolicyAddress(ctx), true, "transferGovernance", ops, types.ModuleEVMAddress, emergency)
 	if err != nil {
 		ctx.Logger().Error("Unable to call CrocPolicy.transferGovernance() for TransferGovernanceProposal", "err", err)
+		return err
+	}
+	return nil
+}
+
+// nolint: dupl
+func handleOpsProposal(ctx sdk.Context, k *keeper.Keeper, p *types.OpsProposal) error {
+	err := p.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	md := p.GetMetadata()
+	callpath := uint16(md.Callpath)
+	// CrocPolicy ABI: opsResolution (address minion, uint16 proxyPath, bytes cmd)
+	_, err = k.EVMKeeper.CallEVM(ctx, contracts.CrocPolicyContract.ABI, types.ModuleEVMAddress, k.GetVerifiedCrocPolicyAddress(ctx), true, "opsResolution", k.GetNativeDexAddress(ctx), callpath, md.CmdArgs)
+	if err != nil {
+		ctx.Logger().Error("Unable to call CrocPolicy.opsResolution() for OpsProposal", "err", err)
 		return err
 	}
 	return nil

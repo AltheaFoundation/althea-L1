@@ -206,3 +206,19 @@ func ParseTransferGovernanceMetadata(cdc codec.JSONCodec, metadataFile string) (
 
 	return propMetaData, nil
 }
+
+func ParseOpsMetadata(cdc codec.JSONCodec, metadataFile string) (types.OpsMetadata, error) {
+	// nolint: exhaustruct
+	propMetaData := types.OpsMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
+	if err != nil {
+		return propMetaData, err
+	}
+
+	if err = json.Unmarshal(contents, &propMetaData); err != nil {
+		return propMetaData, err
+	}
+
+	return propMetaData, nil
+}

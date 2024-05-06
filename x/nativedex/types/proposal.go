@@ -16,6 +16,7 @@ const (
 	ProposalTypeHotPathOpen        string = "HotPathOpen"
 	ProposalTypeSetSafeMode        string = "SetSafeMode"
 	ProposalTypeTransferGovernance string = "TransferGovernance"
+	ProposalTypeOps                string = "Ops"
 	MaxDescriptionLength           int    = 1000
 	MaxTitleLength                 int    = 140
 )
@@ -31,6 +32,7 @@ var (
 	_ govtypes.Content = &HotPathOpenProposal{}
 	_ govtypes.Content = &SetSafeModeProposal{}
 	_ govtypes.Content = &TransferGovernanceProposal{}
+	_ govtypes.Content = &OpsProposal{}
 )
 
 // Register Compound Proposal type as a valid proposal type in goveranance module
@@ -50,6 +52,8 @@ func init() {
 	govtypes.RegisterProposalTypeCodec(&SetSafeModeProposal{}, "nativedex/SetSafeModeProposal")
 	govtypes.RegisterProposalType(ProposalTypeTransferGovernance)
 	govtypes.RegisterProposalTypeCodec(&TransferGovernanceProposal{}, "nativedex/TransferGovernanceProposal")
+	govtypes.RegisterProposalType(ProposalTypeOps)
+	govtypes.RegisterProposalTypeCodec(&OpsProposal{}, "nativedex/OpsProposal")
 }
 
 func NewUpgradeProxyProposal(title, description string, md UpgradeProxyMetadata) govtypes.Content {
@@ -246,6 +250,38 @@ func (p *TransferGovernanceProposal) ValidateBasic() error {
 
 	if !common.IsHexAddress(md.Emergency) {
 		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid emergency address")
+	}
+
+	return nil
+}
+
+func NewOpsProposal(title, description string, md OpsMetadata) govtypes.Content {
+	return &OpsProposal{
+		Title:       title,
+		Description: description,
+		Metadata:    md,
+	}
+}
+
+func (*OpsProposal) ProposalRoute() string { return RouterKey }
+
+func (*OpsProposal) ProposalType() string {
+	return ProposalTypeOps
+}
+
+func (p *OpsProposal) ValidateBasic() error {
+	if err := govtypes.ValidateAbstract(p); err != nil {
+		return err
+	}
+
+	md := p.GetMetadata()
+
+	if md.Callpath == 0 {
+		return ErrInvalidCallpath
+	}
+
+	if len(md.CmdArgs) == 0 {
+		return sdkerrors.Wrap(govtypes.ErrInvalidProposalContent, "cmd args has zero length")
 	}
 
 	return nil
