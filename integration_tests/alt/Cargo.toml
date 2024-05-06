@@ -1,0 +1,26 @@
+[package]
+name = "alt"
+version = "0.1.0"
+authors = ["Christian Borst <christian@althea.systems>"]
+edition = "2018"
+description = "Althea L1 Tool - CLI for interacting with Althea L1"
+
+[[bin]]
+name = "alt"
+path = "src/main.rs"
+
+[dependencies]
+test_runner = {path = "../test_runner"}
+althea_proto = {workspace = true}
+deep_space = {workspace = true}
+clarity = {workspace = true}
+web30 = {workspace = true}
+num256 = {workspace = true}
+actix = {workspace = true}
+actix-rt = {workspace = true}
+log = {workspace = true}
+env_logger = {workspace = true}
+num = {workspace = true}
+
+clap = {version="3", features=["derive"]}
+openssl-probe = "0.1"
