@@ -6,12 +6,38 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/version"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
+
+// GetTxCmd bundles all the subcmds together so they appear under `gravity tx`
+func GetTxCmd(storeKey string) *cobra.Command {
+	// nolint: exhaustruct
+	nativedexTxCmd := &cobra.Command{
+		Use:                        types.ModuleName,
+		Short:                      "nativedex transaction subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+
+	nativedexTxCmd.AddCommand([]*cobra.Command{
+		NewUpgradeProxyProposalCmd(),
+		NewCollectTreasuryProposalCmd(),
+		NewSetTreasuryProposalCmd(),
+		NewAuthorityTransferProposalCmd(),
+		NewHotPathOpenProposalCmd(),
+		NewSetSafeModeProposalCmd(),
+		NewTransferGovernanceProposalCmd(),
+		NewOpsProposalCmd(),
+	}...)
+
+	return nativedexTxCmd
+}
 
 // NewUpgradeProxyProposalCmd implements the command to submit a UpgradeProxyProposal
 // nolint: dupl
