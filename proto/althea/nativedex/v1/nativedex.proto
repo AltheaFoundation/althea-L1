@@ -153,7 +153,7 @@ message HotPathOpenMetadata {
 // SetSafeModeProposal will lock down the DEX for emergency changes. This can also be used by the emergency multisig to halt the DEX more quickly.
 // When the DEX is in safe mode only a UpgradeProxy, CollectTreasury, SetTreasury, AuthorityTransfer, HotPathOpen, or SetSafeMode Proposal can be executed,
 // and these proposals can only be executed under the SafeMode or Boot Proxy callpaths.
-// If passes, calls CrocPolicy.treasuryResolution(CrocSwapDex, 3, <ABI Encoded Bytes(23, <open>)>)
+// If passes, calls CrocPolicy.treasuryResolution(CrocSwapDex, 3, <ABI Encoded Bytes(23, <lock_dex>)>)
 // 
 // BE VERY CAREFUL EXECUTING THIS PROPOSAL, IT SHOULD ONLY BE USED TO DISABLE THE DEX OR RECOVER FROM DISABLES
 message SetSafeModeProposal {
@@ -199,3 +199,31 @@ message TransferGovernanceMetadata {
 
   string emergency = 2; // The address to use for the Emergency governance role, which can halt the DEX or perform Ops functions
 }
+
+// OpsProposal will execute a non-sudo `protocolCmd()` call on the DEX via CrocPolicy.
+// If passes, calls CrocPolicy.opsResolution (CrocSwapDex, <callpath>, <ABI Encoded Bytes(<cmd args>)>)
+//
+// This proposal enables nativedex governance to perform everyday Ops functions on the DEX,
+// and so the Ops or Emergency addresses could override any decisions made by this proposal.
+message OpsProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  OpsMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+
+  // Developer note: in_safe_mode is not necessary for this proposal type because all OpsProposals will fail in safe mode
+}
+
+message OpsMetadata {
+  option (gogoproto.equal) = false;
+
+  uint64 callpath = 1; // The callpath index to use, see solidity-dex/contracts/mixins/StorageLayout.sol for the default values
+
+  bytes cmd_args = 2; // The ABI encoded bytes to pass to the opsResolution() call
+}
+
