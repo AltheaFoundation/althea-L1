@@ -15,6 +15,7 @@ use test_runner::bootstrapping::parse_ibc_validator_keys;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
 use test_runner::bootstrapping::start_ibc_relayer;
 use test_runner::bootstrapping::{deploy_contracts, get_keys};
+use test_runner::tests::dex::dex_ops_proposal_test;
 use test_runner::tests::dex::dex_safe_mode_test;
 use test_runner::tests::dex::dex_test;
 use test_runner::tests::dex::dex_upgrade_test;
@@ -246,6 +247,18 @@ pub async fn main() {
         } else if test_type == "DEX_SAFE_MODE" {
             info!("Start dex safe mode test");
             dex_safe_mode_test(
+                &contact,
+                &web30,
+                keys,
+                EVM_USER_KEYS.clone(),
+                erc20_addresses,
+                dex_contracts,
+            )
+            .await;
+            return;
+        } else if test_type == "DEX_OPS_PROPOSAL" {
+            info!("Start dex OpsProposal test");
+            dex_ops_proposal_test(
                 &contact,
                 &web30,
                 keys,

@@ -5,13 +5,13 @@ use std::time::Duration;
 use crate::bootstrapping::DexAddresses;
 use crate::dex_utils::{
     croc_policy_ops_resolution, croc_policy_treasury_resolution, croc_query_curve_tick,
-    croc_query_dex, croc_query_pool_params, croc_query_range_position, dex_authority_transfer,
-    dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd,
-    OpsResolutionArgs, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE,
-    MIN_PRICE, WARM_PATH,
+    croc_query_dex, croc_query_pool_params, croc_query_pool_template, croc_query_range_position,
+    dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode,
+    dex_swap, dex_user_cmd, OpsResolutionArgs, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
+    COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use crate::type_urls::{
-    COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL,
+    COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL, OPS_PROPOSAL_TYPE_URL,
     SET_SAFE_MODE_PROPOSAL_TYPE_URL, SET_TREASURY_PROPOSAL_TYPE_URL,
     TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL, UPGRADE_PROXY_PROPOSAL_TYPE_URL,
 };
@@ -22,9 +22,9 @@ use crate::utils::{
 };
 use althea_proto::althea::nativedex::v1::{
     CollectTreasuryMetadata, CollectTreasuryProposal, HotPathOpenMetadata, HotPathOpenProposal,
-    SetSafeModeMetadata, SetSafeModeProposal, SetTreasuryMetadata, SetTreasuryProposal,
-    TransferGovernanceMetadata, TransferGovernanceProposal, UpgradeProxyMetadata,
-    UpgradeProxyProposal,
+    OpsMetadata, OpsProposal, SetSafeModeMetadata, SetSafeModeProposal, SetTreasuryMetadata,
+    SetTreasuryProposal, TransferGovernanceMetadata, TransferGovernanceProposal,
+    UpgradeProxyMetadata, UpgradeProxyProposal,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
     ParamChange, ParameterChangeProposal,
@@ -423,6 +423,84 @@ pub async fn dex_safe_mode_test(
     .await;
 
     info!("Successfully tested DEX safe mode");
+}
+
+pub async fn dex_ops_proposal_test(
+    contact: &Contact,
+    web3: &Web3,
+    validator_keys: Vec<ValidatorKeys>,
+    evm_user_keys: Vec<EthermintUserKey>,
+    erc20_contracts: Vec<EthAddress>,
+    dex_contracts: DexAddresses,
+) {
+    let evm_user = evm_user_keys.first().unwrap();
+    let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
+
+    basic_dex_setup(
+        contact,
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        dex_contracts.policy,
+        evm_user,
+        &validator_keys,
+        pool_base,
+        pool_quote,
+    )
+    .await;
+    let callpath = COLD_PATH;
+    let code: Uint256 = 110u8.into();
+    let index: Uint256 = 36003u32.into();
+    let fee_rate: Uint256 = 1234u16.into();
+    let tick_size: Uint256 = 100u16.into();
+    let jit_thresh: Uint256 = 0u8.into();
+    let knockout: Uint256 = 0u8.into();
+    let oracle: Uint256 = 0u8.into();
+
+    let cmd_args = clarity::abi::encode_tokens(&[
+        code.into(),
+        index.into(),
+        fee_rate.into(),
+        tick_size.into(),
+        jit_thresh.into(),
+        knockout.into(),
+        oracle.into(),
+    ]);
+
+    let pre_template = croc_query_pool_template(
+        web3,
+        dex_contracts.query,
+        Some(evm_user_keys.first().unwrap().eth_address),
+        index,
+    )
+    .await
+    .expect("Unable to query pool template");
+    assert!(
+        tick_size != pre_template.tick_size.into(),
+        "Pool template already exists!"
+    );
+    // function setTemplate (bytes calldata input) private {
+    //     (, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh,
+    //      uint8 knockout, uint8 oracleFlags) =
+    //         abi.decode(input, (uint8, uint256, uint16, uint16, uint8, uint8, uint8));
+    submit_and_pass_nativedex_ops_proposal(contact, &validator_keys, callpath, cmd_args).await;
+
+    let post_template = croc_query_pool_template(
+        web3,
+        dex_contracts.query,
+        Some(evm_user_keys.first().unwrap().eth_address),
+        index,
+    )
+    .await
+    .expect("Unable to query pool template");
+    assert!(
+        fee_rate == post_template.fee_rate.into()
+            && tick_size == post_template.tick_size.into()
+            && jit_thresh == post_template.jit_thresh.into(),
+        "Pool template not updated"
+    );
+
+    info!("Successfully tested nativedex OpsProposal");
 }
 
 pub fn pool_tokens(erc20_contracts: Vec<EthAddress>) -> (EthAddress, EthAddress) {
@@ -1006,4 +1084,43 @@ pub async fn bad_upgrade_proxy_call(
         timeout,
     )
     .await
+}
+
+/// Submits an OpsProposal, to call CrocPolicy.opsResolution with the given args
+pub async fn submit_and_pass_nativedex_ops_proposal(
+    contact: &Contact,
+    keys: &[ValidatorKeys],
+    callpath: u16,
+    cmd_args: Vec<u8>,
+) {
+    let deposit = Coin {
+        amount: one_atom() * 100u8.into(),
+        denom: STAKING_TOKEN.clone(),
+    };
+    let fee = Coin {
+        amount: 0u8.into(),
+        denom: STAKING_TOKEN.clone(),
+    };
+
+    let proposal = OpsProposal {
+        title: "Ops Proposal".to_string(),
+        description: "Ops proposal".to_string(),
+        metadata: Some(OpsMetadata {
+            callpath: callpath as u64,
+            cmd_args,
+        }),
+    };
+    let any = encode_any(proposal, OPS_PROPOSAL_TYPE_URL.to_string());
+    let res = contact
+        .create_gov_proposal(
+            any,
+            deposit,
+            fee,
+            keys.first().unwrap().validator_key,
+            Some(OPERATION_TIMEOUT),
+        )
+        .await;
+    vote_yes_on_proposals(contact, keys, None).await;
+    wait_for_proposals_to_execute(contact).await;
+    info!("Gov proposal executed with {:?}", res);
 }

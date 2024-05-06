@@ -20,6 +20,7 @@ pub const HOT_PATH_OPEN_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.HotPathO
 pub const SET_SAFE_MODE_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.SetSafeModeProposal";
 pub const TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL: &str =
     "/althea.nativedex.v1.TransferGovernanceProposal";
+pub const OPS_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.OpsProposal";
 
 // bank msgs
 pub const MSG_SEND_TYPE_URL: &str = "/cosmos.bank.v1beta1.MsgSend";
