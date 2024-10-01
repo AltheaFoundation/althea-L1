@@ -6,13 +6,14 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	erc20keeper "github.com/Canto-Network/Canto/v5/x/erc20/keeper"
+	erc20keeper "github.com/Canto-Network/Canto/v6/x/erc20/keeper"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 
 	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
@@ -22,7 +23,7 @@ import (
 // Keeper maintains the link to storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	// NOTE: If you add anything to this struct, add a nil check to ValidateMembers below!
-	storeKey   sdk.StoreKey // Unexposed key to access store from sdk.Context
+	storeKey   storetypes.StoreKey // Unexposed key to access store from sdk.Context
 	paramSpace paramtypes.Subspace
 
 	// NOTE: If you add anything to this struct, add a nil check to ValidateMembers below!
@@ -55,7 +56,7 @@ func (k Keeper) ValidateMembers() {
 
 // NewKeeper returns a new instance of the microtx keeper
 func NewKeeper(
-	storeKey sdk.StoreKey,
+	storeKey storetypes.StoreKey,
 	paramSpace paramtypes.Subspace,
 	cdc codec.BinaryCodec,
 	bankKeeper *bankkeeper.BaseKeeper,

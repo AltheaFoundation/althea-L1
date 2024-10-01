@@ -6,6 +6,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
 const (
@@ -25,38 +26,28 @@ var AcceptableCallpathIndexes []uint64 = []uint64{1, 2, 3, 4, 5, 6, 7, 3500, 999
 
 // nolint: exhaustruct
 var (
-	_ govtypes.Content = &UpgradeProxyProposal{}
-	_ govtypes.Content = &CollectTreasuryProposal{}
-	_ govtypes.Content = &SetTreasuryProposal{}
-	_ govtypes.Content = &AuthorityTransferProposal{}
-	_ govtypes.Content = &HotPathOpenProposal{}
-	_ govtypes.Content = &SetSafeModeProposal{}
-	_ govtypes.Content = &TransferGovernanceProposal{}
-	_ govtypes.Content = &OpsProposal{}
+	_ govv1beta1.Content = &UpgradeProxyProposal{}
+	_ govv1beta1.Content = &CollectTreasuryProposal{}
+	_ govv1beta1.Content = &SetTreasuryProposal{}
+	_ govv1beta1.Content = &AuthorityTransferProposal{}
+	_ govv1beta1.Content = &HotPathOpenProposal{}
+	_ govv1beta1.Content = &SetSafeModeProposal{}
+	_ govv1beta1.Content = &TransferGovernanceProposal{}
 )
 
 // Register Compound Proposal type as a valid proposal type in goveranance module
 // nolint: exhaustruct
 func init() {
-	govtypes.RegisterProposalType(ProposalTypeUpgradeProxy)
-	govtypes.RegisterProposalTypeCodec(&UpgradeProxyProposal{}, "nativedex/UpgradeProxyProposal")
-	govtypes.RegisterProposalType(ProposalTypeCollectTreasury)
-	govtypes.RegisterProposalTypeCodec(&CollectTreasuryProposal{}, "nativedex/CollectTreasuryProposal")
-	govtypes.RegisterProposalType(ProposalTypeSetTreasury)
-	govtypes.RegisterProposalTypeCodec(&SetTreasuryProposal{}, "nativedex/SetTreasuryProposal")
-	govtypes.RegisterProposalType(ProposalTypeAuthorityTransfer)
-	govtypes.RegisterProposalTypeCodec(&AuthorityTransferProposal{}, "nativedex/AuthorityTransferProposal")
-	govtypes.RegisterProposalType(ProposalTypeHotPathOpen)
-	govtypes.RegisterProposalTypeCodec(&HotPathOpenProposal{}, "nativedex/HotPathOpenProposal")
-	govtypes.RegisterProposalType(ProposalTypeSetSafeMode)
-	govtypes.RegisterProposalTypeCodec(&SetSafeModeProposal{}, "nativedex/SetSafeModeProposal")
-	govtypes.RegisterProposalType(ProposalTypeTransferGovernance)
-	govtypes.RegisterProposalTypeCodec(&TransferGovernanceProposal{}, "nativedex/TransferGovernanceProposal")
-	govtypes.RegisterProposalType(ProposalTypeOps)
-	govtypes.RegisterProposalTypeCodec(&OpsProposal{}, "nativedex/OpsProposal")
+	govv1beta1.RegisterProposalType(ProposalTypeUpgradeProxy)
+	govv1beta1.RegisterProposalType(ProposalTypeCollectTreasury)
+	govv1beta1.RegisterProposalType(ProposalTypeSetTreasury)
+	govv1beta1.RegisterProposalType(ProposalTypeAuthorityTransfer)
+	govv1beta1.RegisterProposalType(ProposalTypeHotPathOpen)
+	govv1beta1.RegisterProposalType(ProposalTypeSetSafeMode)
+	govv1beta1.RegisterProposalType(ProposalTypeTransferGovernance)
 }
 
-func NewUpgradeProxyProposal(title, description string, md UpgradeProxyMetadata) govtypes.Content {
+func NewUpgradeProxyProposal(title, description string, md UpgradeProxyMetadata) govv1beta1.Content {
 	return &UpgradeProxyProposal{
 		Title:       title,
 		Description: description,
@@ -71,7 +62,7 @@ func (*UpgradeProxyProposal) ProposalType() string {
 }
 
 func (p *UpgradeProxyProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(p); err != nil {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
 		return err
 	}
 
@@ -87,7 +78,7 @@ func (p *UpgradeProxyProposal) ValidateBasic() error {
 	return nil
 }
 
-func NewCollectTreasuryProposal(title, description string, md CollectTreasuryMetadata, inSafeMode bool) govtypes.Content {
+func NewCollectTreasuryProposal(title, description string, md CollectTreasuryMetadata, inSafeMode bool) govv1beta1.Content {
 	return &CollectTreasuryProposal{
 		Title:       title,
 		Description: description,
@@ -103,7 +94,7 @@ func (*CollectTreasuryProposal) ProposalType() string {
 }
 
 func (p *CollectTreasuryProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(p); err != nil {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
 		return err
 	}
 
@@ -115,7 +106,7 @@ func (p *CollectTreasuryProposal) ValidateBasic() error {
 	return nil
 }
 
-func NewSetTreasuryProposal(title, description string, md SetTreasuryMetadata, inSafeMode bool) govtypes.Content {
+func NewSetTreasuryProposal(title, description string, md SetTreasuryMetadata, inSafeMode bool) govv1beta1.Content {
 	return &SetTreasuryProposal{
 		Title:       title,
 		Description: description,
@@ -131,7 +122,7 @@ func (*SetTreasuryProposal) ProposalType() string {
 }
 
 func (p *SetTreasuryProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(p); err != nil {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
 		return err
 	}
 
@@ -143,7 +134,7 @@ func (p *SetTreasuryProposal) ValidateBasic() error {
 	return nil
 }
 
-func NewAuthorityTransferProposal(title, description string, md AuthorityTransferMetadata, inSafeMode bool) govtypes.Content {
+func NewAuthorityTransferProposal(title, description string, md AuthorityTransferMetadata, inSafeMode bool) govv1beta1.Content {
 	return &AuthorityTransferProposal{
 		Title:       title,
 		Description: description,
@@ -159,7 +150,7 @@ func (*AuthorityTransferProposal) ProposalType() string {
 }
 
 func (p *AuthorityTransferProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(p); err != nil {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
 		return err
 	}
 
@@ -171,7 +162,7 @@ func (p *AuthorityTransferProposal) ValidateBasic() error {
 	return nil
 }
 
-func NewHotPathOpenProposal(title, description string, md HotPathOpenMetadata, inSafeMode bool) govtypes.Content {
+func NewHotPathOpenProposal(title, description string, md HotPathOpenMetadata, inSafeMode bool) govv1beta1.Content {
 	return &HotPathOpenProposal{
 		Title:       title,
 		Description: description,
@@ -187,7 +178,7 @@ func (*HotPathOpenProposal) ProposalType() string {
 }
 
 func (p *HotPathOpenProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(p); err != nil {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
 		return err
 	}
 
@@ -197,7 +188,7 @@ func (p *HotPathOpenProposal) ValidateBasic() error {
 	return nil
 }
 
-func NewSetSafeModeProposal(title, description string, md SetSafeModeMetadata, inSafeMode bool) govtypes.Content {
+func NewSetSafeModeProposal(title, description string, md SetSafeModeMetadata, inSafeMode bool) govv1beta1.Content {
 	return &SetSafeModeProposal{
 		Title:       title,
 		Description: description,
@@ -213,7 +204,7 @@ func (*SetSafeModeProposal) ProposalType() string {
 }
 
 func (p *SetSafeModeProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(p); err != nil {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
 		return err
 	}
 
@@ -223,7 +214,7 @@ func (p *SetSafeModeProposal) ValidateBasic() error {
 	return nil
 }
 
-func NewTransferGovernanceProposal(title, description string, md TransferGovernanceMetadata) govtypes.Content {
+func NewTransferGovernanceProposal(title, description string, md TransferGovernanceMetadata) govv1beta1.Content {
 	return &TransferGovernanceProposal{
 		Title:       title,
 		Description: description,
@@ -238,7 +229,7 @@ func (*TransferGovernanceProposal) ProposalType() string {
 }
 
 func (p *TransferGovernanceProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(p); err != nil {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
 		return err
 	}
 
@@ -255,7 +246,7 @@ func (p *TransferGovernanceProposal) ValidateBasic() error {
 	return nil
 }
 
-func NewOpsProposal(title, description string, md OpsMetadata) govtypes.Content {
+func NewOpsProposal(title, description string, md OpsMetadata) govv1beta1.Content {
 	return &OpsProposal{
 		Title:       title,
 		Description: description,
@@ -270,7 +261,7 @@ func (*OpsProposal) ProposalType() string {
 }
 
 func (p *OpsProposal) ValidateBasic() error {
-	if err := govtypes.ValidateAbstract(p); err != nil {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
 		return err
 	}
 

@@ -18,7 +18,6 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -27,8 +26,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
@@ -44,6 +41,7 @@ import (
 	"github.com/spf13/cobra"
 
 	// EVM
+
 	ethermintclient "github.com/evmos/ethermint/client"
 	ethermintserver "github.com/evmos/ethermint/server"
 	ethermintserverconfig "github.com/evmos/ethermint/server/config"
@@ -117,7 +115,12 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
 
-			initClientCtx, err := config.ReadFromClientConfig(initClientCtx)
+			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
 			if err != nil {
 				return fmt.Errorf("unable to update context with client.toml config: %v", err)
 			}
@@ -131,7 +134,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 			// Takes all these configurations and applies them, additionally configuring Tendermint
 			// to adhere to these desires
-			return server.InterceptConfigsPreRunHandler(cmd, altheaAppTemplate, altheaAppConfig)
+			return server.InterceptConfigsPreRunHandler(cmd, altheaAppTemplate, altheaAppConfig, initTendermintConfig())
 		},
 	}
 
@@ -147,6 +150,18 @@ func initAppConfig() (string, interface{}) {
 	appTempl, appCfg := ethermintserverconfig.AppConfig(altheacfg.BaseDenom)
 
 	return appTempl, appCfg
+}
+
+// initTendermintConfig helps to override default Tendermint Config values.
+// return tmcfg.DefaultConfig if no custom configuration is required for the application.
+func initTendermintConfig() *cfg.Config {
+	cfg := cfg.DefaultConfig()
+
+	// these values put a higher strain on node memory
+	// cfg.P2P.MaxNumInboundPeers = 100
+	// cfg.P2P.MaxNumOutboundPeers = 40
+
+	return cfg
 }
 
 // Execute executes the root command.
@@ -187,7 +202,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig *params.EncodingConfig) 
 	ac := appCreator{encodingConfig}
 	// The ethermint server commands perform a lot of modifications on top of the base ones, notably setting up the
 	// EVM JSONRPC server, tx indexer, and some various improvements like closing the DB automatically
-	ethermintserver.AddCommands(rootCmd, althea.DefaultNodeHome, ac.newApp, ac.createSimappAndExport, addModuleInitFlags)
+	ethermintserver.AddCommands(rootCmd, ethermintserver.NewDefaultStartOptions(ac.newApp, althea.DefaultNodeHome), ac.createSimappAndExport, addModuleInitFlags)
 
 	rootCmd.AddCommand(ethermintserver.NewIndexTxCmd())
 
@@ -356,6 +371,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
+		authcmd.GetAuxToFeeCommand(),
 		flags.LineBreak,
 		vestingcli.GetTxCmd(),
 	)
@@ -374,30 +390,11 @@ type appCreator struct {
 // newApp is an AppCreator used for the start command, anything which must be passed to NewAltheaApp (in app.go)
 // can be fetched and added here
 func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
-	var cache sdk.MultiStorePersistentCache
-
-	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
-		cache = store.NewCommitKVStoreCacheManager()
-	}
+	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
 	skipUpgradeHeights := make(map[int64]bool)
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
 		skipUpgradeHeights[int64(h)] = true
-	}
-
-	pruningOpts, err := server.GetPruningOptionsFromFlags(appOpts)
-	if err != nil {
-		panic(err)
-	}
-
-	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
-	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
-	if err != nil {
-		panic(err)
-	}
-	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
-	if err != nil {
-		panic(err)
 	}
 
 	return althea.NewAltheaApp(
@@ -406,17 +403,7 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		*a.encCfg,
 		appOpts,
-		baseapp.SetPruning(pruningOpts),
-		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
-		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
-		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server.FlagHaltTime))),
-		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
-		baseapp.SetInterBlockCache(cache),
-		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
-		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
-		baseapp.SetSnapshotStore(snapshotStore),
-		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
-		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
+		baseappOptions...,
 	)
 }
 

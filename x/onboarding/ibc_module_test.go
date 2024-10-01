@@ -10,13 +10,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v4/testing"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	ibcgotesting "github.com/cosmos/ibc-go/v6/testing"
 
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	"github.com/Canto-Network/Canto/v5/contracts"
+	"github.com/Canto-Network/Canto/v6/contracts"
 
 	althea "github.com/AltheaFoundation/althea-L1/app"
 	ibctesting "github.com/AltheaFoundation/althea-L1/ibcutils/testing"
@@ -98,7 +98,7 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 
 	// send coins from chainA to chainB
 	// auto swap and auto convert should happen
-	msg := transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, coinToSendToB, suite.chainA.SenderAccount.GetAddress().String(), suite.chainB.SenderAccount.GetAddress().String(), timeoutHeight, 0)
+	msg := transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, coinToSendToB, suite.chainA.SenderAccount.GetAddress().String(), suite.chainB.SenderAccount.GetAddress().String(), timeoutHeight, 0, "")
 	res, err := suite.chainA.SendMsgs(msg)
 	suite.Require().NoError(err) // message committed
 
@@ -132,7 +132,7 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	// IBC transfer to blocked address
 	blockedAddr := "althea10d07y265gmmuvt4z0w9aw880jnsr700jwqkt6k"
 	coinToSendToB = suite.chainA.GetSimApp().BankKeeper.GetBalance(suite.chainA.GetContext(), suite.chainA.SenderAccount.GetAddress(), sdk.DefaultBondDenom)
-	msg = transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, coinToSendToB, suite.chainA.SenderAccount.GetAddress().String(), blockedAddr, timeoutHeight, 0)
+	msg = transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, coinToSendToB, suite.chainA.SenderAccount.GetAddress().String(), blockedAddr, timeoutHeight, 0, "")
 
 	res, err = suite.chainA.SendMsgs(msg)
 	suite.Require().NoError(err) // message committed
@@ -154,7 +154,7 @@ func (suite *TransferTestSuite) TestHandleMsgTransfer() {
 	balanceVoucherBefore = suite.chainB.App.(*althea.AltheaApp).BankKeeper.GetBalance(suite.chainB.GetContext(), suite.chainB.SenderAccount.GetAddress(), voucherDenomTrace.IBCDenom())
 	balanceErc20Before = erc20Keeper.BalanceOf(suite.chainB.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(suite.chainB.SenderAccount.GetAddress().Bytes()))
 
-	msg = transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, coinToSendToB, suite.chainA.SenderAccount.GetAddress().String(), suite.chainB.SenderAccount.GetAddress().String(), timeoutHeight, 0)
+	msg = transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, coinToSendToB, suite.chainA.SenderAccount.GetAddress().String(), suite.chainB.SenderAccount.GetAddress().String(), timeoutHeight, 0, "")
 
 	res, err = suite.chainA.SendMsgs(msg)
 	suite.Require().NoError(err) // message committed

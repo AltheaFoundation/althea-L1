@@ -6,7 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	canto "github.com/Canto-Network/Canto/v5/app"
+	canto "github.com/Canto-Network/Canto/v6/app"
 )
 
 const (

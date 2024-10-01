@@ -216,3 +216,19 @@ jobs:
         run: tests/all-up-test.sh DEX_OPS_PROPOSAL
         env:
           NO_IMAGE_BUILD: True
+  UPGRADE:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Tests the nativedex OpsProposal function
+        run: tests/all-up-test.sh DEX_OPS_PROPOSAL
+      - name: Tests the Neutrino
+        run: tests/run-upgrade-test.sh v1.4.0
+        env:
+          NO_IMAGE_BUILD: True

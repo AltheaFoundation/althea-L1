@@ -7,6 +7,16 @@ CHAIN_ID="althea_6633438-1"
 
 NODES=$1
 
+# When doing an upgrade test we need to run init using the old binary so we don't include newly added fields
+set +u
+if [[ ! -z ${OLD_BINARY_LOCATION} ]]; then
+  echo "Replacing althea with $OLD_BINARY_LOCATION"
+  BIN=$OLD_BINARY_LOCATION
+else
+  echo "Old binary not set, using regular althea"
+fi
+set -u
+
 STAKING_TOKEN="aalthea"
 ALLOC_18_DECIMALS="1000000000000000000000000"
 ALLOC_6_DECIMALS="1000000000000"

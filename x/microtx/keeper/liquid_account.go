@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 
-	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
+	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"

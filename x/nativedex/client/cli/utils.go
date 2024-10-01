@@ -13,7 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
@@ -64,9 +64,9 @@ func GenericProposalCmdSetup(cmd *cobra.Command) (setup GenericProposalSetup, er
 	return
 }
 
-func GenericProposalCmdBroadcast(cmd *cobra.Command, clientCtx client.Context, content govtypes.Content, deposit sdk.Coins, from sdk.AccAddress) error {
+func GenericProposalCmdBroadcast(cmd *cobra.Command, clientCtx client.Context, content govv1beta1.Content, deposit sdk.Coins, from sdk.AccAddress) error {
 
-	msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+	msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
 	if err != nil {
 		return err
 	}
