@@ -9,15 +9,15 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 // nolint: exhaustruct
-var _ transfertypes.ICS4Wrapper = Keeper{}
+var _ porttypes.ICS4Wrapper = Keeper{}
 
 // Keeper struct
 type Keeper struct {
@@ -74,8 +74,16 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // SendPacket implements the ICS4Wrapper interface from the transfer module.
 // It calls the underlying SendPacket function directly to move down the middleware stack.
-func (k Keeper) SendPacket(ctx sdk.Context, channelCap *capabilitytypes.Capability, packet exported.PacketI) error {
-	return k.Ics4Wrapper.SendPacket(ctx, channelCap, packet)
+func (k Keeper) SendPacket(
+	ctx sdk.Context,
+	chanCap *capabilitytypes.Capability,
+	sourcePort string,
+	sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	data []byte,
+) (sequence uint64, err error) {
+	return k.Ics4Wrapper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // WriteAcknowledgement implements the ICS4Wrapper interface from the transfer module.

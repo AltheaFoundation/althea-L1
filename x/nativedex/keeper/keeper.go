@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -15,7 +16,7 @@ import (
 
 type (
 	Keeper struct {
-		storeKey   sdk.StoreKey
+		storeKey   storetypes.StoreKey
 		cdc        codec.BinaryCodec
 		paramSpace paramtypes.Subspace
 
@@ -24,7 +25,7 @@ type (
 )
 
 func NewKeeper(
-	storeKey sdk.StoreKey,
+	storeKey storetypes.StoreKey,
 	cdc codec.BinaryCodec,
 	ps paramtypes.Subspace,
 

@@ -10,8 +10,8 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/AltheaFoundation/althea-L1/x/lockup/keeper"
@@ -166,7 +166,7 @@ func AnteHandlerUnlockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keep
 
 func GetAllowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	msgSend := GetAllowedMsgSend(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgSend)
+	txBld, err := txFct.BuildUnsignedTx(&msgSend)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgSend, err))
 	}
@@ -191,7 +191,7 @@ func GetAllowedLargeTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, 
 	msgSend := GetAllowedMsgSend(keeper, ctx)
 	multiSend := GetAllowedMultiSendMsg(keeper, ctx)
 	unimportant := GetUnimportantMsg()
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgSend, &multiSend, &msgSend, &multiSend, &unimportant, &unimportant)
+	txBld, err := txFct.BuildUnsignedTx(&msgSend, &multiSend, &msgSend, &multiSend, &unimportant, &unimportant)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgSend, err))
 	}
@@ -201,7 +201,7 @@ func GetAllowedLargeTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, 
 
 func GetAllowedMultiSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	multiSend := GetAllowedMultiSendMsg(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &multiSend)
+	txBld, err := txFct.BuildUnsignedTx(&multiSend)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", multiSend, err))
 	}
@@ -224,7 +224,7 @@ func GetAllowedMultiSendMsg(keeper keeper.Keeper, ctx sdk.Context) banktypes.Msg
 
 func GetUnimportantTx(txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	unimportantMsg := GetUnimportantMsg()
-	txBld, err := tx.BuildUnsignedTx(txFct, &unimportantMsg)
+	txBld, err := txFct.BuildUnsignedTx(&unimportantMsg)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", unimportantMsg, err))
 	}
@@ -244,7 +244,7 @@ func GetUnimportantMsg() stakingtypes.MsgCreateValidator {
 
 func GetAllowedMsgTransferTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	msgTransfer := GetAllowedMsgTransfer(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgTransfer)
+	txBld, err := txFct.BuildUnsignedTx(&msgTransfer)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgTransfer, err))
 	}
@@ -276,7 +276,7 @@ func GetAllowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfertyp
 
 func GetAllowedMsgMicrotxTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	msgMicrotx := GetAllowedMsgMicrotx(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgMicrotx)
+	txBld, err := txFct.BuildUnsignedTx(&msgMicrotx)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgMicrotx, err))
 	}
@@ -309,7 +309,7 @@ func GetUnallowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Facto
 	toAddr := "0x0000000000000000000000000000000000000000"
 	amount := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewInt(1000000000000000000)))
 	msgSend := banktypes.MsgSend{FromAddress: fromAddr, ToAddress: toAddr, Amount: amount}
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgSend)
+	txBld, err := txFct.BuildUnsignedTx(&msgSend)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgSend, err))
 	}
@@ -319,7 +319,7 @@ func GetUnallowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Facto
 
 func GetUnallowedMultiSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	multiSend := GetUnallowedMultiSendMsg(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &multiSend)
+	txBld, err := txFct.BuildUnsignedTx(&multiSend)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", multiSend, err))
 	}
@@ -345,7 +345,7 @@ func GetUnallowedLargeTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory
 	multiSend := GetAllowedMultiSendMsg(keeper, ctx)
 	badMultiSend := GetUnallowedMultiSendMsg(keeper, ctx)
 	unimportant := GetUnimportantMsg()
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgSend, &multiSend, &msgSend, &badMultiSend, &multiSend, &unimportant, &unimportant)
+	txBld, err := txFct.BuildUnsignedTx(&msgSend, &multiSend, &msgSend, &badMultiSend, &multiSend, &unimportant, &unimportant)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgSend, err))
 	}
@@ -355,7 +355,7 @@ func GetUnallowedLargeTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory
 
 func GetUnallowedMsgTransferTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	msgTransfer := GetUnallowedMsgTransfer(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgTransfer)
+	txBld, err := txFct.BuildUnsignedTx(&msgTransfer)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgTransfer, err))
 	}
@@ -387,7 +387,7 @@ func GetUnallowedMsgTransfer(keeper keeper.Keeper, ctx sdk.Context) ibctransfert
 
 func GetUnallowedMsgMicrotxTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	msgMicrotx := GetUnallowedMsgMicrotx(keeper, ctx)
-	txBld, err := tx.BuildUnsignedTx(txFct, &msgMicrotx)
+	txBld, err := txFct.BuildUnsignedTx(&msgMicrotx)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgMicrotx, err))
 	}

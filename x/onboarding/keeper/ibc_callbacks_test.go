@@ -9,19 +9,21 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/mock"
 
+	math "cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v4/testing"
-	ibcmock "github.com/cosmos/ibc-go/v4/testing/mock"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	ibcgotesting "github.com/cosmos/ibc-go/v6/testing"
+	ibcmock "github.com/cosmos/ibc-go/v6/testing/mock"
 
-	"github.com/Canto-Network/Canto/v5/contracts"
-	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
+	"github.com/Canto-Network/Canto/v6/contracts"
+	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 
 	"github.com/AltheaFoundation/althea-L1/x/onboarding/keeper"
 	onboardingtest "github.com/AltheaFoundation/althea-L1/x/onboarding/testutil"
@@ -98,7 +100,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	// Setup Cosmos <=> althea IBC relayer
 	denom := "uUSDC"
 	ibcDenom := uusdcIbcdenom
-	transferAmount := sdk.NewIntWithDecimal(25, 6)
+	transferAmount := math.NewIntWithDecimal(25, 6)
 	sourceChannel := "channel-0"
 	altheaChannel := sourceChannel
 	path := fmt.Sprintf("%s/%s", transfertypes.PortID, altheaChannel)
@@ -119,7 +121,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		{
 			"fail - invalid sender - missing '1' ",
 			func() {
-				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", "althea", ethsecpAddrAlthea)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", "althea", ethsecpAddrAlthea, "")
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, altheaChannel, timeoutHeight, 0)
 			},
@@ -130,7 +132,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		{
 			"fail - invalid sender - invalid bech32",
 			func() {
-				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", "badba1sv9m0g7ycejwr3s369km58h5qe7xj77hvcxrms", ethsecpAddrAlthea)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", "badba1sv9m0g7ycejwr3s369km58h5qe7xj77hvcxrms", ethsecpAddrAlthea, "")
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, altheaChannel, timeoutHeight, 0)
 			},
@@ -144,7 +146,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 				distrAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, distrtypes.ModuleName)
 				suite.Require().NotNil(distrAcc)
 				addr := distrAcc.GetAddress().String()
-				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", addr, addr)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, "100", addr, addr, "")
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, altheaChannel, timeoutHeight, 0)
 			},
@@ -170,7 +172,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 				denom = "uUSDT"
 				ibcDenom = uusdtIbcdenom
 
-				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, ethsecpAddrAlthea)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, ethsecpAddrAlthea, "")
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, altheaChannel, timeoutHeight, 0)
 			},
@@ -184,8 +186,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 				denom = uusdcCh100DenomTrace.BaseDenom
 				ibcDenom = uusdcCh100IbcDenom
 				altheaChannel = "channel-100"
-				transferAmount = sdk.NewIntWithDecimal(25, 6)
-				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, ethsecpAddrAlthea)
+				transferAmount = math.NewIntWithDecimal(25, 6)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, ethsecpAddrAlthea, "")
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, altheaChannel, timeoutHeight, 0)
 			},
@@ -200,8 +202,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 				ibcDenom = uusdcIbcdenom
 
 				altheaChannel = sourceChannel
-				transferAmount = sdk.NewIntWithDecimal(25, 6)
-				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, ethsecpAddrAlthea)
+				transferAmount = math.NewIntWithDecimal(25, 6)
+				transfer := transfertypes.NewFungibleTokenPacketData(denom, transferAmount.String(), secpAddrCosmos, ethsecpAddrAlthea, "")
 				bz := transfertypes.ModuleCdc.MustMarshalJSON(&transfer)
 				packet = channeltypes.NewPacket(bz, 100, transfertypes.PortID, sourceChannel, transfertypes.PortID, altheaChannel, timeoutHeight, 0)
 
@@ -212,7 +214,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 
 			},
 			true,
-			sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(25, 6)),
+			sdk.NewCoin(uusdcIbcdenom, math.NewIntWithDecimal(25, 6)),
 			sdk.NewInt(0),
 		},
 	}
@@ -220,7 +222,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset
 
-			coins := sdk.NewCoins(sdk.NewCoin("aalthea", sdk.NewIntWithDecimal(10000, 18)), sdk.NewCoin(uusdcIbcdenom, sdk.NewIntWithDecimal(10000, 6)))
+			coins := sdk.NewCoins(sdk.NewCoin("aalthea", math.NewIntWithDecimal(10000, 18)), sdk.NewCoin(uusdcIbcdenom, math.NewIntWithDecimal(10000, 6)))
 			suite.Require().NoError(suite.app.BankKeeper.MintCoins(suite.ctx, evmtypes.ModuleName, coins))
 			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, evmtypes.ModuleName, secpAddr, coins)
 			suite.Require().NoError(err)

@@ -7,7 +7,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
 	ibcgotesting "github.com/AltheaFoundation/althea-L1/ibcutils/testing"
 )
