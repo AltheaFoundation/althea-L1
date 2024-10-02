@@ -1,8 +1,9 @@
-FROM fedora:37
+FROM fedora:40
 ENV GOPATH=/go
 ENV PATH=$PATH:/go/bin
-RUN dnf install -y git make gcc gcc-c++ which iproute iputils procps-ng vim-minimal tmux net-tools htop tar jq npm openssl-devel perl rust cargo golang wget
-
+RUN dnf install -y git make gcc gcc-c++ which iproute iputils procps-ng vim-minimal tmux net-tools htop tar jq npm openssl-devel perl rust cargo wget
+COPY --from=golang:1.22 /usr/local/go/ /usr/local/go/
+ENV PATH="/usr/local/go/bin:${PATH}"
 # Download the althea gaia fork as a IBC test chain
 ADD https://github.com/althea-net/ibc-test-chain/releases/download/v9.1.5/gaiad-v9.1.5-linux-amd64 /usr/bin/gaiad
 # Setup Hermes for IBC connections between chains
