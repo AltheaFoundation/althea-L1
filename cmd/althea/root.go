@@ -11,6 +11,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cosmos/go-bip39"
+	"github.com/pkg/errors"
+	"github.com/spf13/cast"
+	"github.com/spf13/cobra"
+
 	cfg "github.com/tendermint/tendermint/config"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
@@ -26,23 +31,20 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	vestingcli "github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	"github.com/cosmos/go-bip39"
-	"github.com/pkg/errors"
-	"github.com/spf13/cast"
-	"github.com/spf13/cobra"
 
 	// EVM
 
 	ethermintclient "github.com/evmos/ethermint/client"
+	"github.com/evmos/ethermint/ethereum/eip712"
 	ethermintserver "github.com/evmos/ethermint/server"
 	ethermintserverconfig "github.com/evmos/ethermint/server/config"
 	ethermintserverflags "github.com/evmos/ethermint/server/flags"
@@ -107,6 +109,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithHomeDir(althea.DefaultNodeHome).
 		WithKeyringOptions(keyring.Option()).
 		WithViper(EnvPrefix)
+
+	eip712.SetEncodingConfig(simappparams.EncodingConfig(encodingConfig))
 
 	rootCmd := &cobra.Command{
 		Use:   althea.Name,
@@ -372,8 +376,6 @@ func txCommand() *cobra.Command {
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
 		authcmd.GetAuxToFeeCommand(),
-		flags.LineBreak,
-		vestingcli.GetTxCmd(),
 	)
 
 	althea.ModuleBasics.AddTxCommands(cmd)
