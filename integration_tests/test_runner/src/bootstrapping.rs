@@ -186,6 +186,49 @@ pub async fn deploy_dex() {
     file.write_all(&output.stdout).unwrap();
 }
 
+/// This function deploys Multicall3, which is used by various frontends
+pub async fn deploy_multicall() {
+    const A: [&str; 1] = ["multicall-deployer"];
+    // files are placed in a root /solidity-dex/ folder
+    const B: [&str; 1] = ["/solidity-dex/multicall-deployer"];
+    // the default unmoved locations for the Gravity repo
+    const C: [&str; 2] = [
+        "/althea/solidity-dex/misc/scripts/multicall-deployer.ts",
+        "/althea/solidity-dex/",
+    ];
+    let output = if all_paths_exist(&A) || all_paths_exist(&B) {
+        let paths = return_existing(A, B);
+        Command::new(paths[0])
+            .args([
+                &format!("--eth-node={}", ETH_NODE.as_str()),
+                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+            ])
+            .output()
+            .expect("Failed to deploy contracts!")
+    } else if all_paths_exist(&C) {
+        Command::new("npx")
+            .args([
+                "ts-node",
+                C[0],
+                &format!("--eth-node={}", ETH_NODE.as_str()),
+                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+            ])
+            .current_dir(C[1])
+            .output()
+            .expect("Failed to deploy contracts!")
+    } else {
+        panic!("Could not find json contract artifacts in any known location!")
+    };
+
+    info!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+    info!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+    if !ExitStatus::success(&output.status) {
+        panic!("Contract deploy failed!")
+    }
+    let mut file = File::create("/multicall-contract").unwrap();
+    file.write_all(&output.stdout).unwrap();
+}
+
 // TODO: Fix send_erc20_bulk to make this method not so slow
 pub async fn send_erc20s_to_evm_users(
     web3: &Web3,

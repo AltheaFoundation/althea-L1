@@ -1,7 +1,10 @@
 package ante
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -9,12 +12,14 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	ibcante "github.com/cosmos/ibc-go/v4/modules/core/ante"
-	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
+	ibcante "github.com/cosmos/ibc-go/v6/modules/core/ante"
+	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 
 	ethante "github.com/evmos/ethermint/app/ante"
+	ethtypes "github.com/evmos/ethermint/types"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
 
 	"github.com/AltheaFoundation/althea-L1/x/gasfree"
 	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
@@ -24,42 +29,42 @@ import (
 // HandlerOptions defines the list of module keepers required to run the canto
 // AnteHandler decorators.
 type HandlerOptions struct {
-	AccountKeeper   AccountKeeper
-	BankKeeper      evmtypes.BankKeeper
-	IBCKeeper       *ibckeeper.Keeper
-	FeeMarketKeeper evmtypes.FeeMarketKeeper
-	EvmKeeper       *evmkeeper.Keeper
-	FeegrantKeeper  ante.FeegrantKeeper
-	SignModeHandler authsigning.SignModeHandler
-	SigGasConsumer  func(meter sdk.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
-	Cdc             codec.BinaryCodec
-	MaxTxGasWanted  uint64
-	GasfreeKeeper   *gasfreekeeper.Keeper
-	MicrotxKeeper   *microtxkeeper.Keeper
+	AccountKeeper          AccountKeeper
+	BankKeeper             evmtypes.BankKeeper
+	IBCKeeper              *ibckeeper.Keeper
+	FeeMarketKeeper        feemarketkeeper.Keeper
+	EvmKeeper              *evmkeeper.Keeper
+	FeegrantKeeper         ante.FeegrantKeeper
+	SignModeHandler        authsigning.SignModeHandler
+	SigGasConsumer         func(meter sdk.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
+	MaxTxGasWanted         uint64
+	ExtensionOptionChecker ante.ExtensionOptionChecker
+	TxFeeChecker           ante.TxFeeChecker
+	DisabledAuthzMsgs      []string
+	Cdc                    codec.BinaryCodec
+	GasfreeKeeper          *gasfreekeeper.Keeper
+	MicrotxKeeper          *microtxkeeper.Keeper
 }
 
 // Validate checks if the keepers are defined
 func (options HandlerOptions) Validate() error {
 	if options.AccountKeeper == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrLogic, "account keeper is required for AnteHandler")
+		return errorsmod.Wrap(sdkerrors.ErrLogic, "account keeper is required for AnteHandler")
 	}
 	if options.BankKeeper == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrLogic, "bank keeper is required for AnteHandler")
+		return errorsmod.Wrap(sdkerrors.ErrLogic, "bank keeper is required for AnteHandler")
 	}
 	if options.SignModeHandler == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
-	}
-	if options.FeeMarketKeeper == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrLogic, "fee market keeper is required for AnteHandler")
+		return errorsmod.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
 	}
 	if options.EvmKeeper == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrLogic, "evm keeper is required for AnteHandler")
+		return errorsmod.Wrap(sdkerrors.ErrLogic, "evm keeper is required for AnteHandler")
 	}
 	if options.GasfreeKeeper == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrLogic, "gasfree keeper is required for AnteHandler")
+		return errorsmod.Wrap(sdkerrors.ErrLogic, "gasfree keeper is required for AnteHandler")
 	}
 	if options.MicrotxKeeper == nil {
-		return sdkerrors.Wrap(sdkerrors.ErrLogic, "microtx keeper is required for AnteHandler")
+		return errorsmod.Wrap(sdkerrors.ErrLogic, "microtx keeper is required for AnteHandler")
 	}
 	return nil
 }
@@ -83,22 +88,33 @@ func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	)
 }
 
+func CosmosExtensionOptionChecker(any *codectypes.Any) bool {
+	a := ethtypes.HasDynamicFeeExtensionOption(any)
+	b := hasEIP712ExtensionOption(any)
+
+	return a || b
+}
+
+func hasEIP712ExtensionOption(any *codectypes.Any) bool {
+	_, ok := any.GetCachedValue().(*ethtypes.ExtensionOptionsWeb3Tx)
+	return ok
+}
+
 // newCosmosAnteHandler creates the default ante handler for Cosmos transactions
 func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		ethante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		ethante.NewAuthzLimiterDecorator(options.DisabledAuthzMsgs),
 		ante.NewSetUpContextDecorator(),
-		ante.NewRejectExtensionOptionsDecorator(),
+		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		ante.NewValidateBasicDecorator(),
-		// Gasfree txs ignore the mempool fee requirement
-		gasfree.NewSelectiveBypassDecorator(*options.GasfreeKeeper, ante.NewMempoolFeeDecorator()),
+		ante.NewTxTimeoutHeightDecorator(),
 		// Gasfree txs ignore the min gas price requirement
 		gasfree.NewSelectiveBypassDecorator(*options.GasfreeKeeper, ethante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper)),
-		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
 		// Gasfree txs do not have fees deducted the normal way, their fees will be deducted separately
-		gasfree.NewSelectiveBypassDecorator(*options.GasfreeKeeper, ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper)),
+		gasfree.NewSelectiveBypassDecorator(*options.GasfreeKeeper, ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, nil)),
 		// Charge gas fees for gasfree messages
 		NewChargeGasfreeFeesDecorator(options.AccountKeeper, *options.GasfreeKeeper, *options.MicrotxKeeper),
 		NewValidatorCommissionDecorator(options.Cdc),
@@ -108,7 +124,7 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
-		ibcante.NewAnteDecorator(options.IBCKeeper),
+		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
 		ethante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
 		NewSetAccountTypeDecorator(options.AccountKeeper, options.EvmKeeper.AccountProtoFn),
 	)
@@ -118,23 +134,24 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 func newCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		ethante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		ethante.NewAuthzLimiterDecorator(options.DisabledAuthzMsgs),
 		ante.NewSetUpContextDecorator(),
-		ante.NewMempoolFeeDecorator(),
+		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		ante.NewValidateBasicDecorator(),
-		ethante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
 		ante.NewTxTimeoutHeightDecorator(),
+		ethante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper),
+		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, nil),
 		NewValidatorCommissionDecorator(options.Cdc),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		// Note: signature verification uses EIP instead of the cosmos signature validator
-		ethante.NewEip712SigVerificationDecorator(options.AccountKeeper, options.SignModeHandler, ""), // Pass no chain id to have it parsed from the Cosmos chain id
+		ethante.NewLegacyEip712SigVerificationDecorator(options.AccountKeeper, options.SignModeHandler, ""), // Pass no chain id to have it parsed from the Cosmos chain id
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
-		ibcante.NewAnteDecorator(options.IBCKeeper),
+		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
 		ethante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
 		NewSetAccountTypeDecorator(options.AccountKeeper, options.EvmKeeper.AccountProtoFn),
 	)

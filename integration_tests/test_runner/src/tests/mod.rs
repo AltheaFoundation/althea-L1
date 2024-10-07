@@ -6,3 +6,4 @@ pub mod lockup;
 pub mod microtx_fees;
 pub mod native_token;
 pub mod onboarding;
+pub mod upgrade;

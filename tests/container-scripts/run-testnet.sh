@@ -4,6 +4,25 @@ set -eux
 BIN=althea
 
 NODES=$1
+set +u
+TEST_TYPE=$2
+
+GITHUB_ACTIONS_PATH="/home/runner/work/AltheaFoundation/althea-L1/"
+DOCKER_PATH="/althea/"
+
+if [[ -d "$GITHUB_ACTIONS_PATH" ]]; then
+    FOLDER_PATH="$GITHUB_ACTIONS_PATH"
+elif [[ -d "$DOCKER_PATH" ]]; then
+    FOLDER_PATH="$DOCKER_PATH"
+else
+    echo "Error: Neither $GITHUB_ACTIONS_PATH nor $DOCKER_PATH exists."
+    exit 1
+fi
+
+if [[ ! -z ${OLD_BINARY_LOCATION} ]]; then
+    BIN=$OLD_BINARY_LOCATION
+fi
+set -u
 
 for i in $(seq 1 $NODES);
 do
@@ -41,7 +60,9 @@ do
     P2P_ADDRESS="--p2p.laddr tcp://7.7.7.$i:26656"
     LOG_LEVEL="--log_level info"
     INVARIANTS_CHECK="--inv-check-period 1"
-    ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $GRPC_WEB_ADDRESS $ETH_RPC_ADDRESS $ETH_RPC_WS_ADDRESS $INVARIANTS_CHECK $LOG_LEVEL $P2P_ADDRESS"
+    MIN_GAS_PRICES="--minimum-gas-prices 0stake"
+
+    ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $GRPC_WEB_ADDRESS $ETH_RPC_ADDRESS $ETH_RPC_WS_ADDRESS $INVARIANTS_CHECK $LOG_LEVEL $P2P_ADDRESS $MIN_GAS_PRICES"
     $BIN $ARGS start &> /validator$i/logs &
 done
 

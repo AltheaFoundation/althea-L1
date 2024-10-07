@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	apitypes "github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/stretchr/testify/suite"
 
 	client "github.com/cosmos/cosmos-sdk/client"
@@ -22,7 +23,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -39,8 +40,6 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
-	cantoante "github.com/Canto-Network/Canto/v5/app/ante"
-
 	althea "github.com/AltheaFoundation/althea-L1/app"
 	ante "github.com/AltheaFoundation/althea-L1/app/ante"
 	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
@@ -54,7 +53,6 @@ type AnteTestSuite struct {
 	app             *althea.AltheaApp
 	clientCtx       client.Context
 	anteHandler     sdk.AnteHandler
-	oldAnteHandler  sdk.AnteHandler
 	ethSigner       ethtypes.Signer
 	enableFeemarket bool
 	evmParamsOption func(*evmtypes.Params)
@@ -72,12 +70,13 @@ func (suite *AnteTestSuite) SetupTest() {
 	cfg := sdk.GetConfig()
 	cfg.SetBech32PrefixForAccount("althea", "altheapub")
 
-	suite.app = althea.Setup(checkTx, func(app *althea.AltheaApp, genesis althea.GenesisState) althea.GenesisState {
+	suite.app = althea.NewSetup(checkTx, func(app *althea.AltheaApp, genesis simapp.GenesisState) simapp.GenesisState {
 		if suite.enableFeemarket {
 			// setup feemarketGenesis params
 			feemarketGenesis := feemarkettypes.DefaultGenesisState()
 			feemarketGenesis.Params.EnableHeight = 1
 			feemarketGenesis.Params.NoBaseFee = false
+			feemarketGenesis.BlockGas = 30000000
 			// Verify feeMarket genesis
 			err := feemarketGenesis.Validate()
 			suite.Require().NoError(err)
@@ -115,20 +114,6 @@ func (suite *AnteTestSuite) SetupTest() {
 	anteHandler := ante.NewAnteHandler(suite.app.NewAnteHandlerOptions(simapp.EmptyAppOptions{}))
 
 	suite.anteHandler = anteHandler
-
-	// Also make a copy of the old Canto antehandler we were using to ensure that our changes fix the problem
-	// nolint: exhaustruct
-	oldAnteHandler := cantoante.NewAnteHandler(cantoante.HandlerOptions{
-		AccountKeeper:   suite.app.AccountKeeper,
-		BankKeeper:      suite.app.BankKeeper,
-		EvmKeeper:       suite.app.EvmKeeper,
-		FeegrantKeeper:  nil,
-		IBCKeeper:       suite.app.IbcKeeper,
-		FeeMarketKeeper: suite.app.FeemarketKeeper,
-		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-		SigGasConsumer:  althea.SigVerificationGasConsumer,
-	})
-	suite.oldAnteHandler = oldAnteHandler
 
 	// Defines the siging method (e.g. homestead, london, etc)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
@@ -390,13 +375,12 @@ func (suite *AnteTestSuite) CreateTestEIP712CosmosTxBuilder(
 	fee := legacytx.NewStdFee(gas, gasAmount)
 	accNumber := suite.app.AccountKeeper.GetAccount(suite.ctx, from).GetAccountNumber()
 
-	data := legacytx.StdSignBytes(chainId, accNumber, nonce, 0, fee, []sdk.Msg{msg}, "")
-	typedData, err := eip712.WrapTxToTypedData(ethermintCodec, ethChainId, msg, data, &eip712.FeeDelegationOptions{
+	data := legacytx.StdSignBytes(chainId, accNumber, nonce, 0, fee, []sdk.Msg{msg}, "", nil)
+	typedData, err := eip712.LegacyWrapTxToTypedData(ethermintCodec, ethChainId, msg, data, &eip712.FeeDelegationOptions{
 		FeePayer: from,
 	})
 	suite.Require().NoError(err)
-
-	sigHash, err := eip712.ComputeTypedDataHash(typedData)
+	sigHash, _, err := apitypes.TypedDataAndHash(typedData)
 	suite.Require().NoError(err)
 
 	// Sign typedData
