@@ -10,6 +10,7 @@ use deep_space::Contact;
 use deep_space::PrivateKey;
 use std::env;
 use test_runner::bootstrapping::deploy_dex;
+use test_runner::bootstrapping::deploy_multicall;
 use test_runner::bootstrapping::parse_contract_addresses;
 use test_runner::bootstrapping::parse_dex_contract_addresses;
 use test_runner::bootstrapping::parse_ibc_validator_keys;
@@ -68,6 +69,8 @@ pub async fn main() {
         deploy_contracts(&contact).await;
         info!("Deploying DEX");
         deploy_dex().await;
+        info!("Deploying Multicall3");
+        deploy_multicall().await;
         return;
     }
 
