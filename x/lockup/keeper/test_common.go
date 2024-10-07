@@ -88,6 +88,7 @@ var (
 		MaxEntries:        10,
 		HistoricalEntries: 10000,
 		BondDenom:         "stake",
+		MinCommissionRate: sdk.NewDecFromInt(sdk.NewInt(0)),
 	}
 )
 
@@ -205,14 +206,6 @@ func CreateTestEnv(t *testing.T) TestInput {
 	stakeAddr := authtypes.NewModuleAddress(stakingtypes.BondedPoolName)
 	moduleAcct := accountKeeper.GetAccount(ctx, stakeAddr)
 	require.NotNil(t, moduleAcct)
-
-	router := baseapp.NewRouter()
-	// nolint: exhaustruct
-	router.AddRoute(bank.AppModule{}.Route())
-	// nolint: exhaustruct
-	router.AddRoute(staking.AppModule{}.Route())
-	// nolint: exhaustruct
-	router.AddRoute(distribution.AppModule{}.Route())
 
 	govRouter := govv1beta1.NewRouter().
 		AddRoute(paramsproposal.RouterKey, params.NewParamChangeProposalHandler(paramsKeeper)).

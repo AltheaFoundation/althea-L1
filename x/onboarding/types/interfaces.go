@@ -18,7 +18,7 @@ import (
 
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
 )
 
 type Erc20Keeper interface {

@@ -22,8 +22,8 @@ import (
 	ibcgotesting "github.com/cosmos/ibc-go/v6/testing"
 	ibcmock "github.com/cosmos/ibc-go/v6/testing/mock"
 
-	"github.com/Canto-Network/Canto/v6/contracts"
-	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
+	"github.com/AltheaFoundation/althea-L1/contracts"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
 
 	"github.com/AltheaFoundation/althea-L1/x/onboarding/keeper"
 	onboardingtest "github.com/AltheaFoundation/althea-L1/x/onboarding/testutil"

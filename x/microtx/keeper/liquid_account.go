@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 
-	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -17,6 +16,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
 	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
