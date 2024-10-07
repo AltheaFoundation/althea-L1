@@ -11,9 +11,8 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
-	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
-
 	"github.com/AltheaFoundation/althea-L1/ibcutils"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
 	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 

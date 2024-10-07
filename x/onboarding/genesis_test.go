@@ -12,6 +12,7 @@ import (
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 
+	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/evmos/ethermint/tests"
@@ -36,13 +37,14 @@ func (suite *GenesisTestSuite) SetupTest() {
 	// consensus key
 	consAddress := sdk.ConsAddress(tests.GenerateAddress().Bytes())
 
-	suite.app = althea.Setup(false, func(app *althea.AltheaApp, genesis althea.GenesisState) althea.GenesisState {
+	suite.app = althea.NewSetup(false, func(app *althea.AltheaApp, gs simapp.GenesisState) simapp.GenesisState {
 		evmGenesis := evmtypes.DefaultGenesisState()
 		evmGenesis.Params.EvmDenom = altheaconfig.BaseDenom
 		evmGenesis.Params.AllowUnprotectedTxs = false
 
-		genesis[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
-		return genesis
+		gs[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
+
+		return gs
 	})
 
 	// nolint: exhaustruct

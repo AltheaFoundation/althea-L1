@@ -13,9 +13,9 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	erc20keeper "github.com/Canto-Network/Canto/v6/x/erc20/keeper"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 
+	erc20keeper "github.com/AltheaFoundation/althea-L1/x/erc20/keeper"
 	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )

@@ -112,11 +112,6 @@ import (
 
 	// EVM + ERC20
 
-	"github.com/Canto-Network/Canto/v6/x/erc20"
-	erc20client "github.com/Canto-Network/Canto/v6/x/erc20/client"
-	erc20keeper "github.com/Canto-Network/Canto/v6/x/erc20/keeper"
-	erc20types "github.com/Canto-Network/Canto/v6/x/erc20/types"
-
 	ethante "github.com/evmos/ethermint/app/ante"
 	"github.com/evmos/ethermint/ethereum/eip712"
 	ethermintsrvflags "github.com/evmos/ethermint/server/flags"
@@ -137,6 +132,10 @@ import (
 	"github.com/AltheaFoundation/althea-L1/app/upgrades"
 	"github.com/AltheaFoundation/althea-L1/app/upgrades/neutrino"
 	altheacfg "github.com/AltheaFoundation/althea-L1/config"
+	"github.com/AltheaFoundation/althea-L1/x/erc20"
+	erc20client "github.com/AltheaFoundation/althea-L1/x/erc20/client"
+	erc20keeper "github.com/AltheaFoundation/althea-L1/x/erc20/keeper"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
 	"github.com/AltheaFoundation/althea-L1/x/gasfree"
 	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 	gasfreetypes "github.com/AltheaFoundation/althea-L1/x/gasfree/types"
@@ -578,6 +577,16 @@ func NewAltheaApp(
 	)
 	app.SlashingKeeper = &slashingKeeper
 
+	// Connect the inter-module staking hooks together, these are the only modules allowed to interact with how staking
+	// works, including inflationary staking rewards and punishing bad actors (excluding genutil which works at genesis to
+	// seed the set of validators from the genesis txs set)
+	stakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(
+			distrKeeper.Hooks(),
+			slashingKeeper.Hooks(),
+		),
+	)
+
 	upgradeKeeper := upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
 		keys[upgradetypes.StoreKey],
@@ -681,16 +690,6 @@ func NewAltheaApp(
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	ibcKeeper.SetRouter(ibcRouter)
-
-	// Connect the inter-module staking hooks together, these are the only modules allowed to interact with how staking
-	// works, including inflationary staking rewards and punishing bad actors (excluding genutil which works at genesis to
-	// seed the set of validators from the genesis txs set)
-	stakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(
-			distrKeeper.Hooks(),
-			slashingKeeper.Hooks(),
-		),
-	)
 
 	mintKeeper := mintkeeper.NewKeeper(
 		appCodec,
@@ -1065,7 +1064,7 @@ func (app *AltheaApp) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci
 // InitChainer deserializes the given chain genesis state, registers in-place upgrade migrations, and delegates
 // the ABCI InitGenesis execution to the ModuleManager
 func (app *AltheaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
-	var genesisState GenesisState
+	var genesisState simapp.GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}

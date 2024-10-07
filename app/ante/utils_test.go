@@ -40,8 +40,6 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
-	cantoante "github.com/Canto-Network/Canto/v6/app/ante"
-
 	althea "github.com/AltheaFoundation/althea-L1/app"
 	ante "github.com/AltheaFoundation/althea-L1/app/ante"
 	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
@@ -55,7 +53,6 @@ type AnteTestSuite struct {
 	app             *althea.AltheaApp
 	clientCtx       client.Context
 	anteHandler     sdk.AnteHandler
-	oldAnteHandler  sdk.AnteHandler
 	ethSigner       ethtypes.Signer
 	enableFeemarket bool
 	evmParamsOption func(*evmtypes.Params)
@@ -73,12 +70,13 @@ func (suite *AnteTestSuite) SetupTest() {
 	cfg := sdk.GetConfig()
 	cfg.SetBech32PrefixForAccount("althea", "altheapub")
 
-	suite.app = althea.Setup(checkTx, func(app *althea.AltheaApp, genesis althea.GenesisState) althea.GenesisState {
+	suite.app = althea.NewSetup(checkTx, func(app *althea.AltheaApp, genesis simapp.GenesisState) simapp.GenesisState {
 		if suite.enableFeemarket {
 			// setup feemarketGenesis params
 			feemarketGenesis := feemarkettypes.DefaultGenesisState()
 			feemarketGenesis.Params.EnableHeight = 1
 			feemarketGenesis.Params.NoBaseFee = false
+			feemarketGenesis.BlockGas = 30000000
 			// Verify feeMarket genesis
 			err := feemarketGenesis.Validate()
 			suite.Require().NoError(err)
@@ -116,20 +114,6 @@ func (suite *AnteTestSuite) SetupTest() {
 	anteHandler := ante.NewAnteHandler(suite.app.NewAnteHandlerOptions(simapp.EmptyAppOptions{}))
 
 	suite.anteHandler = anteHandler
-
-	// Also make a copy of the old Canto antehandler we were using to ensure that our changes fix the problem
-	// nolint: exhaustruct
-	oldAnteHandler := cantoante.NewAnteHandler(cantoante.HandlerOptions{
-		AccountKeeper:   *suite.app.AccountKeeper,
-		BankKeeper:      suite.app.BankKeeper,
-		EvmKeeper:       suite.app.EvmKeeper,
-		FeegrantKeeper:  nil,
-		IBCKeeper:       suite.app.IbcKeeper,
-		FeeMarketKeeper: *suite.app.FeemarketKeeper,
-		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-		SigGasConsumer:  althea.SigVerificationGasConsumer,
-	})
-	suite.oldAnteHandler = oldAnteHandler
 
 	// Defines the siging method (e.g. homestead, london, etc)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
