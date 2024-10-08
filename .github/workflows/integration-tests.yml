@@ -14,9 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
-          working-directory: integration-tests/
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Build Integration Tests
         run: cd integration_tests && cargo check --all --verbose
   native_token:
@@ -24,211 +25,178 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
-        continue-on-error: true
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
-      - name: Prune cache to keep the size down
-        run: docker builder prune -af && docker system prune -af
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Test the native token features of the EVM
-        run: tests/all-up-test.sh NATIVE_TOKEN
+        run: tests/all-up-test-ci.sh NATIVE_TOKEN
   lockup:
     runs-on: ubuntu-latest
     needs: native_token
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Lock up the chain and ensure funds are not transferrable
-        run: tests/all-up-test.sh LOCKUP
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh LOCKUP
   microtx_fees:
     runs-on: ubuntu-latest
     needs: native_token
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Assert that fees are collected by the microtx module
-        run: tests/all-up-test.sh MICROTX_FEES
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh MICROTX_FEES
   erc20_conversion:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Test the erc20 module's token conversion functionality
-        run: tests/all-up-test.sh ERC20_CONVERSION
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh ERC20_CONVERSION
   liquid_accounts:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Test the microtx module's liquid infrastructure accounts functions
-        run: tests/all-up-test.sh LIQUID_ACCOUNTS
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh LIQUID_ACCOUNTS
   ica_host:
-    needs: native_token
+    #needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Test the interchain accounts host module on Althea-L1
-        run: tests/all-up-test.sh ICA_HOST
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh ICA_HOST
   ONBOARDING_DEFAULT_PARAMS:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Starts the onboarding module with the default params
-        run: tests/all-up-test.sh ONBOARDING_DEFAULT_PARAMS
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh ONBOARDING_DEFAULT_PARAMS
   ONBOARDING_DISABLED_WHITELISTED:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Starts the onboarding module disabled with a whitelisted channel
-        run: tests/all-up-test.sh ONBOARDING_DISABLED_WHITELISTED
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh ONBOARDING_DISABLED_WHITELISTED
   ONBOARDING_DISABLE_AFTER:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Starts the onboarding module permissively, but disables it after a transfer
-        run: tests/all-up-test.sh ONBOARDING_DISABLE_AFTER
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh ONBOARDING_DISABLE_AFTER
   ONBOARDING_DELIST_AFTER:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Starts the onboarding module permissively, but removes the channel from the whilelist after a transfer
-        run: tests/all-up-test.sh ONBOARDING_DELIST_AFTER
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh ONBOARDING_DELIST_AFTER
   DEX:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Performs basic DEX tests
-        run: tests/all-up-test.sh DEX
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh DEX
   DEX_UPGRADE:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Tests the DEX callpath upgrade functionality
-        run: tests/all-up-test.sh DEX_UPGRADE
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh DEX_UPGRADE
   DEX_SAFE_MODE:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Tests the DEX safe mode lockdown functionality
-        run: tests/all-up-test.sh DEX_SAFE_MODE
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh DEX_SAFE_MODE
   DEX_OPS_PROPOSAL:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
+          workspaces: integration_tests/
+          cache-on-failure: true
       - name: Tests the nativedex OpsProposal function
-        run: tests/all-up-test.sh DEX_OPS_PROPOSAL
-        env:
-          NO_IMAGE_BUILD: True
+        run: tests/all-up-test-ci.sh DEX_OPS_PROPOSAL
   UPGRADE:
     needs: native_token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: integration-test-cache-{hash}
-          restore-keys: |
-            integration-test-cache-
-      - name: Tests the nativedex OpsProposal function
-        run: tests/all-up-test.sh DEX_OPS_PROPOSAL
-      - name: Tests the Neutrino
+          workspaces: integration_tests/
+          cache-on-failure: true
+      - name: Tests the Neutrino upgrade
         run: tests/run-upgrade-test.sh v1.4.0
-        env:
-          NO_IMAGE_BUILD: True
