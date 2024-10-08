@@ -7,7 +7,7 @@ NODES=$1
 set +u
 TEST_TYPE=$2
 
-GITHUB_ACTIONS_PATH="/home/runner/work/AltheaFoundation/althea-L1/"
+GITHUB_ACTIONS_PATH="/home/runner/work/althea-L1/althea-L1/"
 DOCKER_PATH="/althea/"
 
 if [[ -d "$GITHUB_ACTIONS_PATH" ]]; then

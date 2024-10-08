@@ -4,7 +4,6 @@
 #[macro_use]
 extern crate log;
 
-use althea_proto::cosmos_sdk_proto::ibc;
 use deep_space::Coin;
 use deep_space::Contact;
 use deep_space::PrivateKey;
@@ -16,7 +15,7 @@ use test_runner::bootstrapping::parse_dex_contract_addresses;
 use test_runner::bootstrapping::parse_ibc_validator_keys;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
 use test_runner::bootstrapping::start_ibc_relayer;
-use test_runner::bootstrapping::{deploy_contracts, get_keys};
+use test_runner::bootstrapping::{deploy_erc20_contracts, get_keys};
 use test_runner::tests::dex::dex_ops_proposal_test;
 use test_runner::tests::dex::dex_safe_mode_test;
 use test_runner::tests::dex::dex_test;
@@ -66,7 +65,7 @@ pub async fn main() {
 
     if should_deploy_contracts() {
         info!("test-runner in contract deploying mode, deploying contracts, then exiting");
-        deploy_contracts(&contact).await;
+        deploy_erc20_contracts(&contact).await;
         info!("Deploying DEX");
         deploy_dex().await;
         info!("Deploying Multicall3");
