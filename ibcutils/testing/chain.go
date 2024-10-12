@@ -19,15 +19,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v4/modules/core/23-commitment/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-	"github.com/cosmos/ibc-go/v4/modules/core/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/ibc-go/v4/testing/mock"
-	"github.com/cosmos/ibc-go/v4/testing/simapp"
-	"github.com/cosmos/ibc-go/v4/testing/simapp/helpers"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
+	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v6/modules/core/exported"
+	"github.com/cosmos/ibc-go/v6/modules/core/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v6/modules/light-clients/07-tendermint/types"
+	"github.com/cosmos/ibc-go/v6/testing/mock"
+	"github.com/cosmos/ibc-go/v6/testing/simapp"
+	"github.com/cosmos/ibc-go/v6/testing/simapp/helpers"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
@@ -555,7 +555,7 @@ func SignAndDeliver(
 	// Simulate a sending a transaction and committing a block
 	// nolint: exhaustruct
 	app.BeginBlock(abci.RequestBeginBlock{Header: header})
-	gInfo, res, err := app.Deliver(txCfg.TxEncoder(), tx)
+	gInfo, res, err := app.SimDeliver(txCfg.TxEncoder(), tx)
 
 	if expPass {
 		require.NoError(t, err)

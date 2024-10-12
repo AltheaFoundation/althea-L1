@@ -7,10 +7,10 @@ package ibctesting
 import (
 	"time"
 
-	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	connectiontypes "github.com/cosmos/ibc-go/v4/modules/core/03-connection/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v4/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/ibc-go/v4/testing/mock"
+	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	connectiontypes "github.com/cosmos/ibc-go/v6/modules/core/03-connection/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v6/modules/light-clients/07-tendermint/types"
+	"github.com/cosmos/ibc-go/v6/testing/mock"
 )
 
 const (

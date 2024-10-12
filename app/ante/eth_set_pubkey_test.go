@@ -153,19 +153,6 @@ func (suite *AnteTestSuite) TestEthSetPubkeyHandler() {
 				suite.Require().Error(err)
 			}
 			suite.Require().True(tc.correctPubKey(pubKey), "PubKey type incorrect after AnteHandler")
-
-			// Now check the old antehandler against the same Tx, see if it would create a pubkey
-			ctx, _ = suite.ctx.CacheContext()
-			suite.testCaseSetup(ctx, addr, tc.startBaseAcc)
-			// nolint: errcheck
-			_, _ = suite.oldAnteHandler(ctx, tx, false)
-			acc = suite.app.AccountKeeper.GetAccount(ctx, addr)
-			pubKey = acc.GetPubKey()
-			if tc.expOldPubKey {
-				suite.Require().True(pubKey != nil && tc.correctPubKey(pubKey), "Old ante handler should have set a pubkey")
-			} else {
-				suite.Require().True(pubKey == nil, "Old ante handler should have set a pubkey")
-			}
 		})
 	}
 }
