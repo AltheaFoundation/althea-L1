@@ -16,9 +16,9 @@ use test_runner::bootstrapping::parse_ibc_validator_keys;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
 use test_runner::bootstrapping::start_ibc_relayer;
 use test_runner::bootstrapping::{deploy_erc20_contracts, get_keys};
+use test_runner::tests::dex::basic_dex_test;
 use test_runner::tests::dex::dex_ops_proposal_test;
 use test_runner::tests::dex::dex_safe_mode_test;
-use test_runner::tests::dex::dex_test;
 use test_runner::tests::dex::dex_upgrade_test;
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
 use test_runner::tests::ica_host::ica_host_happy_path;
@@ -227,7 +227,7 @@ pub async fn main() {
             return;
         } else if test_type == "DEX" {
             info!("Start dex test");
-            dex_test(
+            basic_dex_test(
                 &contact,
                 &web30,
                 keys,

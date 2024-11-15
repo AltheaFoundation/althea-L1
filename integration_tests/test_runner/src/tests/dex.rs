@@ -4,11 +4,12 @@ use std::time::Duration;
 
 use crate::bootstrapping::DexAddresses;
 use crate::dex_utils::{
-    croc_policy_ops_resolution, croc_policy_treasury_resolution, croc_query_curve_tick,
-    croc_query_dex, croc_query_pool_params, croc_query_pool_template, croc_query_range_position,
-    dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode,
-    dex_swap, dex_user_cmd, OpsResolutionArgs, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
-    COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
+    burn_ambient_pos, burn_knockout_pos, burn_ranged_pos, croc_policy_ops_resolution,
+    croc_policy_treasury_resolution, croc_query_curve_tick, croc_query_dex, croc_query_pool_params,
+    croc_query_pool_template, croc_query_range_position, dex_authority_transfer,
+    dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd,
+    mint_ambient_pos, mint_knockout_pos, mint_ranged_pos, OpsResolutionArgs, ProtocolCmdArgs,
+    SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL, OPS_PROPOSAL_TYPE_URL,
@@ -31,8 +32,7 @@ use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
 };
 use clarity::{Address as EthAddress, PrivateKey, Uint256};
 use deep_space::{Coin, Contact};
-use num::ToPrimitive;
-
+use num_traits::ToPrimitive;
 use rand::Rng;
 use web30::client::Web3;
 use web30::jsonrpc::error::Web3Error;
@@ -42,7 +42,7 @@ lazy_static! {
     pub static ref POOL_IDX: Uint256 = 36000u32.into();
 }
 
-pub async fn dex_test(
+pub async fn basic_dex_test(
     contact: &Contact,
     web3: &Web3,
     validator_keys: Vec<ValidatorKeys>,
@@ -50,16 +50,21 @@ pub async fn dex_test(
     erc20_contracts: Vec<EthAddress>,
     dex_contracts: DexAddresses,
 ) {
-    let evm_user = evm_user_keys.first().unwrap();
-    let evm_privkey = evm_user.eth_privkey;
-    let optional_caller = Some(evm_user.eth_address);
-    let croc_query_contract = dex_contracts.query;
-    let dex_result = croc_query_dex(web3, croc_query_contract, optional_caller).await;
-    assert!(dex_result.is_ok(), "Bad result");
-    let dex = dex_result.unwrap();
-    assert_eq!(dex, dex_contracts.dex, "Dex contract address mismatch");
-
-    let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
+    let DexTestParams {
+        evm_user,
+        evm_privkey,
+        caller,
+        query,
+        dex,
+        pool_base,
+        pool_quote,
+    } = setup_params(
+        web3,
+        evm_user_keys,
+        dex_contracts.clone(),
+        erc20_contracts.clone(),
+    )
+    .await;
 
     basic_dex_setup(
         contact,
@@ -67,7 +72,7 @@ pub async fn dex_test(
         dex_contracts.dex,
         dex_contracts.query,
         dex_contracts.policy,
-        evm_user,
+        &evm_user,
         &validator_keys,
         pool_base,
         pool_quote,
@@ -106,53 +111,208 @@ pub async fn dex_test(
     if range_pos.liq > 0u8.into() {
         info!("Range position already exists: {:?}", range_pos);
     } else {
-        let mint_ranged_pos_args = UserCmdArgs {
-            callpath: WARM_PATH, // Warm Path index
-            cmd: vec![
-                Uint256::from(1u8).into(),            // Mint Ranged Liq in base token code
-                pool_base.into(),                     // base
-                pool_quote.into(),                    // quote
-                (*POOL_IDX).into(),                   // poolIdx
-                bid_tick.into(),                      // bid (lower) tick
-                ask_tick.into(),                      // ask (upper) tick
-                (one_eth() * 10240u32.into()).into(), // liq (in liquidity units, which must be a multiple of 1024)
-                (*MIN_PRICE).into(),                  // limitLower
-                (*MAX_PRICE).into(),                  // limitHigher
-                Uint256::from(0u8).into(),            // reserveFlags
-                EthAddress::default().into(),         // lpConduit
-            ],
-        };
-        info!("Minting position in both tokens: {mint_ranged_pos_args:?}");
-        dex_user_cmd(
+        let liq = one_eth() * 10240u32.into();
+        mint_ranged_pos(
             web3,
             dex_contracts.dex,
-            evm_privkey,
-            mint_ranged_pos_args,
-            None,
-            None,
-        )
-        .await
-        .expect("Failed to mint position in pool");
-        let range_pos = croc_query_range_position(
-            web3,
             dex_contracts.query,
-            None,
-            evm_user.eth_address,
+            evm_privkey,
+            &evm_user,
             pool_base,
             pool_quote,
             *POOL_IDX,
             bid_tick,
             ask_tick,
+            liq,
         )
-        .await
-        .expect("Could not query position");
-        assert!(range_pos.liq > 0u8.into());
+        .await;
     }
 
     // Finally, perform many smaller swaps to ensure the pool is working as expected
-    swap_many(web3, dex_contracts, pool_base, pool_quote, evm_user, 30).await;
+    swap_many(web3, dex_contracts, pool_base, pool_quote, &evm_user, 30).await;
 
     info!("Successfully tested DEX");
+}
+
+// Generates some additional positions, minting and burning ambient and ranged and knockout positions
+pub async fn advanced_dex_test(
+    contact: &Contact,
+    web3: &Web3,
+    validator_keys: Vec<ValidatorKeys>,
+    evm_user_keys: Vec<EthermintUserKey>,
+    erc20_contracts: Vec<EthAddress>,
+    dex_contracts: DexAddresses,
+) {
+    let DexTestParams {
+        evm_user,
+        evm_privkey,
+        caller: _,
+        query: _,
+        dex: _,
+        pool_base,
+        pool_quote,
+    } = setup_params(
+        web3,
+        evm_user_keys,
+        dex_contracts.clone(),
+        erc20_contracts.clone(),
+    )
+    .await;
+
+    basic_dex_setup(
+        contact,
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        dex_contracts.policy,
+        &evm_user,
+        &validator_keys,
+        pool_base,
+        pool_quote,
+    )
+    .await;
+
+    let tick = croc_query_curve_tick(
+        web3,
+        dex_contracts.query,
+        Some(evm_user.eth_address),
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+    )
+    .await
+    .expect("Could not get curve tick for pool");
+
+    let bid_tick = tick - 75u8.into();
+    let ask_tick = tick + 75u8.into();
+    let liq = one_eth() * 10240u32.into();
+    mint_ranged_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        bid_tick,
+        ask_tick,
+        liq,
+    )
+    .await;
+    mint_knockout_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        bid_tick,
+        ask_tick,
+        true,
+        0u8,
+        liq,
+        true,
+    )
+    .await;
+    mint_ambient_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        liq,
+    )
+    .await;
+    burn_ranged_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        bid_tick,
+        ask_tick,
+        liq,
+    )
+    .await;
+    burn_knockout_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        bid_tick,
+        ask_tick,
+        true,
+        0u8,
+        liq,
+        true,
+        true,
+        None,
+    )
+    .await;
+    burn_ambient_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        liq,
+    )
+    .await;
+    info!("Successfully tested DEX");
+}
+
+pub struct DexTestParams {
+    pub evm_user: EthermintUserKey,
+    pub evm_privkey: PrivateKey,
+    pub caller: Option<EthAddress>,
+    pub query: EthAddress,
+    pub dex: EthAddress,
+    pub pool_base: EthAddress,
+    pub pool_quote: EthAddress,
+}
+
+pub async fn setup_params(
+    web3: &Web3,
+    evm_user_keys: Vec<EthermintUserKey>,
+    dex_contracts: DexAddresses,
+    erc20_contracts: Vec<EthAddress>,
+) -> DexTestParams {
+    let evm_user = *evm_user_keys.first().unwrap();
+    let evm_privkey = evm_user.eth_privkey;
+    let optional_caller = Some(evm_user.eth_address);
+    let croc_query_contract = dex_contracts.query;
+    let dex_result = croc_query_dex(web3, croc_query_contract, optional_caller).await;
+    assert!(dex_result.is_ok(), "Bad result");
+    let dex = dex_result.unwrap();
+    assert_eq!(dex, dex_contracts.dex, "Dex contract address mismatch");
+
+    let (pool_base, pool_quote) = pool_tokens(erc20_contracts);
+
+    DexTestParams {
+        evm_user,
+        evm_privkey,
+        caller: optional_caller,
+        query: croc_query_contract,
+        dex,
+        pool_base,
+        pool_quote,
+    }
 }
 
 pub async fn dex_upgrade_test(

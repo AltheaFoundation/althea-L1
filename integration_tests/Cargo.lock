@@ -2110,6 +2110,7 @@ dependencies = [
  "lazy_static",
  "log",
  "num",
+ "num-traits",
  "num256",
  "prost",
  "prost-types",
