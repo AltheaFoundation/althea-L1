@@ -1,6 +1,7 @@
 package gasfree_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -86,6 +87,37 @@ func (suite *GasfreeTestSuite) DoSetupTest(t require.TestingT) {
 		return genesis
 	})
 
+	coins := sdk.NewCoins(sdk.NewCoin(altheaconfig.BaseDenom, sdk.NewInt(100000000000000)))
+	genesisState := althea.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
+	b32address := sdk.MustBech32ifyAddressBytes(sdk.GetConfig().GetBech32AccountAddrPrefix(), priv.PubKey().Address().Bytes())
+	balances := []banktypes.Balance{
+		{
+			Address: b32address,
+			Coins:   coins,
+		},
+		{
+			Address: suite.app.AccountKeeper.GetModuleAddress(authtypes.FeeCollectorName).String(),
+			Coins:   coins,
+		},
+	}
+	// Update total supply
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(sdk.NewCoin(altheaconfig.BaseDenom, sdk.NewInt(200000000000000))), []banktypes.Metadata{})
+	genesisState[banktypes.ModuleName] = suite.app.AppCodec().MustMarshalJSON(bankGenesis)
+
+	stateBytes, err := tmjson.MarshalIndent(genesisState, "", " ")
+	require.NoError(t, err)
+
+	// Initialize the chain
+	suite.app.InitChain(
+		// nolint: exhaustruct
+		abci.RequestInitChain{
+			ChainId:         "althea_6633438-1",
+			Validators:      []abci.ValidatorUpdate{},
+			ConsensusParams: DefaultConsensusParams,
+			AppStateBytes:   stateBytes,
+		},
+	)
+
 	// nolint: exhaustruct
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
 		Height:          1,
@@ -139,8 +171,34 @@ func (suite *GasfreeTestSuite) DoSetupTest(t require.TestingT) {
 }
 
 // Setup initializes a new Althea app. A Nop logger is set in AltheaApp.
-func Setup(isCheckTx bool, patchGenesis func(*althea.AltheaApp, simapp.GenesisState) simapp.GenesisState) *althea.AltheaApp {
-	return althea.NewSetup(isCheckTx, patchGenesis)
+func Setup(isCheckTx bool, patchGenesis func(*althea.AltheaApp, althea.GenesisState) althea.GenesisState) *althea.AltheaApp {
+	db := dbm.NewMemDB()
+	app := althea.NewAltheaApp(tmlog.NewNopLogger(), db, nil, true, map[int64]bool{}, althea.DefaultNodeHome, 5, althea.MakeEncodingConfig(), simapp.EmptyAppOptions{})
+	if !isCheckTx {
+		// init chain must be called to stop deliverState from being nil
+		genesisState := althea.NewDefaultGenesisState()
+		if patchGenesis != nil {
+			genesisState = patchGenesis(app, genesisState)
+		}
+
+		stateBytes, err := json.MarshalIndent(genesisState, "", " ")
+		if err != nil {
+			panic(err)
+		}
+
+		// Initialize the chain
+		app.InitChain(
+			// nolint: exhaustruct
+			abci.RequestInitChain{
+				ChainId:         "althea_6633438-1",
+				Validators:      []abci.ValidatorUpdate{},
+				ConsensusParams: DefaultConsensusParams,
+				AppStateBytes:   stateBytes,
+			},
+		)
+	}
+
+	return app
 }
 
 // DefaultConsensusParams defines the default Tendermint consensus params used in
