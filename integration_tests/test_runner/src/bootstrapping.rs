@@ -477,7 +477,7 @@ pub async fn start_ibc_relayer(
     )
     .await;
     if althea_channel.is_err() {
-        info!("No IBC channels exist between althea_417834-1 and ibc-test-1, creating one now...");
+        info!("No IBC channels exist between althea_6633438-1 and ibc-test-1, creating one now...");
         create_ibc_channel(hermes_base());
     }
     thread::spawn(|| {

@@ -53,7 +53,7 @@ type SenderAccount struct {
 }
 
 // ChainIDPrefix defines the default chain ID prefix for althea test chains
-var ChainIDPrefixAlthea = "althea_417834-"
+var ChainIDPrefixAlthea = "althea_6633438-"
 
 // TestChain is a testing struct that wraps a simapp with the last TM Header, the current ABCI
 // header and the validators of the TestChain. It also contains a field called ChainID. This

@@ -100,7 +100,7 @@ func (suite *GasfreeTestSuite) DoSetupTest(t require.TestingT) {
 	suite.app.InitChain(
 		// nolint: exhaustruct
 		abci.RequestInitChain{
-			ChainId:         "althea_417834-1",
+			ChainId:         "althea_6633438-1",
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: DefaultConsensusParams,
 			AppStateBytes:   stateBytes,
@@ -110,7 +110,7 @@ func (suite *GasfreeTestSuite) DoSetupTest(t require.TestingT) {
 	// nolint: exhaustruct
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
 		Height:          1,
-		ChainID:         "althea_417834-1",
+		ChainID:         "althea_6633438-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: consAddress.Bytes(),
 		// nolint: exhaustruct
@@ -179,7 +179,7 @@ func Setup(isCheckTx bool, patchGenesis func(*althea.AltheaApp, althea.GenesisSt
 		app.InitChain(
 			// nolint: exhaustruct
 			abci.RequestInitChain{
-				ChainId:         "althea_417834-1",
+				ChainId:         "althea_6633438-1",
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,

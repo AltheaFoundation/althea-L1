@@ -129,7 +129,7 @@ pub fn get_test_token_name() -> String {
 
 /// Returns the chain-id of the althea instance running, see ALTHEA CHAIN CONSTANTS above
 pub fn get_chain_id() -> String {
-    "althea_417834-1".to_string()
+    "althea_6633438-1".to_string()
 }
 
 /// Returns the chain-id of the gaiad instance running, see IBC CHAIN CONSTANTS above
