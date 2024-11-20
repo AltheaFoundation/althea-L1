@@ -192,7 +192,6 @@ pub async fn deploy_multicall() {
                 path[0],
                 &format!("--eth-node={}", ETH_NODE.as_str()),
                 &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
-                &format!("--artifacts-root={}", path[1]),
             ])
             .current_dir(path[1])
             .output()
