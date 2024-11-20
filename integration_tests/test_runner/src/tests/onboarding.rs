@@ -186,7 +186,7 @@ pub async fn onboarding_test(
         Some(channel_id_timeout),
     )
     .await
-    .expect("Could not find ibc-test-1 <-> althea_417834-1 channel");
+    .expect("Could not find ibc-test-1 <-> althea_6633438-1 channel");
 
     let TestSetupResults {
         erc20_denom_on_ibc,

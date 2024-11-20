@@ -70,7 +70,7 @@ port = 3001
 # A chains section includes parameters related to a chain and the full node to which
 # the relayer can send transactions and queries.
 [[chains]]
-id = 'althea_417834-1'
+id = 'althea_6633438-1'
 # Specify the RPC address and port where the chain RPC server listens on. Required
 rpc_addr = 'http://localhost:26657'
 # Specify the GRPC address and port where the chain GRPC server listens on. Required
