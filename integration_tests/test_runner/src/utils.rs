@@ -104,6 +104,14 @@ pub fn should_deploy_contracts() -> bool {
     }
 }
 
+pub fn parse_contracts_root() -> Result<String, env::VarError> {
+    env::var("CONTRACTS_ROOT")
+}
+
+pub fn parse_dex_contracts_root() -> Result<String, env::VarError> {
+    env::var("DEX_CONTRACTS_ROOT")
+}
+
 /// Gets the standard non-token fee for the testnet. We deploy the test chain with STAKE
 /// and FOOTOKEN balances by default, one footoken is sufficient for any Cosmos tx fee except
 /// fees for send_to_eth messages which have to be of the same bridged denom so that the relayers
