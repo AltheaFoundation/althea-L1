@@ -1,8 +1,8 @@
 use crate::ibc_utils::get_channel;
 use crate::utils::{
-    get_chain_id, get_deposit, get_ibc_chain_id, ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC,
-    HERMES_CONFIG, IBC_RELAYER_ADDRESS, IBC_STAKING_TOKEN, OPERATION_TIMEOUT,
-    RELAYER_MNEMONIC_FILE,
+    get_chain_id, get_deposit, get_ibc_chain_id, parse_contracts_root, parse_dex_contracts_root,
+    ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC, HERMES_CONFIG, IBC_RELAYER_ADDRESS,
+    IBC_STAKING_TOKEN, OPERATION_TIMEOUT, RELAYER_MNEMONIC_FILE,
 };
 use crate::utils::{
     send_erc20_bulk, EthermintUserKey, ValidatorKeys, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT,
@@ -96,10 +96,6 @@ pub async fn deploy_erc20_contracts(contact: &Contact) {
     // yet produced the next block after submitting each eth address
     contact.wait_for_next_block(TOTAL_TIMEOUT).await.unwrap();
 
-    // these are the possible paths where we could find the contract deployer
-    // and the gravity contract itself, feel free to expand this if it makes your
-    // deployments more straightforward.
-
     // the default unmoved locations for the Gravity repo
     const A: [&str; 2] = ["/althea/solidity/contract-deployer.ts", "/althea/solidity/"];
     // the default unmoved locations for Github Actions
@@ -107,18 +103,33 @@ pub async fn deploy_erc20_contracts(contact: &Contact) {
         "/home/runner/work/althea-L1/althea-L1/solidity/contract-deployer.ts",
         "/home/runner/work/althea-L1/althea-L1/solidity/",
     ];
-    let output = match return_existing(vec![A, B]) {
-        Some(path) => Command::new("npx")
-            .args([
-                "ts-node",
-                path[0],
-                &format!("--eth-node={}", ETH_NODE.as_str()),
-                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
-                &format!("--artifacts-root={}", path[1]),
-            ])
-            .current_dir(path[1])
-            .output()
-            .expect("Failed to deploy contracts!"),
+
+    // the user specified contracts root
+    let contracts_root = parse_contracts_root();
+    let paths = if let Ok(root) = contracts_root {
+        Some(vec![
+            format!("{}/contract-deployer.ts", root),
+            format!("{}/", root),
+        ])
+    } else {
+        return_existing(vec![A, B]).map(|path| vec![path[0].to_string(), path[1].to_string()])
+    };
+
+    let output = match paths {
+        Some(path) => {
+            info!("Deploying contracts from {:?}", path);
+            Command::new("npx")
+                .args([
+                    "ts-node",
+                    &path[0],
+                    &format!("--eth-node={}", ETH_NODE.as_str()),
+                    &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                    &format!("--artifacts-root={}", path[1]),
+                ])
+                .current_dir(&path[1])
+                .output()
+                .expect("Failed to deploy contracts!")
+        }
         None => {
             panic!("Could not find json contract artifacts in any known location!")
         }
@@ -147,20 +158,34 @@ pub async fn deploy_dex() {
         "/home/runner/work/althea-L1/althea-L1/solidity-dex/misc/scripts/dex-deployer.ts",
         "/home/runner/work/althea-L1/althea-L1/solidity-dex/artifacts/contracts/",
     ];
-    let output = match return_existing(vec![A, B]) {
-        Some(path) => Command::new("npx")
-            .args([
-                "ts-node",
-                path[0],
-                &format!("--eth-node={}", ETH_NODE.as_str()),
-                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
-                &format!("--artifacts-root={}", path[1]),
-            ])
-            .current_dir(path[1])
-            .output()
-            .expect("Failed to deploy contracts!"),
+    // the user specified contracts root
+    let contracts_root = parse_dex_contracts_root();
+    let paths = if let Ok(root) = contracts_root {
+        Some(vec![
+            format!("{}/misc/scripts/dex-deployer.ts", root),
+            format!("{}/artifacts/contracts/", root),
+        ])
+    } else {
+        return_existing(vec![A, B]).map(|path| vec![path[0].to_string(), path[1].to_string()])
+    };
+
+    let output = match paths {
+        Some(path) => {
+            info!("Deploying contracts from {:?}", path);
+            Command::new("npx")
+                .args([
+                    "ts-node",
+                    &path[0],
+                    &format!("--eth-node={}", ETH_NODE.as_str()),
+                    &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                    &format!("--artifacts-root={}", path[1]),
+                ])
+                .current_dir(&path[1])
+                .output()
+                .expect("Failed to deploy contracts!")
+        }
         None => {
-            panic!("Could not find dex artifacts in any known location!")
+            panic!("Could not find json contract artifacts in any known location!")
         }
     };
     info!("stdout: {}", String::from_utf8_lossy(&output.stdout));
@@ -184,19 +209,32 @@ pub async fn deploy_multicall() {
         "/home/runner/work/althea-L1/althea-L1/solidity-dex/misc/scripts/multicall-deployer.ts",
         "/home/runner/work/althea-L1/althea-L1/solidity-dex/artifacts/contracts/periphery/",
     ];
-    let paths = vec![A, B];
-    let output = match return_existing(paths) {
-        Some(path) => Command::new("npx")
-            .args([
-                "ts-node",
-                path[0],
-                &format!("--eth-node={}", ETH_NODE.as_str()),
-                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
-                &format!("--artifacts-root={}", path[1]),
-            ])
-            .current_dir(path[1])
-            .output()
-            .expect("Failed to deploy contracts!"),
+    // the user specified contracts root
+    let contracts_root = parse_dex_contracts_root();
+    let paths = if let Ok(root) = contracts_root {
+        Some(vec![
+            format!("{}/misc/scripts/multicall-deployer.ts", root),
+            format!("{}/artifacts/contracts/periphery/", root),
+        ])
+    } else {
+        return_existing(vec![A, B]).map(|path| vec![path[0].to_string(), path[1].to_string()])
+    };
+
+    let output = match paths {
+        Some(path) => {
+            info!("Deploying contracts from {:?}", path);
+            Command::new("npx")
+                .args([
+                    "ts-node",
+                    &path[0],
+                    &format!("--eth-node={}", ETH_NODE.as_str()),
+                    &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                    &format!("--artifacts-root={}", path[1]),
+                ])
+                .current_dir(&path[1])
+                .output()
+                .expect("Failed to deploy contracts!")
+        }
         None => {
             panic!("Could not find json contract artifacts in any known location!")
         }
