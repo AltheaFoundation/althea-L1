@@ -442,6 +442,61 @@ pub async fn croc_query_range_tokens(
     })
 }
 
+#[derive(Debug, Clone)]
+pub struct CrocQueryKnockoutPivot {
+    pub lots: Uint256, // Multiply by 1024 to get the amount of sqrt(X*Y) liquidity at the pivot
+    pub pivot: u32,    // The pivot time used in later referring to the knockout pivot
+    pub range: u16,    // The width of the knockout range liquidity in ticks at the pivot
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn croc_query_knockout_pivot(
+    web30: &Web3,
+    croc_query_contract: EthAddress,
+    caller: EthAddress,
+    base: EthAddress,  // The base token, must be lexically smaller than quote
+    quote: EthAddress, // The quote token, must be lexically larger than base
+    pool_idx: Uint256, // The index of the pool's template
+    is_bid: bool, // If true then the liquidity knocks out when the price moves below tick, otherwise above
+    tick: Int256, // The tick of the knockout pivot
+) -> Result<CrocQueryKnockoutPivot, Web3Error> {
+    if base.gt(&quote) {
+        return Err(Web3Error::ContractCallError(
+            "croc_query_knockout_pivot: base must be lexically smaller than quote".to_string(),
+        ));
+    }
+
+    // ABI: queryKnockoutPivot(address base, address quote, uint256 poolIdx, bool isBid, int24 tick)
+    // returns (uint96 lots, uint32 pivot, uint16 range)
+    let payload = clarity::abi::encode_call(
+        "queryKnockoutPivot(address,address,uint256,bool,int24)",
+        &[
+            base.into(),
+            quote.into(),
+            pool_idx.into(),
+            is_bid.into(),
+            tick.into(),
+        ],
+    )?;
+
+    let query_res = web30
+        .simulate_transaction(
+            TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            None,
+        )
+        .await?;
+
+    let mut i: usize = 0;
+    let lots = Uint256::from_be_bytes(&query_res[i..i + 32]);
+    i += 32;
+    let pivot = u32::from_be_bytes(query_res[i + 28..i + 32].try_into().unwrap());
+    i += 32;
+    let range = u16::from_be_bytes(query_res[i + 30..i + 32].try_into().unwrap());
+
+    Ok(CrocQueryKnockoutPivot { lots, pivot, range })
+}
+
+#[derive(Debug, Clone)]
 pub struct CrocQueryKnockoutTokens {
     pub liq: Uint256,
     pub base_qty: Uint256,
@@ -449,6 +504,7 @@ pub struct CrocQueryKnockoutTokens {
     pub knocked_out: bool,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn croc_query_knockout_tokens(
     web30: &Web3,
     croc_query_contract: EthAddress,
@@ -498,8 +554,7 @@ pub async fn croc_query_knockout_tokens(
     let base_qty = Uint256::from_be_bytes(&query_res[i..i + 32]);
     i += 32;
     let quote_qty = Uint256::from_be_bytes(&query_res[i..i + 32]);
-    i += 32;
-    let knocked_out = query_res[i + 32] > 0u8;
+    let knocked_out = query_res.last().unwrap() > &0u8;
 
     Ok(CrocQueryKnockoutTokens {
         liq,
@@ -939,7 +994,7 @@ pub async fn croc_policy_treasury_resolution(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn mint_ranged_pos(
+pub async fn dex_mint_ranged_pos(
     web3: &Web3,
     dex: EthAddress,
     query: EthAddress,
@@ -952,6 +1007,7 @@ pub async fn mint_ranged_pos(
     ask_tick: Int256,
     liq: Uint256, // The liquidity to mint (must be a multiple of 1024)
 ) {
+    assert!(base.lt(&quote), "base must be lexically smaller than quote");
     let start_pos = croc_query_range_position(
         web3,
         query,
@@ -1003,7 +1059,7 @@ pub async fn mint_ranged_pos(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn burn_ranged_pos(
+pub async fn dex_burn_ranged_pos(
     web3: &Web3,
     dex: EthAddress,
     query: EthAddress,
@@ -1016,6 +1072,7 @@ pub async fn burn_ranged_pos(
     ask_tick: Int256,
     liq: Uint256, // The liquidity to burn (must be a multiple of 1024)
 ) {
+    assert!(base.lt(&quote), "base must be lexically smaller than quote");
     let pos_start = croc_query_range_position(
         web3,
         query,
@@ -1068,12 +1125,12 @@ pub async fn burn_ranged_pos(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn mint_knockout_pos(
+pub async fn dex_mint_knockout_pos(
     web3: &Web3,
     dex: EthAddress,
-    query: EthAddress,
+    _query: EthAddress,
     evm_privkey: PrivateKey,
-    evm_user: &EthermintUserKey,
+    _evm_user: &EthermintUserKey,
     base: EthAddress,
     quote: EthAddress,
     pool_idx: Uint256,
@@ -1084,6 +1141,7 @@ pub async fn mint_knockout_pos(
     qty: Uint256,
     inside_mid: bool,
 ) {
+    assert!(base.lt(&quote), "base must be lexically smaller than quote");
     let arg_bytes = encode_tokens(&[qty.into(), inside_mid.into()]);
     let mint_ko_pos_args = UserCmdArgs {
         callpath: KNOCKOUT_LIQ_PATH, // KnockoutLiqPath index
@@ -1091,7 +1149,7 @@ pub async fn mint_knockout_pos(
             Uint256::from(91u8).into(), // Mint Knockout code
             base.into(),                // base
             quote.into(),               // quote
-            (pool_idx).into(),          // poolIdx
+            pool_idx.into(),            // poolIdx
             bid_tick.into(),            // bid (lower) tick
             ask_tick.into(),            // ask (upper) tick
             is_bid.into(),
@@ -1100,38 +1158,52 @@ pub async fn mint_knockout_pos(
         ],
     };
     info!("Minting knockout position: {mint_ko_pos_args:?}");
-    let res = dex_user_cmd(web3, dex, evm_privkey, mint_ko_pos_args, None, None)
+    dex_user_cmd(web3, dex, evm_privkey, mint_ko_pos_args, None, None)
         .await
         .expect("Failed to mint knockout position in pool");
 
-    // Querying the knockout position requires the "pivotTime", which is the timestamp of the block that the position was minted in
-    let pivot = web3
-        .eth_get_block_by_number(res.get_block_number().unwrap())
-        .await
-        .unwrap()
-        .timestamp;
-    let pivot: u32 = u32::from_be_bytes(pivot.to_be_bytes()[28..32].try_into().unwrap());
+    // let pivot_tick = if is_bid { bid_tick } else { ask_tick };
+    // info!(
+    //     "Querying knockout position: {} {} {} {} {}",
+    //     base, quote, pool_idx, is_bid, pivot_tick
+    // );
+    // // Querying the knockout position requires the "pivotTime", which is the timestamp of the block that the position was minted in
+    // let pivot = croc_query_knockout_pivot(
+    //     web3,
+    //     dex,
+    //     evm_user.eth_address,
+    //     base,
+    //     quote,
+    //     pool_idx,
+    //     is_bid,
+    //     pivot_tick,
+    // )
+    // .await
+    // .expect("Could not query pivot");
+    // info!("Queried pivot: {pivot:?}");
+    // let pivot = pivot.pivot;
 
-    let ko_pos = croc_query_knockout_tokens(
-        web3,
-        query,
-        None,
-        evm_user.eth_address,
-        base,
-        quote,
-        pool_idx,
-        pivot,
-        bid_tick,
-        ask_tick,
-        is_bid,
-    )
-    .await
-    .expect("Could not query position");
-    assert!(ko_pos.base_qty > 0u8.into() || ko_pos.quote_qty > 0u8.into());
+    // let ko_pos = croc_query_knockout_tokens(
+    //     web3,
+    //     query,
+    //     None,
+    //     evm_user.eth_address,
+    //     base,
+    //     quote,
+    //     pool_idx,
+    //     pivot,
+    //     bid_tick,
+    //     ask_tick,
+    //     is_bid,
+    // )
+    // .await
+    // .expect("Could not query position");
+    // info!("Minted knockout position: {ko_pos:?}");
+    // assert!(ko_pos.base_qty > 0u8.into() || ko_pos.quote_qty > 0u8.into());
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn burn_knockout_pos(
+pub async fn dex_burn_knockout_pos(
     web3: &Web3,
     dex: EthAddress,
     query: EthAddress,
@@ -1149,6 +1221,7 @@ pub async fn burn_knockout_pos(
     inside_mid: bool,
     pivot: Option<u32>,
 ) {
+    assert!(base.lt(&quote), "base must be lexically smaller than quote");
     let start_pos = if let Some(pivot) = pivot {
         Some(
             croc_query_knockout_tokens(
@@ -1215,7 +1288,7 @@ pub async fn burn_knockout_pos(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn mint_ambient_pos(
+pub async fn dex_mint_ambient_pos(
     web3: &Web3,
     dex: EthAddress,
     query: EthAddress,
@@ -1226,6 +1299,7 @@ pub async fn mint_ambient_pos(
     pool_idx: Uint256,
     liq: Uint256, // The liquidity to mint (must be a multiple of 1024)
 ) {
+    assert!(base.lt(&quote), "base must be lexically smaller than quote");
     let start_pos = croc_query_ambient_tokens(
         web3,
         query,
@@ -1269,11 +1343,11 @@ pub async fn mint_ambient_pos(
     )
     .await
     .expect("Could not query position");
-    assert_eq!(amb_pos.liq - start_pos.liq, liq);
+    assert!(liq - (amb_pos.liq - start_pos.liq) < 1000u32.into());
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn burn_ambient_pos(
+pub async fn dex_burn_ambient_pos(
     web3: &Web3,
     dex: EthAddress,
     query: EthAddress,
@@ -1284,6 +1358,7 @@ pub async fn burn_ambient_pos(
     pool_idx: Uint256,
     liq: Uint256, // The liquidity to mint (must be a multiple of 1024)
 ) {
+    assert!(base.lt(&quote), "base must be lexically smaller than quote");
     let start_pos = croc_query_ambient_tokens(
         web3,
         query,

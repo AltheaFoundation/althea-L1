@@ -294,6 +294,7 @@ fn return_existing(paths: Vec<[&str; 2]>) -> Option<[&str; 2]> {
 pub struct BootstrapContractAddresses {
     pub erc20_addresses: Vec<EthAddress>,
     pub erc721_addresses: Vec<EthAddress>,
+    pub weth_address: EthAddress,
     pub uniswap_liquidity_address: Option<EthAddress>,
 }
 
@@ -308,6 +309,7 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
     file.read_to_string(&mut output).unwrap();
     let mut erc20_addresses = Vec::new();
     let mut erc721_addresses = Vec::new();
+    let mut weth_address = EthAddress::default();
     let mut uniswap_liquidity = None;
     for line in output.lines() {
         if line.contains("ERC20 deployed at Address -") {
@@ -318,6 +320,9 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
             let address_string = line.split('-').last().unwrap();
             erc721_addresses.push(address_string.trim().parse().unwrap());
             info!("found erc721 address it is {}", address_string);
+        } else if line.contains("WETH deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            weth_address = address_string.trim().parse().unwrap();
         } else if line.contains("Uniswap Liquidity test deployed at Address - ") {
             let address_string = line.split('-').last().unwrap();
             uniswap_liquidity = Some(address_string.trim().parse().unwrap());
@@ -326,6 +331,7 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
     BootstrapContractAddresses {
         erc20_addresses,
         erc721_addresses,
+        weth_address,
         uniswap_liquidity_address: uniswap_liquidity,
     }
 }
