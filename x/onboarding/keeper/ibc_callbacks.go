@@ -7,13 +7,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
-
-	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	"github.com/AltheaFoundation/althea-L1/ibcutils"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
 	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
