@@ -115,8 +115,8 @@ func (suite *AnteTestSuite) TestCosmosAnteHandlerMempoolFeeBypass() {
 	// nolint: exhaustruct
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(bothGasfreeCtx, []string{sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}), sdk.MsgTypeURL(&banktypes.MsgSend{})})
 
-	// Expect the error from the mempool fee decorator to contain something like "insufficient fees; got: x required: provided fee < minimum global feey"
-	suite.Require().NoError(runBypassTest(suite, "insufficient fees; got:", gasfreeMicrotxCtx, gasfreeSendCtx, noGasfreeCtx, bothGasfreeCtx, msgMicrotxTx, msgSendTx, bothTx))
+	// Expect the error from the mempool fee decorator to contain something like "insufficient fees; got: x required: provided fee < minimum global fee"
+	suite.Require().NoError(runBypassTest(suite, "provided fee < minimum global fee", gasfreeMicrotxCtx, gasfreeSendCtx, noGasfreeCtx, bothGasfreeCtx, msgMicrotxTx, msgSendTx, bothTx))
 }
 
 // Checks that the MinGasPrices antedecorator is bypassed for applicable txs

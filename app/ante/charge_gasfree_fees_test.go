@@ -192,6 +192,6 @@ func (suite *AnteTestSuite) TestChargeGasfreeFeesDecorator() {
 	// nolint: exhaustruct
 	suite.app.GasfreeKeeper.SetGasFreeMessageTypes(bothGasfreeCtx, []string{sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}), sdk.MsgTypeURL(&banktypes.MsgSend{})})
 
-	// Expect the error from the mempool fee decorator to contain something like "insufficient fees; got: x required: provided fee < minimum global feey"
+	// Expect the error from the mempool fee decorator to contain something like "insufficient fees; got: x required: provided fee < minimum global fee y"
 	suite.Require().NoError(runGasfreeTests(suite, gasfreeMicrotxCtx, gasfreeSendCtx, noGasfreeCtx, bothGasfreeCtx, msgMicrotxTx, msgSendTx, bothTx, addr, testDenom))
 }

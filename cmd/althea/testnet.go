@@ -25,6 +25,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/server"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
+	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -166,7 +167,7 @@ func InitTestnet(
 		memo := fmt.Sprintf("%s@%s:26656", nodeIDs[i], ip)
 		genFiles = append(genFiles, nodeConfig.GenesisFile())
 
-		kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, nodeDir, inBuf)
+		kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, nodeDir, inBuf, clientCtx.Codec)
 		if err != nil {
 			return err
 		}
@@ -177,7 +178,7 @@ func InitTestnet(
 			return err
 		}
 
-		addr, secret, err := server.GenerateSaveCoinKey(kb, nodeDirName, true, algo)
+		addr, secret, err := testutil.GenerateSaveCoinKey(kb, nodeDirName, "", true, algo)
 		if err != nil {
 			_ = os.RemoveAll(outputDir)
 			return err
@@ -269,11 +270,11 @@ func initGenFiles(
 	genFiles []string, numValidators int,
 ) error {
 
-	appGenState := mbm.DefaultGenesis(clientCtx.JSONCodec)
+	appGenState := mbm.DefaultGenesis(clientCtx.Codec)
 
 	// set the accounts in the genesis state
 	var authGenState authtypes.GenesisState
-	clientCtx.JSONCodec.MustUnmarshalJSON(appGenState[authtypes.ModuleName], &authGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[authtypes.ModuleName], &authGenState)
 
 	accounts, err := authtypes.PackAccounts(genAccounts)
 	if err != nil {
@@ -281,14 +282,14 @@ func initGenFiles(
 	}
 
 	authGenState.Accounts = accounts
-	appGenState[authtypes.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&authGenState)
+	appGenState[authtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&authGenState)
 
 	// set the balances in the genesis state
 	var bankGenState banktypes.GenesisState
-	clientCtx.JSONCodec.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
 
 	bankGenState.Balances = genBalances
-	appGenState[banktypes.ModuleName] = clientCtx.JSONCodec.MustMarshalJSON(&bankGenState)
+	appGenState[banktypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")
 	if err != nil {
@@ -335,7 +336,7 @@ func collectGenFiles(
 			return err
 		}
 
-		nodeAppState, err := genutil.GenAppStateFromConfig(clientCtx.JSONCodec, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator)
+		nodeAppState, err := genutil.GenAppStateFromConfig(clientCtx.Codec, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator)
 		if err != nil {
 			return err
 		}

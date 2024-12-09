@@ -6,9 +6,10 @@ use crate::bootstrapping::DexAddresses;
 use crate::dex_utils::{
     croc_policy_ops_resolution, croc_policy_treasury_resolution, croc_query_curve_tick,
     croc_query_dex, croc_query_pool_params, croc_query_pool_template, croc_query_range_position,
-    dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode,
-    dex_swap, dex_user_cmd, OpsResolutionArgs, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
-    COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
+    dex_authority_transfer, dex_burn_ambient_pos, dex_burn_knockout_pos, dex_burn_ranged_pos,
+    dex_direct_protocol_cmd, dex_mint_ambient_pos, dex_mint_knockout_pos, dex_mint_ranged_pos,
+    dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, OpsResolutionArgs,
+    ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL, OPS_PROPOSAL_TYPE_URL,
@@ -31,9 +32,9 @@ use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
 };
 use clarity::{Address as EthAddress, PrivateKey, Uint256};
 use deep_space::{Coin, Contact};
-use num::ToPrimitive;
-
+use num_traits::ToPrimitive;
 use rand::Rng;
+use tokio::time::sleep;
 use web30::client::Web3;
 use web30::jsonrpc::error::Web3Error;
 use web30::types::TransactionResponse;
@@ -42,44 +43,99 @@ lazy_static! {
     pub static ref POOL_IDX: Uint256 = 36000u32.into();
 }
 
-pub async fn dex_test(
+pub async fn basic_dex_test(
     contact: &Contact,
     web3: &Web3,
     validator_keys: Vec<ValidatorKeys>,
     evm_user_keys: Vec<EthermintUserKey>,
     erc20_contracts: Vec<EthAddress>,
     dex_contracts: DexAddresses,
+    walthea: EthAddress,
 ) {
-    let evm_user = evm_user_keys.first().unwrap();
-    let evm_privkey = evm_user.eth_privkey;
-    let optional_caller = Some(evm_user.eth_address);
-    let croc_query_contract = dex_contracts.query;
-    let dex_result = croc_query_dex(web3, croc_query_contract, optional_caller).await;
-    assert!(dex_result.is_ok(), "Bad result");
-    let dex = dex_result.unwrap();
-    assert_eq!(dex, dex_contracts.dex, "Dex contract address mismatch");
-
-    let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
+    let DexTestParams {
+        evm_user,
+        caller: _,
+        query,
+        dex,
+        pool_base,
+        pool_quote,
+    } = setup_params(
+        web3,
+        evm_user_keys,
+        dex_contracts.clone(),
+        erc20_contracts.clone(),
+    )
+    .await;
 
     basic_dex_setup(
         contact,
         web3,
-        dex_contracts.dex,
-        dex_contracts.query,
+        dex,
+        query,
         dex_contracts.policy,
-        evm_user,
+        &evm_user,
         &validator_keys,
         pool_base,
         pool_quote,
+        walthea,
     )
     .await;
+    let (a, b) = if walthea < pool_base {
+        (walthea, pool_base)
+    } else {
+        (pool_base, walthea)
+    };
+    populate_pool_basic(web3, &dex_contracts, &evm_user, a, b).await;
 
+    populate_pool_basic(web3, &dex_contracts, &evm_user, pool_base, pool_quote).await;
+
+    info!("Successfully tested DEX");
+}
+
+pub async fn populate_pool_basic(
+    web3: &Web3,
+    dex_contracts: &DexAddresses,
+    evm_user: &EthermintUserKey,
+    base: EthAddress,
+    quote: EthAddress,
+) {
+    if base != EthAddress::default()
+        && !web3
+            .check_erc20_approved(base, evm_user.eth_address, dex_contracts.dex)
+            .await
+            .expect("Unable to check erc20 approval")
+    {
+        web3.approve_erc20_transfers(
+            base,
+            evm_user.eth_privkey,
+            dex_contracts.dex,
+            Some(OPERATION_TIMEOUT),
+            vec![],
+        )
+        .await
+        .expect("Unable to approve erc20");
+    }
+    if !web3
+        .check_erc20_approved(quote, evm_user.eth_address, dex_contracts.dex)
+        .await
+        .expect("Unable to check erc20 approval")
+    {
+        web3.approve_erc20_transfers(
+            quote,
+            evm_user.eth_privkey,
+            dex_contracts.dex,
+            Some(OPERATION_TIMEOUT),
+            vec![],
+        )
+        .await
+        .expect("Unable to approve erc20");
+    }
     let tick = croc_query_curve_tick(
         web3,
         dex_contracts.query,
         Some(evm_user.eth_address),
-        pool_base,
-        pool_quote,
+        base,
+        quote,
         *POOL_IDX,
     )
     .await
@@ -95,8 +151,8 @@ pub async fn dex_test(
         dex_contracts.query,
         None,
         evm_user.eth_address,
-        pool_base,
-        pool_quote,
+        base,
+        quote,
         *POOL_IDX,
         bid_tick,
         ask_tick,
@@ -106,53 +162,239 @@ pub async fn dex_test(
     if range_pos.liq > 0u8.into() {
         info!("Range position already exists: {:?}", range_pos);
     } else {
-        let mint_ranged_pos_args = UserCmdArgs {
-            callpath: WARM_PATH, // Warm Path index
-            cmd: vec![
-                Uint256::from(1u8).into(),            // Mint Ranged Liq in base token code
-                pool_base.into(),                     // base
-                pool_quote.into(),                    // quote
-                (*POOL_IDX).into(),                   // poolIdx
-                bid_tick.into(),                      // bid (lower) tick
-                ask_tick.into(),                      // ask (upper) tick
-                (one_eth() * 10240u32.into()).into(), // liq (in liquidity units, which must be a multiple of 1024)
-                (*MIN_PRICE).into(),                  // limitLower
-                (*MAX_PRICE).into(),                  // limitHigher
-                Uint256::from(0u8).into(),            // reserveFlags
-                EthAddress::default().into(),         // lpConduit
-            ],
-        };
-        info!("Minting position in both tokens: {mint_ranged_pos_args:?}");
-        dex_user_cmd(
+        let liq: Uint256 = one_atom() * 1024000000u32.into();
+        let bb = web3
+            .get_erc20_balance(base, evm_user.eth_address)
+            .await
+            .unwrap();
+        let qb = web3
+            .get_erc20_balance(quote, evm_user.eth_address)
+            .await
+            .unwrap();
+        let ba = web3
+            .check_erc20_approved(base, evm_user.eth_address, dex_contracts.dex)
+            .await
+            .unwrap();
+        let qa = web3
+            .check_erc20_approved(quote, evm_user.eth_address, dex_contracts.dex)
+            .await
+            .unwrap();
+        info!("Before minting ranged position: base balance: {}, quote balance: {}, base approved: {}, quote approved: {}", bb, qb, ba, qa);
+        dex_mint_ranged_pos(
             web3,
             dex_contracts.dex,
-            evm_privkey,
-            mint_ranged_pos_args,
-            None,
-            None,
-        )
-        .await
-        .expect("Failed to mint position in pool");
-        let range_pos = croc_query_range_position(
-            web3,
             dex_contracts.query,
-            None,
-            evm_user.eth_address,
-            pool_base,
-            pool_quote,
+            evm_user.eth_privkey,
+            evm_user,
+            base,
+            quote,
             *POOL_IDX,
             bid_tick,
             ask_tick,
+            liq,
         )
-        .await
-        .expect("Could not query position");
-        assert!(range_pos.liq > 0u8.into());
+        .await;
     }
 
     // Finally, perform many smaller swaps to ensure the pool is working as expected
-    swap_many(web3, dex_contracts, pool_base, pool_quote, evm_user, 30).await;
+    swap_many(web3, dex_contracts, base, quote, evm_user, 30).await;
+}
 
+// Generates some additional positions, minting and burning ambient and ranged and knockout positions
+pub async fn advanced_dex_test(
+    contact: &Contact,
+    web3: &Web3,
+    validator_keys: Vec<ValidatorKeys>,
+    evm_user_keys: Vec<EthermintUserKey>,
+    erc20_contracts: Vec<EthAddress>,
+    dex_contracts: DexAddresses,
+    walthea: EthAddress,
+) {
+    let DexTestParams {
+        evm_user,
+        caller: _,
+        query: _,
+        dex: _,
+        pool_base,
+        pool_quote,
+    } = setup_params(
+        web3,
+        evm_user_keys,
+        dex_contracts.clone(),
+        erc20_contracts.clone(),
+    )
+    .await;
+
+    basic_dex_setup(
+        contact,
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        dex_contracts.policy,
+        &evm_user,
+        &validator_keys,
+        pool_base,
+        pool_quote,
+        walthea,
+    )
+    .await;
+
+    let tick = croc_query_curve_tick(
+        web3,
+        dex_contracts.query,
+        Some(evm_user.eth_address),
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+    )
+    .await
+    .expect("Could not get curve tick for pool");
+
+    let ranged_bid_tick = tick - 32u8.into();
+    let ranged_ask_tick = tick + 32u8.into();
+    let liq = one_eth() * 10240u32.into();
+
+    dex_mint_ambient_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user.eth_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        (1024u32 * 10000u32).into(),
+    )
+    .await;
+    dex_mint_ranged_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user.eth_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        ranged_bid_tick,
+        ranged_ask_tick,
+        liq / 4u8.into(),
+    )
+    .await;
+
+    let tick = croc_query_curve_tick(
+        web3,
+        dex_contracts.query,
+        Some(evm_user.eth_address),
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+    )
+    .await
+    .expect("Could not get curve tick for pool");
+    let ko_bid_tick = tick - 32u32.into();
+    let ko_ask_tick = tick + 32u32.into();
+
+    dex_mint_knockout_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user.eth_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        ko_bid_tick,
+        ko_ask_tick,
+        true,
+        0u8,
+        (1024u32 * 10000u32).into(),
+        true,
+    )
+    .await;
+
+    sleep(Duration::from_secs(15)).await;
+
+    dex_burn_ranged_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user.eth_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        ranged_bid_tick,
+        ranged_ask_tick,
+        liq / 4u8.into(),
+    )
+    .await;
+    dex_burn_knockout_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user.eth_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        ko_bid_tick,
+        ko_ask_tick,
+        true,
+        0u8,
+        (1024u32 * 10000u32).into(),
+        true,
+        true,
+        None,
+    )
+    .await;
+    dex_burn_ambient_pos(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user.eth_privkey,
+        &evm_user,
+        pool_base,
+        pool_quote,
+        *POOL_IDX,
+        (1024u32 * 10000u32).into(),
+    )
+    .await;
     info!("Successfully tested DEX");
+}
+
+pub struct DexTestParams {
+    pub evm_user: EthermintUserKey,
+    pub caller: Option<EthAddress>,
+    pub query: EthAddress,
+    pub dex: EthAddress,
+    pub pool_base: EthAddress,
+    pub pool_quote: EthAddress,
+}
+
+pub async fn setup_params(
+    web3: &Web3,
+    evm_user_keys: Vec<EthermintUserKey>,
+    dex_contracts: DexAddresses,
+    erc20_contracts: Vec<EthAddress>,
+) -> DexTestParams {
+    let evm_user = *evm_user_keys.first().unwrap();
+    let optional_caller = Some(evm_user.eth_address);
+    let croc_query_contract = dex_contracts.query;
+    let dex_result = croc_query_dex(web3, croc_query_contract, optional_caller).await;
+    assert!(dex_result.is_ok(), "Bad result");
+    let dex = dex_result.unwrap();
+    assert_eq!(dex, dex_contracts.dex, "Dex contract address mismatch");
+
+    let (pool_base, pool_quote) = pool_tokens(erc20_contracts);
+
+    DexTestParams {
+        evm_user,
+        caller: optional_caller,
+        query: croc_query_contract,
+        dex,
+        pool_base,
+        pool_quote,
+    }
 }
 
 pub async fn dex_upgrade_test(
@@ -162,6 +404,7 @@ pub async fn dex_upgrade_test(
     evm_user_keys: Vec<EthermintUserKey>,
     erc20_contracts: Vec<EthAddress>,
     dex_contracts: DexAddresses,
+    walthea: EthAddress,
 ) {
     let evm_user = evm_user_keys.first().unwrap();
     let emergency_user = evm_user_keys.last().unwrap();
@@ -179,6 +422,7 @@ pub async fn dex_upgrade_test(
         &validator_keys,
         pool_base,
         pool_quote,
+        walthea,
     )
     .await;
 
@@ -317,6 +561,7 @@ pub async fn dex_safe_mode_test(
     evm_user_keys: Vec<EthermintUserKey>,
     erc20_contracts: Vec<EthAddress>,
     dex_contracts: DexAddresses,
+    walthea: EthAddress,
 ) {
     let emergency_user = evm_user_keys.last().unwrap();
     let evm_user = evm_user_keys.first().unwrap();
@@ -332,6 +577,7 @@ pub async fn dex_safe_mode_test(
         &validator_keys,
         pool_base,
         pool_quote,
+        walthea,
     )
     .await;
     let tick = croc_query_curve_tick(
@@ -432,6 +678,7 @@ pub async fn dex_ops_proposal_test(
     evm_user_keys: Vec<EthermintUserKey>,
     erc20_contracts: Vec<EthAddress>,
     dex_contracts: DexAddresses,
+    walthea: EthAddress,
 ) {
     let evm_user = evm_user_keys.first().unwrap();
     let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
@@ -446,6 +693,7 @@ pub async fn dex_ops_proposal_test(
         &validator_keys,
         pool_base,
         pool_quote,
+        walthea,
     )
     .await;
     let callpath = COLD_PATH;
@@ -514,7 +762,7 @@ pub fn pool_tokens(erc20_contracts: Vec<EthAddress>) -> (EthAddress, EthAddress)
 
 async fn swap_many(
     web3: &Web3,
-    dex_contracts: DexAddresses,
+    dex_contracts: &DexAddresses,
     pool_base: EthAddress,
     pool_quote: EthAddress,
     evm_user: &EthermintUserKey,
@@ -524,8 +772,8 @@ async fn swap_many(
     let mut rng = rand::thread_rng();
 
     for _ in 0..swaps {
-        let qty_multi: u32 = rng.gen();
-        let qty = one_atom() * qty_multi.into();
+        let qty_multi: u16 = rng.gen();
+        let qty = (1024u32 * u32::from(qty_multi)).into();
         let pre_swap_base = web3
             .get_erc20_balance(pool_base, evm_user.eth_address)
             .await
@@ -666,6 +914,7 @@ pub async fn basic_dex_setup(
     validator_keys: &[ValidatorKeys],
     pool_base: EthAddress,
     pool_quote: EthAddress,
+    walthea: EthAddress,
 ) {
     let current_auth = dex_query_authority(web3, dex, Some(evm_user.eth_address))
         .await
@@ -693,44 +942,83 @@ pub async fn basic_dex_setup(
         info!("Dex is in safe mode, disabling safe mode");
         submit_and_pass_safe_mode_proposal(contact, validator_keys, false, true).await;
     }
+
+    if web3
+        .get_erc20_balance(walthea, evm_user.eth_address)
+        .await
+        .unwrap()
+        < one_eth() * 60_000u32.into()
+    {
+        web3.wrap_eth(
+            one_eth() * 60_000u32.into(),
+            evm_user.eth_privkey,
+            Some(walthea),
+            Some(Duration::from_secs(15)),
+        )
+        .await
+        .expect("Unable to wrap native token!");
+    }
+
+    // Create or prepare the pool with Base and wAlthea tokens
+    let (a, b) = if walthea < pool_base {
+        (walthea, pool_base)
+    } else {
+        (pool_base, walthea)
+    };
+    create_or_prepare_pool(web3, dex, query, evm_user, a, b, *POOL_IDX).await;
+    // Create or prepare the pool with Base and Quote tokens
+    create_or_prepare_pool(web3, dex, query, evm_user, pool_base, pool_quote, *POOL_IDX).await;
+}
+
+pub async fn create_or_prepare_pool(
+    web3: &Web3,
+    dex: EthAddress,
+    query: EthAddress,
+    evm_user: &EthermintUserKey,
+    base: EthAddress,
+    quote: EthAddress,
+    pool_idx: Uint256,
+) {
+    if base != EthAddress::default() {
+        web3.approve_erc20_transfers(
+            base,
+            evm_user.eth_privkey,
+            dex,
+            Some(OPERATION_TIMEOUT),
+            vec![],
+        )
+        .await
+        .expect("Could not approve base token");
+    }
+    web3.approve_erc20_transfers(
+        quote,
+        evm_user.eth_privkey,
+        dex,
+        Some(OPERATION_TIMEOUT),
+        vec![],
+    )
+    .await
+    .expect("Could not approve quote token");
     let pool = croc_query_pool_params(
         web3,
         query,
         Some(evm_user.eth_address),
-        pool_base,
-        pool_quote,
-        *POOL_IDX,
+        base,
+        quote,
+        pool_idx,
     )
     .await;
     if pool.is_ok() && pool.unwrap().tick_size != 0 {
-        info!("Pool already created, approving use of base and quote tokens");
-        web3.approve_erc20_transfers(
-            pool_base,
-            evm_user.eth_privkey,
-            dex,
-            Some(OPERATION_TIMEOUT),
-            vec![],
-        )
-        .await
-        .expect("Could not approve base token");
-        web3.approve_erc20_transfers(
-            pool_quote,
-            evm_user.eth_privkey,
-            dex,
-            Some(OPERATION_TIMEOUT),
-            vec![],
-        )
-        .await
-        .expect("Could not approve base token");
+        info!("Pool already created");
     } else {
-        info!("Creating pool");
+        info!("Creating {base}/{quote} pool");
         init_pool(
             web3,
             evm_user.eth_privkey,
             dex,
-            pool_base,
-            pool_quote,
-            None,
+            base,
+            quote,
+            Some(pool_idx),
             None,
         )
         .await

@@ -9,15 +9,17 @@ use deep_space::Contact;
 use deep_space::PrivateKey;
 use std::env;
 use test_runner::bootstrapping::deploy_dex;
+use test_runner::bootstrapping::deploy_multicall;
 use test_runner::bootstrapping::parse_contract_addresses;
 use test_runner::bootstrapping::parse_dex_contract_addresses;
 use test_runner::bootstrapping::parse_ibc_validator_keys;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
 use test_runner::bootstrapping::start_ibc_relayer;
-use test_runner::bootstrapping::{deploy_contracts, get_keys};
+use test_runner::bootstrapping::{deploy_erc20_contracts, get_keys};
+use test_runner::tests::dex::advanced_dex_test;
+use test_runner::tests::dex::basic_dex_test;
 use test_runner::tests::dex::dex_ops_proposal_test;
 use test_runner::tests::dex::dex_safe_mode_test;
-use test_runner::tests::dex::dex_test;
 use test_runner::tests::dex::dex_upgrade_test;
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
 use test_runner::tests::ica_host::ica_host_happy_path;
@@ -29,7 +31,10 @@ use test_runner::tests::onboarding::onboarding_default_params;
 use test_runner::tests::onboarding::onboarding_delist_after;
 use test_runner::tests::onboarding::onboarding_disable_after;
 use test_runner::tests::onboarding::onboarding_disabled_whitelisted;
+use test_runner::tests::upgrade::upgrade_part_1;
+use test_runner::tests::upgrade::upgrade_part_2;
 use test_runner::utils::one_atom;
+use test_runner::utils::one_eth;
 use test_runner::utils::one_hundred_eth;
 use test_runner::utils::send_funds_bulk;
 use test_runner::utils::ETH_NODE;
@@ -62,9 +67,11 @@ pub async fn main() {
 
     if should_deploy_contracts() {
         info!("test-runner in contract deploying mode, deploying contracts, then exiting");
-        deploy_contracts(&contact).await;
+        deploy_erc20_contracts(&contact).await;
         info!("Deploying DEX");
         deploy_dex().await;
+        info!("Deploying Multicall3");
+        deploy_multicall().await;
         return;
     }
 
@@ -78,7 +85,7 @@ pub async fn main() {
         &web30,
         erc20_addresses.clone(),
         EVM_USER_KEYS.clone(),
-        one_hundred_eth(),
+        one_eth() * 60_000u32.into(),
     )
     .await
     .unwrap();
@@ -92,23 +99,6 @@ pub async fn main() {
     let (ibc_keys, _ibc_phrases) = parse_ibc_validator_keys();
 
     info!("Funding EVM users with the native coin");
-    // Send the EVM users some althea token
-    send_funds_bulk(
-        &contact,
-        keys.first().expect("No validator keys?").validator_key,
-        &EVM_USER_KEYS
-            .clone()
-            .into_iter()
-            .map(|euk| euk.ethermint_address)
-            .collect::<Vec<_>>(),
-        Coin {
-            amount: one_atom(),
-            denom: STAKING_TOKEN.to_string(),
-        },
-        Some(OPERATION_TIMEOUT),
-    )
-    .await
-    .unwrap();
 
     info!("Checking footoken balances");
     // assert that the validators have a balance of the footoken we use
@@ -222,13 +212,27 @@ pub async fn main() {
             return;
         } else if test_type == "DEX" {
             info!("Start dex test");
-            dex_test(
+            basic_dex_test(
                 &contact,
                 &web30,
                 keys,
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
+                contracts.weth_address,
+            )
+            .await;
+            return;
+        } else if test_type == "DEX_ADVANCED" {
+            info!("Start advanced dex test");
+            advanced_dex_test(
+                &contact,
+                &web30,
+                keys,
+                EVM_USER_KEYS.clone(),
+                erc20_addresses,
+                dex_contracts,
+                contracts.weth_address,
             )
             .await;
             return;
@@ -241,6 +245,7 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
+                contracts.weth_address,
             )
             .await;
             return;
@@ -253,6 +258,7 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
+                contracts.weth_address,
             )
             .await;
             return;
@@ -265,9 +271,30 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
+                contracts.weth_address,
             )
             .await;
             return;
+        } else if test_type == "UPGRADE_PART_1" {
+            upgrade_part_1(
+                &web30,
+                &contact,
+                &ibc_contact,
+                keys,
+                ibc_keys,
+                erc20_addresses,
+            )
+            .await;
+        } else if test_type == "UPGRADE_PART_2" {
+            upgrade_part_2(
+                &web30,
+                &contact,
+                &ibc_contact,
+                keys,
+                ibc_keys,
+                erc20_addresses,
+            )
+            .await;
         } else {
             panic!("Unknown test type: {:?}", test_type);
         }
