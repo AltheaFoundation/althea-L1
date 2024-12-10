@@ -1059,6 +1059,48 @@ pub async fn dex_mint_ranged_pos(
 }
 
 #[allow(clippy::too_many_arguments)]
+pub async fn dex_mint_ranged_in_amount(
+    web3: &Web3,
+    dex: EthAddress,
+    evm_privkey: PrivateKey,
+    base: EthAddress,
+    quote: EthAddress,
+    pool_idx: Uint256,
+    bid_tick: Int256,
+    ask_tick: Int256,
+    qty: Uint256,  // The amount of a token to mint a position with
+    in_base: bool, // Whether to mint in the base token or the quote token
+) {
+    assert!(base.lt(&quote), "base must be lexically smaller than quote");
+
+    let code = if in_base {
+        Uint256::from(11u8) // Mint in base amount code
+    } else {
+        Uint256::from(12u8) // Mint in quote amount code
+    };
+    let mint_ranged_pos_args = UserCmdArgs {
+        callpath: WARM_PATH, // Warm Path index
+        cmd: vec![
+            code.into(),
+            base.into(),                  // base
+            quote.into(),                 // quote
+            pool_idx.into(),              // poolIdx
+            bid_tick.into(),              // bid (lower) tick
+            ask_tick.into(),              // ask (upper) tick
+            qty.into(), // liq (in liquidity units, which must be a multiple of 1024)
+            (*MIN_PRICE).into(), // limitLower
+            (*MAX_PRICE).into(), // limitHigher
+            Uint256::from(0u8).into(), // reserveFlags
+            EthAddress::default().into(), // lpConduit
+        ],
+    };
+    info!("Minting position in single token: {mint_ranged_pos_args:?}");
+    dex_user_cmd(web3, dex, evm_privkey, mint_ranged_pos_args, None, None)
+        .await
+        .expect("Failed to mint position in pool");
+}
+
+#[allow(clippy::too_many_arguments)]
 pub async fn dex_burn_ranged_pos(
     web3: &Web3,
     dex: EthAddress,

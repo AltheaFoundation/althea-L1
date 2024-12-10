@@ -7,9 +7,10 @@ use crate::dex_utils::{
     croc_policy_ops_resolution, croc_policy_treasury_resolution, croc_query_curve_tick,
     croc_query_dex, croc_query_pool_params, croc_query_pool_template, croc_query_range_position,
     dex_authority_transfer, dex_burn_ambient_pos, dex_burn_knockout_pos, dex_burn_ranged_pos,
-    dex_direct_protocol_cmd, dex_mint_ambient_pos, dex_mint_knockout_pos, dex_mint_ranged_pos,
-    dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, OpsResolutionArgs,
-    ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
+    dex_direct_protocol_cmd, dex_mint_ambient_pos, dex_mint_knockout_pos,
+    dex_mint_ranged_in_amount, dex_mint_ranged_pos, dex_query_authority, dex_query_safe_mode,
+    dex_swap, dex_user_cmd, OpsResolutionArgs, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
+    COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL, OPS_PROPOSAL_TYPE_URL,
@@ -162,7 +163,7 @@ pub async fn populate_pool_basic(
     if range_pos.liq > 0u8.into() {
         info!("Range position already exists: {:?}", range_pos);
     } else {
-        let liq: Uint256 = one_atom() * 1024000000u32.into();
+        let qty: Uint256 = one_eth() * 1024u32.into();
         let bb = web3
             .get_erc20_balance(base, evm_user.eth_address)
             .await
@@ -180,18 +181,32 @@ pub async fn populate_pool_basic(
             .await
             .unwrap();
         info!("Before minting ranged position: base balance: {}, quote balance: {}, base approved: {}, quote approved: {}", bb, qb, ba, qa);
-        dex_mint_ranged_pos(
+        // Mint using the base token
+        dex_mint_ranged_in_amount(
             web3,
             dex_contracts.dex,
-            dex_contracts.query,
             evm_user.eth_privkey,
-            evm_user,
             base,
             quote,
             *POOL_IDX,
             bid_tick,
             ask_tick,
-            liq,
+            qty,
+            true,
+        )
+        .await;
+        // Mint using the quote token
+        dex_mint_ranged_in_amount(
+            web3,
+            dex_contracts.dex,
+            evm_user.eth_privkey,
+            base,
+            quote,
+            *POOL_IDX,
+            bid_tick,
+            ask_tick,
+            qty,
+            false,
         )
         .await;
     }
