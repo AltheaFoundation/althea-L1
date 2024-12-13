@@ -323,6 +323,7 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
         } else if line.contains("WETH deployed at Address -") {
             let address_string = line.split('-').last().unwrap();
             weth_address = address_string.trim().parse().unwrap();
+            info!("found weth address it is {}", address_string);
         } else if line.contains("Uniswap Liquidity test deployed at Address - ") {
             let address_string = line.split('-').last().unwrap();
             uniswap_liquidity = Some(address_string.trim().parse().unwrap());

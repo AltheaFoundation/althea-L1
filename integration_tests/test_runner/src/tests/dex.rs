@@ -4,13 +4,13 @@ use std::time::Duration;
 
 use crate::bootstrapping::DexAddresses;
 use crate::dex_utils::{
-    croc_policy_ops_resolution, croc_policy_treasury_resolution, croc_query_curve_tick,
-    croc_query_dex, croc_query_pool_params, croc_query_pool_template, croc_query_range_position,
-    dex_authority_transfer, dex_burn_ambient_pos, dex_burn_knockout_pos, dex_burn_ranged_pos,
-    dex_direct_protocol_cmd, dex_mint_ambient_pos, dex_mint_knockout_pos,
+    ambient_liq_to_flows, croc_policy_ops_resolution, croc_policy_treasury_resolution,
+    croc_query_curve_tick, croc_query_dex, croc_query_pool_params, croc_query_pool_template,
+    croc_query_price, croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd,
+    dex_mint_ambient_in_amount, dex_mint_ambient_pos, dex_mint_knockout_pos,
     dex_mint_ranged_in_amount, dex_mint_ranged_pos, dex_query_authority, dex_query_safe_mode,
-    dex_swap, dex_user_cmd, OpsResolutionArgs, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
-    COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
+    dex_swap, dex_user_cmd, size_ambient_liq, OpsResolutionArgs, ProtocolCmdArgs, SwapArgs,
+    UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL, OPS_PROPOSAL_TYPE_URL,
@@ -33,9 +33,9 @@ use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
 };
 use clarity::{Address as EthAddress, PrivateKey, Uint256};
 use deep_space::{Coin, Contact};
+use num256::Int256;
 use num_traits::ToPrimitive;
 use rand::Rng;
-use tokio::time::sleep;
 use web30::client::Web3;
 use web30::jsonrpc::error::Web3Error;
 use web30::types::TransactionResponse;
@@ -163,7 +163,7 @@ pub async fn populate_pool_basic(
     if range_pos.liq > 0u8.into() {
         info!("Range position already exists: {:?}", range_pos);
     } else {
-        let qty: Uint256 = one_eth() * 1024u32.into();
+        let qty: Uint256 = 1024000000000000000u128.into(); // 1.024 eth
         let bb = web3
             .get_erc20_balance(base, evm_user.eth_address)
             .await
@@ -180,39 +180,29 @@ pub async fn populate_pool_basic(
             .check_erc20_approved(quote, evm_user.eth_address, dex_contracts.dex)
             .await
             .unwrap();
-        info!("Before minting ranged position: base balance: {}, quote balance: {}, base approved: {}, quote approved: {}", bb, qb, ba, qa);
+        let one_eth_f = one_eth().to_f64().unwrap();
+        let bb_f = bb.to_i128().unwrap().to_f64().unwrap();
+        let qb_f = qb.to_i128().unwrap().to_f64().unwrap();
+        info!("Before minting ranged position: base balance: {}, quote balance: {}, base approved: {}, quote approved: {}", (bb_f) / one_eth_f, (qb_f) / one_eth_f, ba, qa);
         // Mint using the base token
-        dex_mint_ranged_in_amount(
+        dex_mint_ranged_pos(
             web3,
             dex_contracts.dex,
+            dex_contracts.query,
             evm_user.eth_privkey,
+            evm_user.eth_address,
             base,
             quote,
             *POOL_IDX,
             bid_tick,
             ask_tick,
             qty,
-            true,
-        )
-        .await;
-        // Mint using the quote token
-        dex_mint_ranged_in_amount(
-            web3,
-            dex_contracts.dex,
-            evm_user.eth_privkey,
-            base,
-            quote,
-            *POOL_IDX,
-            bid_tick,
-            ask_tick,
-            qty,
-            false,
         )
         .await;
     }
 
     // Finally, perform many smaller swaps to ensure the pool is working as expected
-    swap_many(web3, dex_contracts, base, quote, evm_user, 30).await;
+    swap_many(web3, dex_contracts, base, quote, evm_user, 30, None).await;
 }
 
 // Generates some additional positions, minting and burning ambient and ranged and knockout positions
@@ -230,8 +220,8 @@ pub async fn advanced_dex_test(
         caller: _,
         query: _,
         dex: _,
-        pool_base,
-        pool_quote,
+        pool_base: base,
+        pool_quote: quote,
     } = setup_params(
         web3,
         evm_user_keys,
@@ -248,51 +238,42 @@ pub async fn advanced_dex_test(
         dex_contracts.policy,
         &evm_user,
         &validator_keys,
-        pool_base,
-        pool_quote,
+        base,
+        quote,
         walthea,
     )
     .await;
-
-    let tick = croc_query_curve_tick(
+    let bb = web3
+        .get_erc20_balance(base, evm_user.eth_address)
+        .await
+        .unwrap();
+    let qb = web3
+        .get_erc20_balance(quote, evm_user.eth_address)
+        .await
+        .unwrap();
+    let ambient_qty = one_eth();
+    let price_root = croc_query_price(
         web3,
         dex_contracts.query,
-        Some(evm_user.eth_address),
-        pool_base,
-        pool_quote,
+        Some(*MINER_ETH_ADDRESS),
+        base,
+        quote,
         *POOL_IDX,
     )
     .await
-    .expect("Could not get curve tick for pool");
-
-    let ranged_bid_tick = tick - 32u8.into();
-    let ranged_ask_tick = tick + 32u8.into();
-    let liq = one_eth() * 10240u32.into();
-
+    .unwrap();
+    let pr_u128 = price_root.to_u128().unwrap();
+    let liq = size_ambient_liq(ambient_qty.to_u128().unwrap(), true, pr_u128, false);
     dex_mint_ambient_pos(
         web3,
         dex_contracts.dex,
         dex_contracts.query,
         evm_user.eth_privkey,
-        &evm_user,
-        pool_base,
-        pool_quote,
+        evm_user.eth_address,
+        base,
+        quote,
         *POOL_IDX,
-        (1024u32 * 10000u32).into(),
-    )
-    .await;
-    dex_mint_ranged_pos(
-        web3,
-        dex_contracts.dex,
-        dex_contracts.query,
-        evm_user.eth_privkey,
-        &evm_user,
-        pool_base,
-        pool_quote,
-        *POOL_IDX,
-        ranged_bid_tick,
-        ranged_ask_tick,
-        liq / 4u8.into(),
+        liq.into(),
     )
     .await;
 
@@ -300,81 +281,71 @@ pub async fn advanced_dex_test(
         web3,
         dex_contracts.query,
         Some(evm_user.eth_address),
-        pool_base,
-        pool_quote,
+        base,
+        quote,
         *POOL_IDX,
     )
     .await
     .expect("Could not get curve tick for pool");
-    let ko_bid_tick = tick - 32u32.into();
-    let ko_ask_tick = tick + 32u32.into();
 
-    dex_mint_knockout_pos(
-        web3,
-        dex_contracts.dex,
-        dex_contracts.query,
-        evm_user.eth_privkey,
-        &evm_user,
-        pool_base,
-        pool_quote,
-        *POOL_IDX,
-        ko_bid_tick,
-        ko_ask_tick,
-        true,
-        0u8,
-        (1024u32 * 10000u32).into(),
-        true,
-    )
-    .await;
+    let liq = one_eth() * 1024u32.into() / 100u32.into();
+    let tick_range = 10240;
+    for i in 0..10 {
+        let position_width = tick_range / 10; // Make the positions 1/10th of the total range
+        let tick_offset = tick_range / 10 * i - (tick_range / 2); // Divide into 10 portions, center around the current tick
+        let bid_tick = tick + tick_offset.into() - (Int256::from(position_width) / 2i8.into());
+        let ask_tick = tick + tick_offset.into() + (Int256::from(position_width) / 2i8.into());
 
-    sleep(Duration::from_secs(15)).await;
+        info!("Minting position between ticks {bid_tick} and {ask_tick}");
 
-    dex_burn_ranged_pos(
-        web3,
-        dex_contracts.dex,
-        dex_contracts.query,
-        evm_user.eth_privkey,
-        &evm_user,
-        pool_base,
-        pool_quote,
-        *POOL_IDX,
-        ranged_bid_tick,
-        ranged_ask_tick,
-        liq / 4u8.into(),
-    )
-    .await;
-    dex_burn_knockout_pos(
-        web3,
-        dex_contracts.dex,
-        dex_contracts.query,
-        evm_user.eth_privkey,
-        &evm_user,
-        pool_base,
-        pool_quote,
-        *POOL_IDX,
-        ko_bid_tick,
-        ko_ask_tick,
-        true,
-        0u8,
-        (1024u32 * 10000u32).into(),
-        true,
-        true,
-        None,
-    )
-    .await;
-    dex_burn_ambient_pos(
-        web3,
-        dex_contracts.dex,
-        dex_contracts.query,
-        evm_user.eth_privkey,
-        &evm_user,
-        pool_base,
-        pool_quote,
-        *POOL_IDX,
-        (1024u32 * 10000u32).into(),
-    )
-    .await;
+        // Mint two ranged positions (in each token)
+        dex_mint_ranged_in_amount(
+            web3,
+            dex_contracts.dex,
+            evm_user.eth_privkey,
+            base,
+            quote,
+            *POOL_IDX,
+            bid_tick,
+            ask_tick,
+            liq,
+            true,
+        )
+        .await;
+    }
     info!("Successfully tested DEX");
+}
+pub async fn dex_swap_many(
+    web3: &Web3,
+    evm_user_keys: Vec<EthermintUserKey>,
+    erc20_contracts: Vec<EthAddress>,
+    dex_contracts: DexAddresses,
+) {
+    let DexTestParams {
+        evm_user,
+        caller: _,
+        query: _,
+        dex: _,
+        pool_base,
+        pool_quote,
+    } = setup_params(
+        web3,
+        evm_user_keys,
+        dex_contracts.clone(),
+        erc20_contracts.clone(),
+    )
+    .await;
+    swap_many(
+        web3,
+        &dex_contracts,
+        pool_base,
+        pool_quote,
+        &evm_user,
+        40,
+        Some(true),
+    )
+    .await;
+    info!("Successfully swapped many times");
 }
 
 pub struct DexTestParams {
@@ -782,13 +753,17 @@ async fn swap_many(
     pool_quote: EthAddress,
     evm_user: &EthermintUserKey,
     swaps: usize,
+    direction: Option<bool>,
 ) {
-    let mut is_buy = true; // Switch direction frequently, starting with base for quote
+    let mut is_buy = if let Some(d) = direction { d } else { true };
     let mut rng = rand::thread_rng();
 
     for _ in 0..swaps {
-        let qty_multi: u16 = rng.gen();
-        let qty = (1024u32 * u32::from(qty_multi)).into();
+        let mut qty_multi: u8 = rng.gen(); // 0 to 255
+        if qty_multi == 0 {
+            qty_multi = 1;
+        }
+        let qty = Uint256::from(1000000000000000u128) * qty_multi.into(); // .001 eth * qty_multi
         let pre_swap_base = web3
             .get_erc20_balance(pool_base, evm_user.eth_address)
             .await
@@ -855,7 +830,9 @@ async fn swap_many(
             );
         }
 
-        is_buy = !is_buy;
+        if direction.is_none() {
+            is_buy = !is_buy;
+        }
     }
 }
 

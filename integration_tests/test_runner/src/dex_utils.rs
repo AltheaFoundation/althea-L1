@@ -1,4 +1,4 @@
-use std::{convert::TryInto, time::Duration};
+use std::{convert::TryInto, str::FromStr, time::Duration};
 
 use clarity::{
     abi::{encode_tokens, AbiToken},
@@ -13,7 +13,7 @@ use web30::{
     types::{TransactionRequest, TransactionResponse},
 };
 
-use crate::utils::{EthermintUserKey, OPERATION_TIMEOUT};
+use crate::utils::OPERATION_TIMEOUT;
 
 // Callpath Indices
 pub const BOOT_PATH: u16 = 0;
@@ -999,7 +999,7 @@ pub async fn dex_mint_ranged_pos(
     dex: EthAddress,
     query: EthAddress,
     evm_privkey: PrivateKey,
-    evm_user: &EthermintUserKey,
+    evm_address: EthAddress,
     base: EthAddress,
     quote: EthAddress,
     pool_idx: Uint256,
@@ -1012,7 +1012,7 @@ pub async fn dex_mint_ranged_pos(
         web3,
         query,
         None,
-        evm_user.eth_address,
+        evm_address,
         base,
         quote,
         pool_idx,
@@ -1046,7 +1046,7 @@ pub async fn dex_mint_ranged_pos(
         web3,
         query,
         None,
-        evm_user.eth_address,
+        evm_address,
         base,
         quote,
         pool_idx,
@@ -1106,7 +1106,7 @@ pub async fn dex_burn_ranged_pos(
     dex: EthAddress,
     query: EthAddress,
     evm_privkey: PrivateKey,
-    evm_user: &EthermintUserKey,
+    evm_address: EthAddress,
     base: EthAddress,
     quote: EthAddress,
     pool_idx: Uint256,
@@ -1119,7 +1119,7 @@ pub async fn dex_burn_ranged_pos(
         web3,
         query,
         None,
-        evm_user.eth_address,
+        evm_address,
         base,
         quote,
         pool_idx,
@@ -1153,7 +1153,7 @@ pub async fn dex_burn_ranged_pos(
         web3,
         query,
         None,
-        evm_user.eth_address,
+        evm_address,
         base,
         quote,
         pool_idx,
@@ -1172,7 +1172,7 @@ pub async fn dex_mint_knockout_pos(
     dex: EthAddress,
     _query: EthAddress,
     evm_privkey: PrivateKey,
-    _evm_user: &EthermintUserKey,
+    _evm_address: EthAddress,
     base: EthAddress,
     quote: EthAddress,
     pool_idx: Uint256,
@@ -1213,7 +1213,7 @@ pub async fn dex_mint_knockout_pos(
     // let pivot = croc_query_knockout_pivot(
     //     web3,
     //     dex,
-    //     evm_user.eth_address,
+    //     evm_address,
     //     base,
     //     quote,
     //     pool_idx,
@@ -1229,7 +1229,7 @@ pub async fn dex_mint_knockout_pos(
     //     web3,
     //     query,
     //     None,
-    //     evm_user.eth_address,
+    //     evm_address,
     //     base,
     //     quote,
     //     pool_idx,
@@ -1250,7 +1250,7 @@ pub async fn dex_burn_knockout_pos(
     dex: EthAddress,
     query: EthAddress,
     evm_privkey: PrivateKey,
-    evm_user: &EthermintUserKey,
+    evm_address: EthAddress,
     base: EthAddress,
     quote: EthAddress,
     pool_idx: Uint256,
@@ -1270,7 +1270,7 @@ pub async fn dex_burn_knockout_pos(
                 web3,
                 query,
                 None,
-                evm_user.eth_address,
+                evm_address,
                 base,
                 quote,
                 pool_idx,
@@ -1314,7 +1314,7 @@ pub async fn dex_burn_knockout_pos(
             web3,
             query,
             None,
-            evm_user.eth_address,
+            evm_address,
             base,
             quote,
             pool_idx,
@@ -1335,24 +1335,17 @@ pub async fn dex_mint_ambient_pos(
     dex: EthAddress,
     query: EthAddress,
     evm_privkey: PrivateKey,
-    evm_user: &EthermintUserKey,
+    evm_address: EthAddress,
     base: EthAddress,
     quote: EthAddress,
     pool_idx: Uint256,
     liq: Uint256, // The liquidity to mint (must be a multiple of 1024)
 ) {
     assert!(base.lt(&quote), "base must be lexically smaller than quote");
-    let start_pos = croc_query_ambient_tokens(
-        web3,
-        query,
-        None,
-        evm_user.eth_address,
-        base,
-        quote,
-        pool_idx,
-    )
-    .await
-    .expect("Could not query position");
+    let start_pos =
+        croc_query_ambient_tokens(web3, query, None, evm_address, base, quote, pool_idx)
+            .await
+            .expect("Could not query position");
 
     let mint_ambient_pos_args = UserCmdArgs {
         callpath: WARM_PATH, // Warm Path index
@@ -1374,18 +1367,62 @@ pub async fn dex_mint_ambient_pos(
     dex_user_cmd(web3, dex, evm_privkey, mint_ambient_pos_args, None, None)
         .await
         .expect("Failed to mint position in pool");
-    let amb_pos = croc_query_ambient_tokens(
-        web3,
-        query,
-        None,
-        evm_user.eth_address,
-        base,
-        quote,
-        pool_idx,
-    )
-    .await
-    .expect("Could not query position");
+    let amb_pos = croc_query_ambient_tokens(web3, query, None, evm_address, base, quote, pool_idx)
+        .await
+        .expect("Could not query position");
     assert!(liq - (amb_pos.liq - start_pos.liq) < 1000u32.into());
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn dex_mint_ambient_in_amount(
+    web3: &Web3,
+    dex: EthAddress,
+    query: EthAddress,
+    evm_privkey: PrivateKey,
+    evm_address: EthAddress,
+    base: EthAddress,
+    quote: EthAddress,
+    pool_idx: Uint256,
+    qty: Uint256,  // The amount of a token to mint a position with
+    in_base: bool, // Whether to mint in the base token or the quote token
+) {
+    assert!(base.lt(&quote), "base must be lexically smaller than quote");
+
+    let code = if in_base {
+        Uint256::from(31u8) // Mint in base amount code
+    } else {
+        Uint256::from(32u8) // Mint in quote amount code
+    };
+
+    let start_pos =
+        croc_query_ambient_tokens(web3, query, None, evm_address, base, quote, pool_idx)
+            .await
+            .expect("Could not query position");
+
+    let mint_ambient_pos_args = UserCmdArgs {
+        callpath: WARM_PATH, // Warm Path index
+        cmd: vec![
+            code.into(),
+            base.into(),                  // base
+            quote.into(),                 // quote
+            (pool_idx).into(),            // poolIdx
+            Uint256::zero().into(),       // bid (lower) tick
+            Uint256::zero().into(),       // ask (upper) tick
+            qty.into(),                   // qty of tokens to supply
+            (*MIN_PRICE).into(),          // limitLower
+            (*MAX_PRICE).into(),          // limitHigher
+            Uint256::zero().into(),       // reserveFlags
+            EthAddress::default().into(), // lpConduit
+        ],
+    };
+    info!("Minting ambient position: {mint_ambient_pos_args:?}");
+    dex_user_cmd(web3, dex, evm_privkey, mint_ambient_pos_args, None, None)
+        .await
+        .expect("Failed to mint position in pool");
+    let amb_pos = croc_query_ambient_tokens(web3, query, None, evm_address, base, quote, pool_idx)
+        .await
+        .expect("Could not query position");
+    assert!(amb_pos.liq > start_pos.liq);
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1394,24 +1431,17 @@ pub async fn dex_burn_ambient_pos(
     dex: EthAddress,
     query: EthAddress,
     evm_privkey: PrivateKey,
-    evm_user: &EthermintUserKey,
+    evm_address: EthAddress,
     base: EthAddress,
     quote: EthAddress,
     pool_idx: Uint256,
     liq: Uint256, // The liquidity to mint (must be a multiple of 1024)
 ) {
     assert!(base.lt(&quote), "base must be lexically smaller than quote");
-    let start_pos = croc_query_ambient_tokens(
-        web3,
-        query,
-        None,
-        evm_user.eth_address,
-        base,
-        quote,
-        pool_idx,
-    )
-    .await
-    .expect("Could not query position");
+    let start_pos =
+        croc_query_ambient_tokens(web3, query, None, evm_address, base, quote, pool_idx)
+            .await
+            .expect("Could not query position");
 
     let burn_ambient_pos_args = UserCmdArgs {
         callpath: WARM_PATH, // Warm Path index
@@ -1433,16 +1463,133 @@ pub async fn dex_burn_ambient_pos(
     dex_user_cmd(web3, dex, evm_privkey, burn_ambient_pos_args, None, None)
         .await
         .expect("Failed to burn position in pool");
-    let amb_pos = croc_query_ambient_tokens(
-        web3,
-        query,
-        None,
-        evm_user.eth_address,
-        base,
-        quote,
-        pool_idx,
-    )
-    .await
-    .expect("Could not query position");
+    let amb_pos = croc_query_ambient_tokens(web3, query, None, evm_address, base, quote, pool_idx)
+        .await
+        .expect("Could not query position");
     assert_eq!(start_pos.liq - amb_pos.liq, liq);
+}
+
+// Mimics the logic in the Ambient sizeAmbientLiq() function
+pub fn size_ambient_liq(collateral: u128, is_add: bool, price_root: u128, in_base: bool) -> u128 {
+    let buffered = buffer_collateral(collateral, is_add);
+    let liq = liquidity_supported(buffered, price_root, in_base);
+
+    if is_add {
+        liq
+    } else {
+        liq + 1
+    }
+}
+
+// Mimics the logic in the Ambient sizeConcentratedLiq() function
+pub fn size_concentrated_liq(
+    collateral: u128,
+    is_add: bool,
+    price_root: u128,
+    lower_tick: i32,
+    upper_tick: i32,
+    in_base: bool,
+) -> u128 {
+    let (mut bid_price, mut ask_price) =
+        determine_price_range(price_root, lower_tick, upper_tick, in_base).unwrap();
+    let buffered = buffer_collateral(collateral, is_add);
+    if !in_base {
+        bid_price = recip_q64(bid_price);
+        ask_price = recip_q64(ask_price);
+    }
+    let price_delta = if bid_price > ask_price {
+        bid_price - ask_price
+    } else {
+        ask_price - bid_price
+    };
+    let liq = liquidity_supported(buffered, price_delta, in_base);
+
+    if is_add {
+        shave_round_lots(liq)
+    } else {
+        shave_round_lots_up(liq)
+    }
+}
+
+pub fn buffer_collateral(collateral: u128, is_add: bool) -> u128 {
+    const BUFFER: u128 = 4;
+
+    if is_add {
+        if collateral < BUFFER {
+            0
+        } else {
+            collateral - BUFFER
+        }
+    } else {
+        #[allow(clippy::collapsible_if)]
+        if collateral > u128::MAX - BUFFER {
+            u128::MAX
+        } else {
+            collateral + BUFFER
+        }
+    }
+}
+
+pub fn liquidity_supported(buffered_collateral: u128, price_root: u128, in_base: bool) -> u128 {
+    let bc_f = buffered_collateral.to_f64().unwrap();
+    let pr_f = price_root.to_f64().unwrap();
+
+    if in_base {
+        (bc_f * 2f64.powf(64f64) / pr_f).to_u128()
+    } else {
+        (bc_f * pr_f / 2f64.powf(64f64)).to_u128()
+    }
+    .unwrap()
+}
+
+pub fn determine_price_range(
+    curve_price: u128,
+    lower_tick: i32,
+    upper_tick: i32,
+    in_base: bool,
+) -> Result<(u128, u128), String> {
+    let mut bid_price = tick_to_sqrt_ratio(lower_tick);
+    let mut ask_price = tick_to_sqrt_ratio(upper_tick);
+
+    if curve_price <= bid_price {
+        if in_base {
+            return Err("Price is below the bid price".to_string());
+        }
+    } else if curve_price >= ask_price {
+        if !in_base {
+            return Err("Price is above the ask price".to_string());
+        }
+    } else if in_base {
+        ask_price = curve_price;
+    } else {
+        bid_price = curve_price;
+    }
+
+    Ok((bid_price, ask_price))
+}
+
+pub fn tick_to_sqrt_ratio(tick: i32) -> u128 {
+    (1.0001f64.powf(tick as f64).sqrt() * 2f64.powf(64f64))
+        .to_u128()
+        .unwrap()
+}
+
+fn recip_q64(x: u128) -> u128 {
+    let q128 = Uint256::from_str("340282366920938463463374607431768211456").unwrap();
+    (q128 / x.into()).to_u128().unwrap()
+}
+
+fn shave_round_lots(liq: u128) -> u128 {
+    (liq >> 11) << 11
+}
+
+fn shave_round_lots_up(liq: u128) -> u128 {
+    ((liq >> 11) + 1) << 11
+}
+
+pub fn ambient_liq_to_flows(liq: u128, price_root: u128) -> (i128, i128) {
+    let base = (price_root * liq) >> 64;
+    let quote = (price_root << 64) / liq;
+
+    (base as i128, quote as i128)
 }

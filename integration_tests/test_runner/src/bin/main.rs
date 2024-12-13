@@ -4,7 +4,6 @@
 #[macro_use]
 extern crate log;
 
-use deep_space::Coin;
 use deep_space::Contact;
 use deep_space::PrivateKey;
 use std::env;
@@ -20,6 +19,7 @@ use test_runner::tests::dex::advanced_dex_test;
 use test_runner::tests::dex::basic_dex_test;
 use test_runner::tests::dex::dex_ops_proposal_test;
 use test_runner::tests::dex::dex_safe_mode_test;
+use test_runner::tests::dex::dex_swap_many;
 use test_runner::tests::dex::dex_upgrade_test;
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
 use test_runner::tests::ica_host::ica_host_happy_path;
@@ -33,15 +33,11 @@ use test_runner::tests::onboarding::onboarding_disable_after;
 use test_runner::tests::onboarding::onboarding_disabled_whitelisted;
 use test_runner::tests::upgrade::upgrade_part_1;
 use test_runner::tests::upgrade::upgrade_part_2;
-use test_runner::utils::one_atom;
 use test_runner::utils::one_eth;
-use test_runner::utils::one_hundred_eth;
-use test_runner::utils::send_funds_bulk;
 use test_runner::utils::ETH_NODE;
 use test_runner::utils::EVM_USER_KEYS;
 use test_runner::utils::IBC_ADDRESS_PREFIX;
 use test_runner::utils::IBC_NODE_GRPC;
-use test_runner::utils::STAKING_TOKEN;
 use test_runner::utils::{
     get_test_token_name, should_deploy_contracts, wait_for_cosmos_online, ADDRESS_PREFIX,
     COSMOS_NODE_GRPC, OPERATION_TIMEOUT, TOTAL_TIMEOUT,
@@ -233,6 +229,15 @@ pub async fn main() {
                 erc20_addresses,
                 dex_contracts,
                 contracts.weth_address,
+            )
+            .await;
+            return;
+        } else if test_type == "DEX_SWAP_MANY" {
+            dex_swap_many(
+                &web30,
+                EVM_USER_KEYS.clone(),
+                erc20_addresses,
+                dex_contracts,
             )
             .await;
             return;
