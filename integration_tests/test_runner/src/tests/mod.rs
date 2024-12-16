@@ -1,5 +1,6 @@
 pub mod dex;
 pub mod erc20_conversion;
+pub mod evm_fee_burning;
 pub mod ica_host;
 pub mod liquid_accounts;
 pub mod lockup;

@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate log;
 
+use althea_proto::canto::erc20;
 use deep_space::Contact;
 use deep_space::PrivateKey;
 use std::env;
@@ -22,6 +23,7 @@ use test_runner::tests::dex::dex_safe_mode_test;
 use test_runner::tests::dex::dex_swap_many;
 use test_runner::tests::dex::dex_upgrade_test;
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
+use test_runner::tests::evm_fee_burning::evm_fee_burning_test;
 use test_runner::tests::ica_host::ica_host_happy_path;
 use test_runner::tests::liquid_accounts::liquid_accounts_test;
 use test_runner::tests::lockup::lockup_test;
@@ -277,6 +279,20 @@ pub async fn main() {
                 erc20_addresses,
                 dex_contracts,
                 contracts.weth_address,
+            )
+            .await;
+            return;
+        } else if test_type == "EVM_FEES"
+            || test_type == "EVM_FEE_BURNING"
+            || test_type == "EVM_FEE_BURN"
+        {
+            info!("Start evm fee burning test");
+            evm_fee_burning_test(
+                &contact,
+                &web30,
+                keys,
+                EVM_USER_KEYS.clone(),
+                erc20_addresses,
             )
             .await;
             return;
