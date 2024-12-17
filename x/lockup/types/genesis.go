@@ -23,7 +23,7 @@ func DefaultGenesisState() *GenesisState {
 func DefaultParams() *Params {
 	return &Params{
 		Locked:     false,
-		LockExempt: []string{"0x0000000000000000000000000000000000000000"},
+		LockExempt: []string{},
 		LockedMessageTypes: []string{
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&banktypes.MsgSend{}),
@@ -71,9 +71,12 @@ func ValidateLockExempt(i interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid lock exempt type: %T", i)
 	}
-	if len(v) == 0 {
-		return fmt.Errorf("no lock exempt addresses %v", v)
+	for i, address := range v {
+		if _, err := sdk.AccAddressFromBech32(address); err != nil {
+			return fmt.Errorf("invalid lock exempt address %d: %s", i, address)
+		}
 	}
+
 	return nil
 }
 
