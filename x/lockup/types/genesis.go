@@ -9,6 +9,8 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+
 	"github.com/AltheaFoundation/althea-L1/config"
 	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
@@ -33,6 +35,8 @@ func DefaultParams() *Params {
 			sdk.MsgTypeURL(&ibctransfertypes.MsgTransfer{}),
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}),
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 		},
 		/* Note: The authoritative way to get the native token of the chain is by calling
 		   mintKeeper.GetParams(ctx).MintDenom, but the context is not available yet

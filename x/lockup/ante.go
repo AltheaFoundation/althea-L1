@@ -128,6 +128,9 @@ func (lad LockAnteDecorator) isAcceptable(ctx sdk.Context, msg sdk.Msg) error {
 		// Check that any locked msg is permissible on a type-case basis
 		if allow, err := allowMessage(msg, exemptSet, lockedTokenDenomsSet); !allow {
 			return sdkerrors.Wrap(err, fmt.Sprintf("Transaction blocked because of message %v", msg))
+		} else {
+			// The user is exempt, allow it to pass
+			return nil
 		}
 	}
 	if msgType == "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress" {
@@ -137,7 +140,11 @@ func (lad LockAnteDecorator) isAcceptable(ctx sdk.Context, msg sdk.Msg) error {
 		return sdkerrors.Wrap(types.ErrLocked, "The chain is locked, recursively MsgExec-wrapped Msgs are not allowed")
 	}
 	if msgType == "/ethermint.evm.v1.MsgEthereumTx" {
-		return sdkerrors.Wrap(types.ErrLocked, "The chain is locked, only exempt addresses may submit this Msg type")
+		if allow, err := allowMessage(msg, exemptSet, lockedTokenDenomsSet); !allow {
+			return sdkerrors.Wrap(err, "The chain is locked, only exempt addresses may submit this Msg type")
+		} else {
+			return nil
+		}
 	}
 
 	return nil
@@ -222,6 +229,7 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 		msgEvmTx := msg.(*evmtypes.MsgEthereumTx)
 		addressBytes := common.HexToAddress(msgEvmTx.From).Bytes()
 		ethermintAddr := sdk.AccAddress(addressBytes)
+		fmt.Printf("From: %v Addr: %v\n", msgEvmTx.From, ethermintAddr.String())
 		if _, present := exemptSet[ethermintAddr.String()]; !present {
 			return false, sdkerrors.Wrap(types.ErrLocked,
 				"The chain is locked, only exempt addresses may send a MsgEthereumTx")
