@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -1023,6 +1025,12 @@ func NewAltheaApp(
 
 	// Register the configured upgrades for the upgrade module
 	app.registerUpgradeHandlers()
+
+	// -^v-^v-^v-^v-^v-^v- TESTING TOOL -^v-^v-^v-^v-^v-^v-^v-^v-^v
+	// Write special data to disk so that registerStoreLoaders works appropriately
+	SetupManualTest(app)
+	// -^v-^v-^v-^v-^v-^v- END TOOL -^v-^v-^v-^v-^v-^v-^v-^v-^v
+
 	app.registerStoreLoaders()
 
 	if loadLatest {
@@ -1043,6 +1051,9 @@ func (app *AltheaApp) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker delegates the ABCI BeginBlock execution to the ModuleManager
 func (app *AltheaApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	// -^v-^v-^v-^v-^v-^v- TESTING TOOL -^v-^v-^v-^v-^v-^v-^v-^v-^v
+	RunManualTestingTool(app, ctx, req)
+	// -^v-^v-^v-^v-^v-^v- END TOOL -^v-^v-^v-^v-^v-^v-^v-^v-^v
 	out := app.MM.BeginBlock(ctx, req)
 	firstBlock.Do(func() { // Run the startup firstBeginBlocker assertions only once
 		app.firstBeginBlocker(ctx, req)
@@ -1340,3 +1351,40 @@ func (app *AltheaApp) NewAnteHandlerOptions(appOpts servertypes.AppOptions) ante
 		MicrotxKeeper: app.MicrotxKeeper,
 	}
 }
+
+// -^v-^v-^v-^v-^v-^v- TESTING TOOL -^v-^v-^v-^v-^v-^v-^v-^v-^v
+// Writes a false UpgradeInfo to disk, so that the StoreLoader is set correctly by x/upgrade
+func SetupManualTest(app *AltheaApp) {
+	upgradeHeight, err := strconv.Atoi(os.Getenv("ALTHEA_UPGRADE_HEIGHT"))
+	if err != nil {
+		panic(err)
+	}
+	// This info is read in app.registerStoreLoaders(), used to set the correct store loader for new/deleted modules
+	app.UpgradeKeeper.DumpUpgradeInfoToDisk(int64(upgradeHeight), getManualUpgradePlan(int64(upgradeHeight)))
+}
+
+// TODO: Update the plan name in this function
+func getManualUpgradePlan(height int64) upgradetypes.Plan {
+	return upgradetypes.Plan{
+		Name:                tethys.PlanName,
+		Time:                time.Time{},
+		Height:              height,
+		Info:                "Simulated upgrade plan",
+		UpgradedClientState: nil,
+	}
+}
+
+func RunManualTestingTool(app *AltheaApp, ctx sdk.Context, _ abci.RequestBeginBlock) {
+	// Do a custom upgrade without governance on this node
+	upgradeHeight, err := strconv.Atoi(os.Getenv("ALTHEA_UPGRADE_HEIGHT"))
+	currHeight := ctx.BlockHeight()
+	fmt.Println("Checking if it's time to apply the upgrade: Curr Height:", currHeight, "upgradeHeight", upgradeHeight)
+	if err == nil && (upgradeHeight == 0 || currHeight == int64(upgradeHeight)) {
+		fmt.Println("It's time to upgrade!")
+		plan := getManualUpgradePlan(currHeight)
+		fmt.Println("Applying upgrade:", plan)
+		app.UpgradeKeeper.ApplyUpgrade(ctx, plan)
+	}
+}
+
+// -^v-^v-^v-^v-^v-^v- END TOOL -^v-^v-^v-^v-^v-^v-^v-^v-^v
