@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use crate::type_urls::{
     GENERIC_AUTHORIZATION_TYPE_URL, MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MICROTX_TYPE_URL,
@@ -18,9 +18,11 @@ use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{Input, MsgMultiSend,
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use althea_proto::cosmos_sdk_proto::cosmos::distribution::v1beta1::MsgSetWithdrawAddress;
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParamChange;
+use clarity::Address as EthAddress;
 use clarity::Uint256;
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
+use web30::client::Web3;
 
 /// These *_PARAM_KEY constants are defined in x/lockup/types/types.go and must match those values exactly
 pub const LOCKED_PARAM_KEY: &str = "locked";
@@ -31,7 +33,13 @@ pub const LOCKED_TOKEN_DENOMS_PARAM_KEY: &str = "lockedTokenDenoms";
 /// Simulates the launch lockup process by setting the lockup module params via governance,
 /// attempting to transfer tokens a variety of ways, and finally clearing the lockup module params
 /// and asserting that balances can successfully be transferred
-pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) {
+pub async fn lockup_test(
+    contact: &Contact,
+    validator_keys: Vec<ValidatorKeys>,
+    web3: &Web3,
+    evm_user_keys: Vec<EthermintUserKey>,
+    erc20_addresses: Vec<EthAddress>,
+) {
     let lock_exempt = get_user_key(None);
     let msg_send_authorized = get_user_key(None);
     let msg_multi_send_authorized = get_user_key(None);
@@ -44,7 +52,14 @@ pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) 
         msg_multi_send_authorized,
     )
     .await;
-    lockup_the_chain(contact, &validator_keys, &lock_exempt).await;
+    lockup_the_chain(
+        contact,
+        &validator_keys,
+        vec![&lock_exempt, &evm_user_keys[0]],
+    )
+    .await;
+    send_evm_tx(evm_user_keys[1], web3, &erc20_addresses, false).await;
+    send_evm_tx(evm_user_keys[0], web3, &erc20_addresses, true).await;
 
     // TODO: Add ibc transfer and check that transfers are blocked outbound for aalthea
     fail_to_send(
@@ -62,6 +77,8 @@ pub async fn lockup_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) 
 
     unlock_the_chain(contact, &validator_keys).await;
     successfully_send(contact, &validator_keys, lock_exempt).await;
+    send_evm_tx(evm_user_keys[1], web3, &erc20_addresses, true).await;
+    send_evm_tx(evm_user_keys[0], web3, &erc20_addresses, true).await;
 }
 
 async fn fund_lock_exempt_user(
@@ -126,9 +143,9 @@ async fn fund_authorized_users(
 pub async fn lockup_the_chain(
     contact: &Contact,
     validator_keys: &[ValidatorKeys],
-    lock_exempt: &EthermintUserKey,
+    lock_exempt: Vec<&EthermintUserKey>,
 ) {
-    let to_change = create_lockup_param_changes(lock_exempt.ethermint_address);
+    let to_change = create_lockup_param_changes(lock_exempt);
     let proposer = validator_keys.first().unwrap();
     let zero_fee = Coin {
         denom: STAKING_TOKEN.clone(),
@@ -140,7 +157,7 @@ pub async fn lockup_the_chain(
     wait_for_proposals_to_execute(contact).await;
 }
 
-pub fn create_lockup_param_changes(exempt_user: Address) -> Vec<ParamChange> {
+pub fn create_lockup_param_changes(exempt_users: Vec<&EthermintUserKey>) -> Vec<ParamChange> {
     // Params{lock_exempt:, locked: false, locked_message_types: Vec::new() };
     let lockup_param = ParamChange {
         subspace: "lockup".to_string(),
@@ -153,7 +170,13 @@ pub fn create_lockup_param_changes(exempt_user: Address) -> Vec<ParamChange> {
 
     let mut lock_exempt = lockup_param.clone();
     lock_exempt.key = LOCK_EXEMPT_PARAM_KEY.to_string();
-    lock_exempt.value = serde_json::to_string(&vec![exempt_user.to_string()]).unwrap();
+    lock_exempt.value = serde_json::to_string(
+        &exempt_users
+            .into_iter()
+            .map(|v| v.ethermint_address)
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
 
     let locked_msgs = vec![
         MSG_SEND_TYPE_URL.to_string(),
@@ -679,4 +702,31 @@ async fn send_unlocked_token(contact: &Contact, validator_keys: &[ValidatorKeys]
         amount: one_atom(),
     };
     send_from_and_assert_balance_changes(contact, val0, amount.clone()).await;
+}
+
+async fn send_evm_tx(
+    user: EthermintUserKey,
+    web3: &Web3,
+    erc20_addresses: &[EthAddress],
+    expect_success: bool,
+) {
+    let tx = web3
+        .approve_erc20_transfers(
+            erc20_addresses[0],
+            user.eth_privkey,
+            erc20_addresses[1],
+            Some(Duration::from_secs(15)),
+            vec![],
+        )
+        .await;
+    info!(
+        "Submitted evm tx ({} expecting an error): {:?}",
+        if expect_success { "not" } else { "" },
+        tx
+    );
+    if expect_success {
+        tx.expect("Failed to submit evm tx!");
+    } else {
+        tx.expect_err("Successfully submitted evm tx? Should not be possible!");
+    }
 }

@@ -119,7 +119,14 @@ pub async fn main() {
     if let Ok(test_type) = test_type {
         if test_type == "LOCKUP" {
             info!("Starting Lockup test");
-            lockup_test(&contact, keys).await;
+            lockup_test(
+                &contact,
+                keys,
+                &web30,
+                EVM_USER_KEYS.clone(),
+                erc20_addresses,
+            )
+            .await;
             return;
         } else if test_type == "MICROTX_FEES" {
             info!("Starting microtx fees test");

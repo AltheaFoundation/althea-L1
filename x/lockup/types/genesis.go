@@ -9,6 +9,8 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+
 	"github.com/AltheaFoundation/althea-L1/config"
 	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
@@ -23,7 +25,7 @@ func DefaultGenesisState() *GenesisState {
 func DefaultParams() *Params {
 	return &Params{
 		Locked:     false,
-		LockExempt: []string{"0x0000000000000000000000000000000000000000"},
+		LockExempt: []string{},
 		LockedMessageTypes: []string{
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&banktypes.MsgSend{}),
@@ -33,6 +35,8 @@ func DefaultParams() *Params {
 			sdk.MsgTypeURL(&ibctransfertypes.MsgTransfer{}),
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}),
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 		},
 		/* Note: The authoritative way to get the native token of the chain is by calling
 		   mintKeeper.GetParams(ctx).MintDenom, but the context is not available yet
@@ -71,9 +75,12 @@ func ValidateLockExempt(i interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid lock exempt type: %T", i)
 	}
-	if len(v) == 0 {
-		return fmt.Errorf("no lock exempt addresses %v", v)
+	for i, address := range v {
+		if _, err := sdk.AccAddressFromBech32(address); err != nil {
+			return fmt.Errorf("invalid lock exempt address %d: %s", i, address)
+		}
 	}
+
 	return nil
 }
 
