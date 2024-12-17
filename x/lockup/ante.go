@@ -12,8 +12,11 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authz "github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/common"
 
-	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 
@@ -210,6 +213,18 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 				return false, sdkerrors.Wrap(types.ErrLocked,
 					"The chain is locked, only exempt addresses may Microtx a locked token denom")
 			}
+		}
+		return true, nil
+
+	// ^v^v^v^v^v^v^v^v^v^v^v^v EVM MODULE MESSAGES ^v^v^v^v^v^v^v^v^v^v^v^v
+	// nolint: exhaustruct
+	case sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}):
+		msgEvmTx := msg.(*evmtypes.MsgEthereumTx)
+		addressBytes := common.HexToAddress(msgEvmTx.From).Bytes()
+		ethermintAddr := sdk.AccAddress(addressBytes)
+		if _, present := exemptSet[ethermintAddr.String()]; !present {
+			return false, sdkerrors.Wrap(types.ErrLocked,
+				"The chain is locked, only exempt addresses may send a MsgEthereumTx")
 		}
 		return true, nil
 
