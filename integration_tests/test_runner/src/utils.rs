@@ -36,9 +36,15 @@ use web30::{client::Web3, jsonrpc::error::Web3Error, types::SendTxOption};
 pub const OPERATION_TIMEOUT: Duration = Duration::from_secs(30);
 /// the timeout for the total system
 pub const TOTAL_TIMEOUT: Duration = Duration::from_secs(300);
-// The config file location for hermes
-pub const HERMES_CONFIG: &str = "/althea/tests/assets/ibc-relayer-config.toml";
-pub const RELAYER_MNEMONIC_FILE: &str = "/althea/tests/assets/relayer-mnemonic.txt";
+// The config file location for hermes, two possibe locations are provided
+pub const HERMES_CONFIG: [&str; 2] = [
+    "/althea/tests/assets/ibc-relayer-config.toml",
+    "/home/runner/work/althea-L1/althea-L1/tests/assets/ibc-relayer-config.toml",
+];
+pub const RELAYER_MNEMONIC_FILE: [&str; 2] = [
+    "/althea/tests/assets/relayer-mnemonic.txt",
+    "/home/runner/work/althea-L1/althea-L1/tests/assets/relayer-mnemonic.txt",
+];
 pub const ALTHEA_RELAYER_ADDRESS: &str = "althea1zcr3730w7cwl5q7n28yuu3l9hmuq4w9j8rg8at";
 pub const IBC_RELAYER_ADDRESS: &str = "cosmos1vdv5jau58qxv2xgzw6fj3ql70txnpl08z9pngs";
 
@@ -96,6 +102,14 @@ pub fn should_deploy_contracts() -> bool {
         Ok(s) => s == "1" || s.to_lowercase() == "yes" || s.to_lowercase() == "true",
         _ => false,
     }
+}
+
+pub fn parse_contracts_root() -> Result<String, env::VarError> {
+    env::var("CONTRACTS_ROOT")
+}
+
+pub fn parse_dex_contracts_root() -> Result<String, env::VarError> {
+    env::var("DEX_CONTRACTS_ROOT")
 }
 
 /// Gets the standard non-token fee for the testnet. We deploy the test chain with STAKE

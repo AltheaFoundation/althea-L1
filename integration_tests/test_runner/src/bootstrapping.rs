@@ -1,8 +1,8 @@
 use crate::ibc_utils::get_channel;
 use crate::utils::{
-    get_chain_id, get_deposit, get_ibc_chain_id, ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC,
-    HERMES_CONFIG, IBC_RELAYER_ADDRESS, IBC_STAKING_TOKEN, OPERATION_TIMEOUT,
-    RELAYER_MNEMONIC_FILE,
+    get_chain_id, get_deposit, get_ibc_chain_id, parse_contracts_root, parse_dex_contracts_root,
+    ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC, HERMES_CONFIG, IBC_RELAYER_ADDRESS,
+    IBC_STAKING_TOKEN, OPERATION_TIMEOUT, RELAYER_MNEMONIC_FILE,
 };
 use crate::utils::{
     send_erc20_bulk, EthermintUserKey, ValidatorKeys, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT,
@@ -91,98 +91,160 @@ pub fn parse_ibc_validator_keys() -> (Vec<CosmosPrivateKey>, Vec<String>) {
 /// this runs only when the DEPLOY_CONTRACTS env var is set right after
 /// the Ethereum test chain starts in the testing environment. We write
 /// the stdout of this to a file for later test runs to parse
-pub async fn deploy_contracts(contact: &Contact) {
+pub async fn deploy_erc20_contracts(contact: &Contact) {
     // prevents the node deployer from failing (rarely) when the chain has not
     // yet produced the next block after submitting each eth address
     contact.wait_for_next_block(TOTAL_TIMEOUT).await.unwrap();
 
-    // these are the possible paths where we could find the contract deployer
-    // and the gravity contract itself, feel free to expand this if it makes your
-    // deployments more straightforward.
-
-    // both files are just in the PWD
-    const A: [&str; 1] = ["contract-deployer"];
-    // files are placed in a root /solidity/ folder
-    const B: [&str; 1] = ["/solidity/contract-deployer"];
     // the default unmoved locations for the Gravity repo
-    const C: [&str; 2] = ["/althea/solidity/contract-deployer.ts", "/althea/solidity/"];
-    let output = if all_paths_exist(&A) || all_paths_exist(&B) {
-        let paths = return_existing(A, B);
-        Command::new(paths[0])
-            .args([
-                &format!("--eth-node={}", ETH_NODE.as_str()),
-                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
-                "--test-mode=true",
-            ])
-            .output()
-            .expect("Failed to deploy contracts!")
-    } else if all_paths_exist(&C) {
-        Command::new("npx")
-            .args([
-                "ts-node",
-                C[0],
-                &format!("--eth-node={}", ETH_NODE.as_str()),
-                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
-                "--test-mode=true",
-            ])
-            .current_dir(C[1])
-            .output()
-            .expect("Failed to deploy contracts!")
+    const A: [&str; 2] = ["/althea/solidity/contract-deployer.ts", "/althea/solidity/"];
+    // the default unmoved locations for Github Actions
+    const B: [&str; 2] = [
+        "/home/runner/work/althea-L1/althea-L1/solidity/contract-deployer.ts",
+        "/home/runner/work/althea-L1/althea-L1/solidity/",
+    ];
+
+    // the user specified contracts root
+    let contracts_root = parse_contracts_root();
+    let paths = if let Ok(root) = contracts_root {
+        Some(vec![
+            format!("{}/contract-deployer.ts", root),
+            format!("{}/", root),
+        ])
     } else {
-        panic!("Could not find json contract artifacts in any known location!")
+        return_existing(vec![A, B]).map(|path| vec![path[0].to_string(), path[1].to_string()])
     };
 
+    let output = match paths {
+        Some(path) => {
+            info!("Deploying contracts from {:?}", path);
+            Command::new("npx")
+                .args([
+                    "ts-node",
+                    &path[0],
+                    &format!("--eth-node={}", ETH_NODE.as_str()),
+                    &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                    &format!("--artifacts-root={}", path[1]),
+                ])
+                .current_dir(&path[1])
+                .output()
+                .expect("Failed to deploy contracts!")
+        }
+        None => {
+            panic!("Could not find json contract artifacts in any known location!")
+        }
+    };
     info!("stdout: {}", String::from_utf8_lossy(&output.stdout));
     info!("stderr: {}", String::from_utf8_lossy(&output.stderr));
     if !ExitStatus::success(&output.status) {
         panic!("Contract deploy failed!")
     }
-    let mut file = File::create("/contracts").unwrap();
+    let mut file = File::create(ERC20_CONTRACTS_FILE).unwrap();
     file.write_all(&output.stdout).unwrap();
 }
 
+/// The file where the contract addresses are stored
+const DEX_CONTRACTS_FILE: &str = "/tmp/dex-contracts";
+
 /// This function deploys the Ambient (aka CrocSwap) dex contracts and configures them
 pub async fn deploy_dex() {
-    const A: [&str; 1] = ["dex-deployer"];
-    // files are placed in a root /solidity-dex/ folder
-    const B: [&str; 1] = ["/solidity-dex/dex-deployer"];
-    // the default unmoved locations for the Gravity repo
-    const C: [&str; 2] = [
+    // the default unmoved locations for the Gravity repo in the docker container
+    const A: [&str; 2] = [
         "/althea/solidity-dex/misc/scripts/dex-deployer.ts",
-        "/althea/solidity-dex/",
+        "/althea/solidity-dex/artifacts/contracts/",
     ];
-    let output = if all_paths_exist(&A) || all_paths_exist(&B) {
-        let paths = return_existing(A, B);
-        Command::new(paths[0])
-            .args([
-                &format!("--eth-node={}", ETH_NODE.as_str()),
-                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
-                "--test-mode=true",
-            ])
-            .output()
-            .expect("Failed to deploy contracts!")
-    } else if all_paths_exist(&C) {
-        Command::new("npx")
-            .args([
-                "ts-node",
-                C[0],
-                &format!("--eth-node={}", ETH_NODE.as_str()),
-                &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
-                "--test-mode=true",
-            ])
-            .current_dir(C[1])
-            .output()
-            .expect("Failed to deploy contracts!")
+    // the default unmoved locations for Github Actions
+    const B: [&str; 2] = [
+        "/home/runner/work/althea-L1/althea-L1/solidity-dex/misc/scripts/dex-deployer.ts",
+        "/home/runner/work/althea-L1/althea-L1/solidity-dex/artifacts/contracts/",
+    ];
+    // the user specified contracts root
+    let contracts_root = parse_dex_contracts_root();
+    let paths = if let Ok(root) = contracts_root {
+        Some(vec![
+            format!("{}/misc/scripts/dex-deployer.ts", root),
+            format!("{}/artifacts/contracts/", root),
+        ])
     } else {
-        panic!("Could not find json contract artifacts in any known location!")
+        return_existing(vec![A, B]).map(|path| vec![path[0].to_string(), path[1].to_string()])
     };
 
+    let output = match paths {
+        Some(path) => {
+            info!("Deploying contracts from {:?}", path);
+            Command::new("npx")
+                .args([
+                    "ts-node",
+                    &path[0],
+                    &format!("--eth-node={}", ETH_NODE.as_str()),
+                    &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                    &format!("--artifacts-root={}", path[1]),
+                ])
+                .current_dir(&path[1])
+                .output()
+                .expect("Failed to deploy contracts!")
+        }
+        None => {
+            panic!("Could not find json contract artifacts in any known location!")
+        }
+    };
     info!("stdout: {}", String::from_utf8_lossy(&output.stdout));
     info!("stderr: {}", String::from_utf8_lossy(&output.stderr));
     if !ExitStatus::success(&output.status) {
         panic!("Contract deploy failed!")
     }
-    let mut file = File::create("/dex-contracts").unwrap();
+    let mut file = File::create(DEX_CONTRACTS_FILE).unwrap();
+    file.write_all(&output.stdout).unwrap();
+}
+
+/// This function deploys Multicall3, which is used by various frontends
+pub async fn deploy_multicall() {
+    // the default unmoved locations for the Gravity repo in the docker container
+    const A: [&str; 2] = [
+        "/althea/solidity-dex/misc/scripts/multicall-deployer.ts",
+        "/althea/solidity-dex/artifacts/contracts/periphery/",
+    ];
+    // locations for Github Actions
+    const B: [&str; 2] = [
+        "/home/runner/work/althea-L1/althea-L1/solidity-dex/misc/scripts/multicall-deployer.ts",
+        "/home/runner/work/althea-L1/althea-L1/solidity-dex/artifacts/contracts/periphery/",
+    ];
+    // the user specified contracts root
+    let contracts_root = parse_dex_contracts_root();
+    let paths = if let Ok(root) = contracts_root {
+        Some(vec![
+            format!("{}/misc/scripts/multicall-deployer.ts", root),
+            format!("{}/artifacts/contracts/periphery/", root),
+        ])
+    } else {
+        return_existing(vec![A, B]).map(|path| vec![path[0].to_string(), path[1].to_string()])
+    };
+
+    let output = match paths {
+        Some(path) => {
+            info!("Deploying contracts from {:?}", path);
+            Command::new("npx")
+                .args([
+                    "ts-node",
+                    &path[0],
+                    &format!("--eth-node={}", ETH_NODE.as_str()),
+                    &format!("--eth-privkey={:#x}", *MINER_PRIVATE_KEY),
+                    &format!("--artifacts-root={}", path[1]),
+                ])
+                .current_dir(&path[1])
+                .output()
+                .expect("Failed to deploy contracts!")
+        }
+        None => {
+            panic!("Could not find json contract artifacts in any known location!")
+        }
+    };
+    info!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+    info!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+    if !ExitStatus::success(&output.status) {
+        panic!("Contract deploy failed!")
+    }
+    let mut file = File::create("/tmp/multicall-contract").unwrap();
     file.write_all(&output.stdout).unwrap();
 }
 
@@ -225,31 +287,29 @@ fn all_paths_exist(input: &[&str]) -> bool {
     true
 }
 
-fn return_existing<'a>(a: [&'a str; 1], b: [&'a str; 1]) -> [&'a str; 1] {
-    if all_paths_exist(&a) {
-        a
-    } else if all_paths_exist(&b) {
-        b
-    } else {
-        panic!("No paths exist!")
-    }
+fn return_existing(paths: Vec<[&str; 2]>) -> Option<[&str; 2]> {
+    paths.into_iter().find(|&path| all_paths_exist(&path))
 }
 
 pub struct BootstrapContractAddresses {
     pub erc20_addresses: Vec<EthAddress>,
     pub erc721_addresses: Vec<EthAddress>,
+    pub weth_address: EthAddress,
     pub uniswap_liquidity_address: Option<EthAddress>,
 }
+
+pub const ERC20_CONTRACTS_FILE: &str = "/tmp/contracts";
 
 /// Parses the ERC20 and Gravity contract addresses from the file created
 /// in deploy_contracts()
 pub fn parse_contract_addresses() -> BootstrapContractAddresses {
     let mut file =
-        File::open("/contracts").expect("Failed to find contracts! did they not deploy?");
+        File::open(ERC20_CONTRACTS_FILE).expect("Failed to find contracts! did they not deploy?");
     let mut output = String::new();
     file.read_to_string(&mut output).unwrap();
     let mut erc20_addresses = Vec::new();
     let mut erc721_addresses = Vec::new();
+    let mut weth_address = EthAddress::default();
     let mut uniswap_liquidity = None;
     for line in output.lines() {
         if line.contains("ERC20 deployed at Address -") {
@@ -260,6 +320,10 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
             let address_string = line.split('-').last().unwrap();
             erc721_addresses.push(address_string.trim().parse().unwrap());
             info!("found erc721 address it is {}", address_string);
+        } else if line.contains("WETH deployed at Address -") {
+            let address_string = line.split('-').last().unwrap();
+            weth_address = address_string.trim().parse().unwrap();
+            info!("found weth address it is {}", address_string);
         } else if line.contains("Uniswap Liquidity test deployed at Address - ") {
             let address_string = line.split('-').last().unwrap();
             uniswap_liquidity = Some(address_string.trim().parse().unwrap());
@@ -268,6 +332,7 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
     BootstrapContractAddresses {
         erc20_addresses,
         erc721_addresses,
+        weth_address,
         uniswap_liquidity_address: uniswap_liquidity,
     }
 }
@@ -285,7 +350,7 @@ pub struct DexAddresses {
 /// in deploy_dex()
 pub fn parse_dex_contract_addresses() -> DexAddresses {
     let mut file =
-        File::open("/dex-contracts").expect("Failed to find dex contracts! did they not deploy?");
+        File::open(DEX_CONTRACTS_FILE).expect("Failed to find dex contracts! did they not deploy?");
     let mut output = String::new();
     file.read_to_string(&mut output).unwrap();
     let mut dex: EthAddress = EthAddress::default();
@@ -329,6 +394,14 @@ pub fn parse_dex_contract_addresses() -> DexAddresses {
 // Hermes stores its keys in hermes_home/
 pub fn setup_relayer_keys() -> Result<(), Box<dyn std::error::Error>> {
     let mut command = hermes_base();
+    let mut mnemonic_path: Option<&str> = None;
+    for path in RELAYER_MNEMONIC_FILE {
+        if Path::new(path).exists() {
+            mnemonic_path = Some(path);
+            break;
+        }
+    }
+    let mnemonic_path = mnemonic_path.expect("Could not find relayer mnemonic file");
     let _althea_key = command
         .args([
             "keys",
@@ -340,7 +413,7 @@ pub fn setup_relayer_keys() -> Result<(), Box<dyn std::error::Error>> {
             "--hd-path",
             "m/44'/60'/0'/0/0",
             "--mnemonic-file",
-            RELAYER_MNEMONIC_FILE,
+            mnemonic_path,
         ])
         .spawn()
         .expect("Failed to add althea key");
@@ -356,7 +429,7 @@ pub fn setup_relayer_keys() -> Result<(), Box<dyn std::error::Error>> {
             "--chain",
             &get_ibc_chain_id(),
             "--mnemonic-file",
-            RELAYER_MNEMONIC_FILE,
+            mnemonic_path,
         ])
         .spawn()
         .expect("Failed to add ibc key");
@@ -364,6 +437,8 @@ pub fn setup_relayer_keys() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+const IBC_RELAYER_LOGS_ROOT: &str = "/tmp/ibc-relayer-logs/";
 
 // Create a channel between gravity chain and the ibc test chain over the "transfer" port
 // Writes the output to /ibc-relayer-logs/channel-creation
@@ -386,9 +461,11 @@ pub fn create_ibc_channel(hermes_base: Command) {
         "--yes",
     ]);
 
+    std::fs::create_dir_all(IBC_RELAYER_LOGS_ROOT).unwrap();
     let out_file = File::options()
         .write(true)
-        .open("/ibc-relayer-logs/channel-creation")
+        .create(true)
+        .open(format!("{}channel-creation", IBC_RELAYER_LOGS_ROOT))
         .unwrap()
         .into_raw_fd();
     unsafe {
@@ -410,9 +487,11 @@ pub fn run_ibc_relayer(hermes_base: Command, full_scan: bool) {
     if full_scan {
         start = start.arg("--full-scan");
     }
+    std::fs::create_dir_all(IBC_RELAYER_LOGS_ROOT).unwrap();
     let out_file = File::options()
         .write(true)
-        .open("/ibc-relayer-logs/hermes-logs")
+        .create(true)
+        .open(format!("{}hermes-logs", IBC_RELAYER_LOGS_ROOT))
         .unwrap()
         .into_raw_fd();
     unsafe {
@@ -483,11 +562,22 @@ pub async fn start_ibc_relayer(
     thread::spawn(|| {
         run_ibc_relayer(hermes_base(), true); // likely will not return from here, just keep running
     });
-    info!("Running ibc relayer in the background, directing output to /ibc-relayer-logs");
+    info!(
+        "Running ibc relayer in the background, directing output to {}",
+        IBC_RELAYER_LOGS_ROOT
+    );
 }
 
 fn hermes_base() -> Command {
     let mut hermes_base = Command::new("hermes");
-    hermes_base.arg("--config").arg(HERMES_CONFIG);
+    let mut config: Option<&str> = None;
+    for path in HERMES_CONFIG {
+        if Path::new(path).exists() {
+            config = Some(path);
+            break;
+        }
+    }
+    let config = config.expect("Could not find hermes config file");
+    hermes_base.arg("--config").arg(config);
     hermes_base
 }
