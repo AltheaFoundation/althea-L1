@@ -5,13 +5,17 @@ import (
 
 	"github.com/tendermint/tendermint/libs/log"
 
+	gogotypes "github.com/gogo/protobuf/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 
@@ -30,6 +34,8 @@ type Keeper struct {
 	cdc           codec.BinaryCodec // The wire codec for binary encoding/decoding.
 	bankKeeper    *bankkeeper.BaseKeeper
 	accountKeeper *authkeeper.AccountKeeper
+	distrKeeper   *distrkeeper.Keeper
+	stakingKeeper *stakingkeeper.Keeper
 	evmKeeper     *evmkeeper.Keeper
 	erc20Keeper   *erc20keeper.Keeper
 	gasfreeKeeper *gasfreekeeper.Keeper
@@ -42,6 +48,12 @@ func (k Keeper) ValidateMembers() {
 	}
 	if k.accountKeeper == nil {
 		panic("Nil accountKeeper!")
+	}
+	if k.distrKeeper == nil {
+		panic("Nil distrKeeper!")
+	}
+	if k.stakingKeeper == nil {
+		panic("Nil stakingKeeper!")
 	}
 	if k.evmKeeper == nil {
 		panic("Nil evmKeeper!")
@@ -61,6 +73,8 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	bankKeeper *bankkeeper.BaseKeeper,
 	accKeeper *authkeeper.AccountKeeper,
+	distrKeeper *distrkeeper.Keeper,
+	stakingKeeper *stakingkeeper.Keeper,
 	evmKeeper *evmkeeper.Keeper,
 	erc20Keeper *erc20keeper.Keeper,
 	gasfreeKeeper *gasfreekeeper.Keeper,
@@ -77,6 +91,8 @@ func NewKeeper(
 		cdc:           cdc,
 		bankKeeper:    bankKeeper,
 		accountKeeper: accKeeper,
+		distrKeeper:   distrKeeper,
+		stakingKeeper: stakingKeeper,
 		evmKeeper:     evmKeeper,
 		erc20Keeper:   erc20Keeper,
 		gasfreeKeeper: gasfreeKeeper,
@@ -131,4 +147,46 @@ func (k Keeper) GetMicrotxFeeBasisPoints(ctx sdk.Context) (uint64, error) {
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+// GetPreviousProposerConsAddr returns the proposer consensus address for the
+// current block.
+func (k Keeper) GetPreviousProposerConsAddr(ctx sdk.Context) sdk.ConsAddress {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ProposerKey)
+	if bz == nil {
+		panic("previous proposer not set")
+	}
+
+	addrValue := gogotypes.BytesValue{}
+	k.cdc.MustUnmarshal(bz, &addrValue)
+	return addrValue.GetValue()
+}
+
+// set the proposer public key for this block
+func (k Keeper) SetPreviousProposerConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	bz := k.cdc.MustMarshal(&gogotypes.BytesValue{Value: consAddr})
+	store.Set(types.ProposerKey, bz)
+}
+
+// GetProposerReward returns the current distribution proposer rate.
+func (k Keeper) GetBaseProposerReward(ctx sdk.Context) (percent sdk.Dec, err error) {
+	params, err := k.GetParamsIfSet(ctx)
+	if err != nil {
+		// The params have been set, get the param
+		return sdk.Dec{}, err
+	}
+	return params.BaseProposerReward, nil
+}
+
+// GetBonusProposerReward returns the current distribution bonus proposer reward
+// rate.
+func (k Keeper) GetBonusProposerReward(ctx sdk.Context) (percent sdk.Dec, err error) {
+	params, err := k.GetParamsIfSet(ctx)
+	if err != nil {
+		// The params have been set, get the param
+		return sdk.Dec{}, err
+	}
+	return params.BonusProposerReward, nil
 }

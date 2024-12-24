@@ -224,23 +224,24 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
-		evmtypes.FeeBurner:             {authtypes.Burner},
-		minttypes.ModuleName:           {authtypes.Minter},
-		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
-		lockuptypes.ModuleName:         nil,
-		microtxtypes.ModuleName:        nil,
-		gasfreetypes.ModuleName:        nil,
-		onboardingtypes.ModuleName:     nil,
-		nativedextypes.ModuleName:      nil,
-		feemarkettypes.ModuleName:      nil,
-		icatypes.ModuleName:            nil,
+		authtypes.FeeCollectorName:           nil,
+		distrtypes.ModuleName:                nil,
+		stakingtypes.BondedPoolName:          {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:       {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                  {authtypes.Burner},
+		ibctransfertypes.ModuleName:          {authtypes.Minter, authtypes.Burner},
+		evmtypes.ModuleName:                  {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
+		evmtypes.FeeBurner:                   {authtypes.Burner},
+		minttypes.ModuleName:                 {authtypes.Minter},
+		erc20types.ModuleName:                {authtypes.Minter, authtypes.Burner},
+		lockuptypes.ModuleName:               nil,
+		microtxtypes.ModuleName:              nil,
+		gasfreetypes.ModuleName:              nil,
+		onboardingtypes.ModuleName:           nil,
+		nativedextypes.ModuleName:            nil,
+		feemarkettypes.ModuleName:            nil,
+		icatypes.ModuleName:                  nil,
+		microtxtypes.MicrotxFeeCollectorName: nil,
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -775,7 +776,7 @@ func NewAltheaApp(
 	// Microtx enables peer-to-peer automated microtransactions to form the payment layer for Althea-based networks
 	microtxKeeper := microtxkeeper.NewKeeper(
 		keys[microtxtypes.StoreKey], app.GetSubspace(microtxtypes.ModuleName), appCodec,
-		&bankKeeper, &accountKeeper, &evmKeeper, &erc20Keeper, &gasfreeKeeper,
+		&bankKeeper, &accountKeeper, &distrKeeper, &stakingKeeper, &evmKeeper, &erc20Keeper, &gasfreeKeeper,
 	)
 	app.MicrotxKeeper = &microtxKeeper
 

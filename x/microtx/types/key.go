@@ -20,6 +20,8 @@ const (
 
 	// QuerierRoute to be used for querierer msgs
 	QuerierRoute = ModuleName
+
+	MicrotxFeeCollectorName = "microtx_fee_collector"
 )
 
 var (
@@ -31,6 +33,9 @@ var (
 	// LiquidAccountKey is the index for all Liquid Infrastructure Accounts, whose keys contain
 	// a bech32 x/auth account address and values are EVM LiquidInfrastructureNFT contract addresses
 	LiquidAccountKey = HashString("LiquidAccount")
+
+	// ProposerKey is the index of the stored proposer consensus address
+	ProposerKey = HashString("Proposer") // key for the proposer operator address
 )
 
 // GetLiquidAccountKey returns the LiquidAccount key for the given bech32 address,

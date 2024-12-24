@@ -29,6 +29,9 @@ const (
 
 	LiquifyKeyAccount    = "account"
 	LiquifyKeyNFTAddress = "nft-address"
+
+	EventTypeProposerReward = "proposer_reward"
+	AttributeKeyValidator   = "validator"
 )
 
 func NewEventMicrotx(sender string, receiver string, amount sdk.Coin) sdk.Event {
