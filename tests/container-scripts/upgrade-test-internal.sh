@@ -1,4 +1,6 @@
 #!/bin/bash
+
+rm /althea/test-ready-to-run
 set -eux
 # Number of validators to start
 NODES=$1
@@ -38,6 +40,8 @@ popd
 pushd /althea/integration_tests/test_runner
 DEPLOY_CONTRACTS=1 RUST_BACKTRACE=full NO_GAS_OPT=1 RUST_LOG="INFO" PATH=$PATH:$HOME/.cargo/bin cargo run --release --bin test-runner
 popd
+
+touch /althea/test-ready-to-run
 
 # Run the pre-upgrade tests
 pushd /althea/

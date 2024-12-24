@@ -15,6 +15,11 @@ do
 done
 
 
+# Remove the setup complete flag file
+set +e
+rm -fr /althea/test-ready-to-run
+set -e
+
 cd /althea/
 export PATH=$PATH:/usr/local/go/bin
 make install-core
@@ -34,6 +39,9 @@ sleep 10
 # deploy the ethereum contracts
 pushd /althea/integration_tests/test_runner
 DEPLOY_CONTRACTS=1 RUST_BACKTRACE=full TEST_TYPE=$TEST_TYPE NO_GAS_OPT=1 RUST_LOG="INFO" PATH=$PATH:$HOME/.cargo/bin cargo run --release --bin test-runner
+
+# Create a setup complete flag file used by the integration tests
+touch /althea/test-ready-to-run
 
 # This keeps the script open to prevent Docker from stopping the container
 # immediately if the nodes are killed by a different process

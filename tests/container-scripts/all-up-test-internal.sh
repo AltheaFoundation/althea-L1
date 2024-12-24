@@ -2,6 +2,9 @@
 # the script run inside the container for all-up-test.sh
 NODES=$1
 TEST_TYPE=$2
+
+rm /althea/test-ready-to-run
+
 set -eux
 
 bash /althea/tests/container-scripts/setup-validators.sh $NODES
@@ -13,5 +16,7 @@ sleep 30
 # deploy the ethereum contracts
 pushd /althea/integration_tests/test_runner
 DEPLOY_CONTRACTS=1 RUST_BACKTRACE=full TEST_TYPE=$TEST_TYPE NO_GAS_OPT=1 RUST_LOG="INFO" PATH=$PATH:$HOME/.cargo/bin cargo run --release --bin test-runner
+
+touch /althea/test-ready-to-run
 
 bash /althea/tests/container-scripts/integration-tests.sh $NODES $TEST_TYPE

@@ -1,4 +1,7 @@
 #!/bin/bash
+
+rm /althea/test-ready-to-run
+
 set -eux
 # Number of validators to start
 NODES=$1
@@ -40,6 +43,8 @@ tests/container-scripts/run-testnet.sh $NODES
 pushd integration_tests/test_runner
 DEPLOY_CONTRACTS=1 RUST_BACKTRACE=full NO_GAS_OPT=1 RUST_LOG="INFO" PATH=$PATH:$HOME/.cargo/bin cargo run --release --bin test-runner
 popd
+
+touch /althea/test-ready-to-run
 
 # This allows the tester to run the first part of the test
 # immediately if the nodes are killed by a different process
