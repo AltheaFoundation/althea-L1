@@ -364,13 +364,13 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"microtx", "v1", "params"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"microtx", "v1", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_MicrotxFee_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"microtx", "v1", "microtx_fee"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_MicrotxFee_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"microtx", "v1", "microtx_fee"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_LiquidAccounts_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"microtx", "v1", "liquid_accounts"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_LiquidAccounts_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"microtx", "v1", "liquid_accounts"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_LiquidAccount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"microtx", "v1", "liquid_account"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_LiquidAccount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"microtx", "v1", "liquid_account"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
