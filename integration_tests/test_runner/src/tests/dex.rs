@@ -4,13 +4,12 @@ use std::time::Duration;
 
 use crate::bootstrapping::DexAddresses;
 use crate::dex_utils::{
-    ambient_liq_to_flows, croc_policy_ops_resolution, croc_policy_treasury_resolution,
-    croc_query_curve_tick, croc_query_dex, croc_query_pool_params, croc_query_pool_template,
-    croc_query_price, croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd,
-    dex_mint_ambient_in_amount, dex_mint_ambient_pos, dex_mint_knockout_pos,
-    dex_mint_ranged_in_amount, dex_mint_ranged_pos, dex_query_authority, dex_query_safe_mode,
-    dex_swap, dex_user_cmd, size_ambient_liq, OpsResolutionArgs, ProtocolCmdArgs, SwapArgs,
-    UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
+    croc_policy_ops_resolution, croc_policy_treasury_resolution, croc_query_curve_tick,
+    croc_query_dex, croc_query_pool_params, croc_query_pool_template, croc_query_price,
+    croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd,
+    dex_mint_ambient_pos, dex_mint_ranged_in_amount, dex_mint_ranged_pos, dex_query_authority,
+    dex_query_safe_mode, dex_swap, dex_user_cmd, size_ambient_liq, OpsResolutionArgs,
+    ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL, OPS_PROPOSAL_TYPE_URL,
@@ -243,14 +242,6 @@ pub async fn advanced_dex_test(
         walthea,
     )
     .await;
-    let bb = web3
-        .get_erc20_balance(base, evm_user.eth_address)
-        .await
-        .unwrap();
-    let qb = web3
-        .get_erc20_balance(quote, evm_user.eth_address)
-        .await
-        .unwrap();
     let ambient_qty = one_eth();
     let price_root = croc_query_price(
         web3,
@@ -755,7 +746,7 @@ async fn swap_many(
     swaps: usize,
     direction: Option<bool>,
 ) {
-    let mut is_buy = if let Some(d) = direction { d } else { true };
+    let mut is_buy = direction.unwrap_or(true);
     let mut rng = rand::thread_rng();
 
     for _ in 0..swaps {

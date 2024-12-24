@@ -27,6 +27,11 @@ pub async fn evm_fee_burning_test(
     info!("Set inflation to 0");
     set_inflation_to_zero(contact, &validator_keys).await;
 
+    let pre_supply = contact
+        .query_supply_of(STAKING_TOKEN.clone())
+        .await
+        .expect("Unable to get aalthea supply")
+        .expect("No supply of aalthea?");
     let pre_balances = snapshot_validator_rewards(contact, &validator_keys).await;
 
     info!("Generating some fees");
@@ -47,6 +52,16 @@ pub async fn evm_fee_burning_test(
     }
 
     sleep(Duration::from_secs(10)).await;
+    let post_supply = contact
+        .query_supply_of(STAKING_TOKEN.clone())
+        .await
+        .expect("Unable to get aalthea supply")
+        .expect("No supply of aalthea?");
+    assert!(pre_supply.amount > post_supply.amount);
+    info!(
+        "Supply decreased by: {}",
+        pre_supply.amount - post_supply.amount
+    );
     let post_balances = snapshot_validator_rewards(contact, &validator_keys).await;
     assert_eq!(pre_balances, post_balances);
 

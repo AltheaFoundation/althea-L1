@@ -33,6 +33,7 @@ mytestnet
 coverage.txt
 profile.out
 tests/dockerfile/althea.tar.gz
+test-ready-to-run
 
 # Vagrant
 .vagrant/

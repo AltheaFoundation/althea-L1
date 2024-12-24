@@ -4,7 +4,6 @@
 #[macro_use]
 extern crate log;
 
-use althea_proto::canto::erc20;
 use deep_space::Contact;
 use deep_space::PrivateKey;
 use std::env;
