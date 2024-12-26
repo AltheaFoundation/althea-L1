@@ -33,13 +33,21 @@ func (s GenesisState) ValidateBasic() error {
 	if err := s.Params.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "params")
 	}
+
+	if s.PreviousProposer != "" {
+		if _, err := sdk.AccAddressFromBech32(s.PreviousProposer); err != nil {
+			return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "previous proposer is not a valid bech32 address")
+		}
+	}
+
 	return nil
 }
 
 // DefaultGenesisState returns empty genesis state
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		Params: DefaultParams(),
+		Params:           DefaultParams(),
+		PreviousProposer: "",
 	}
 }
 

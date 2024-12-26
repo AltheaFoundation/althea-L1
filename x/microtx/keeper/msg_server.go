@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	sdkante "github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/AltheaFoundation/althea-L1/config"
@@ -168,7 +168,7 @@ func (k Keeper) DeductMicrotxFee(ctx sdk.Context, sender sdk.AccAddress, sendAmo
 		// Finally, collect the necessary fee
 		senderAcc := k.accountKeeper.GetAccount(ctx, sender)
 
-		err = sdkante.DeductFees(k.bankKeeper, ctx, senderAcc, sdk.NewCoins(microtxFeeCoin))
+		err = k.DeductFees(ctx, senderAcc, sdk.NewCoins(microtxFeeCoin))
 		if err != nil {
 			ctx.Logger().Error("Could not deduct MsgMicrotx fee!", "error", err, "account", senderAcc, "fee", microtxFee)
 			return nil, err
@@ -184,6 +184,20 @@ func (k Keeper) getMicrotxFeeForAmount(amount sdk.Int, basisPoints uint64) sdk.I
 		MulInt64(int64(basisPoints)).
 		QuoInt64(int64(BasisPointDivisor)).
 		TruncateInt()
+}
+
+// DeductFees deducts fees from the given account.
+func (k Keeper) DeductFees(ctx sdk.Context, acc authtypes.AccountI, fees sdk.Coins) error {
+	if !fees.IsValid() {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "invalid fee amount: %s", fees)
+	}
+
+	err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, acc.GetAddress(), types.MicrotxFeeCollectorName, fees)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrInsufficientFunds, err.Error())
+	}
+
+	return nil
 }
 
 // ========================================================================================================

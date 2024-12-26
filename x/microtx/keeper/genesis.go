@@ -13,6 +13,24 @@ func InitGenesis(ctx sdk.Context, k Keeper, data microtxtypes.GenesisState) {
 	if err := k.SetParams(ctx, *data.Params); err != nil {
 		panic(fmt.Sprintf("Unable to set params with error %v", err))
 	}
+
+	// We do not care about the initial previous proposer, but it must be set for any other block (including upgrades)
+	if ctx.BlockHeight() > 0 {
+		if data.PreviousProposer == "" {
+			fmt.Println("Previous proposer not set in InitGenesis, block: ", ctx.BlockHeight())
+			panic("Previous proposer not set in InitGenesis")
+		} else {
+			// Convert the previous proposer from an AccAddress (cosmos1...) to a ConsAddress (cosmosvalcons1...)
+			accAddr, err := sdk.AccAddressFromBech32(data.PreviousProposer)
+			if err != nil {
+				fmt.Println("Invalid previous proposer in InitGenesis, block: ", ctx.BlockHeight())
+				panic(fmt.Sprintf("Unable to convert proposer address from bech32: %v", err))
+			}
+			consAddr := sdk.ConsAddress(accAddr)
+			k.SetPreviousProposerConsAddr(ctx, consAddr)
+
+		}
+	}
 }
 
 // ExportGenesis exports all the state needed to restart the chain
@@ -20,7 +38,10 @@ func InitGenesis(ctx sdk.Context, k Keeper, data microtxtypes.GenesisState) {
 func ExportGenesis(ctx sdk.Context, k Keeper) microtxtypes.GenesisState {
 	p := k.GetParams(ctx)
 
+	previousProposer := k.GetPreviousProposerConsAddr(ctx)
+
 	return microtxtypes.GenesisState{
-		Params: &p,
+		PreviousProposer: sdk.AccAddress(previousProposer).String(),
+		Params:           &p,
 	}
 }

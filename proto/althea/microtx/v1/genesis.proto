@@ -22,4 +22,8 @@ message Params {
     ];
 }
 
-message GenesisState { Params params = 1; }
+message GenesisState {
+    Params params = 1;
+    // previous_proposer defines the previous proposer at genesis as a bech32 encoded AccAddress (cosmos1...)
+    string previous_proposer = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}

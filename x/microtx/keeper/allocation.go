@@ -23,12 +23,9 @@ func (k Keeper) AllocateTokens(
 	// fetch and clear the collected fees for distribution, since this is
 	// called in BeginBlock, collected fees will be from the previous block
 	// (and distributed to the previous proposer)
-	feeCollector := k.accountKeeper.GetModuleAccount(ctx, types.MicrotxFeeCollectorName)
-	feesCollectedInt := k.bankKeeper.GetAllBalances(ctx, feeCollector.GetAddress())
+	feeCollector := k.accountKeeper.GetModuleAddress(types.MicrotxFeeCollectorName)
+	feesCollectedInt := k.bankKeeper.GetAllBalances(ctx, feeCollector)
 	feesCollected := sdk.NewDecCoinsFromCoins(feesCollectedInt...)
-
-	// TODO: Transfer to the distribution module instead, be extra careful this is the last send though because
-	// TODO: we no longer have control after the distribution module has it
 
 	// transfer collected fees to the distribution module account
 	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.MicrotxFeeCollectorName, distrtypes.ModuleName, feesCollectedInt)
