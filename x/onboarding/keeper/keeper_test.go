@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
@@ -22,6 +23,7 @@ import (
 
 	althea "github.com/AltheaFoundation/althea-L1/app"
 	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
@@ -46,6 +48,11 @@ func (suite *KeeperTestSuite) SetupTest() {
 		authGenesis := authtypes.DefaultGenesisState()
 
 		genesis[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(authGenesis)
+
+		microtxGenesis := microtxtypes.DefaultGenesisState()
+		microtxGenesis.PreviousProposer = sdk.AccAddress(althea.ValidatorPubKey.Address().Bytes()).String()
+
+		genesis[microtxtypes.ModuleName] = app.AppCodec().MustMarshalJSON(microtxGenesis)
 
 		return genesis
 	})
@@ -89,9 +96,17 @@ func (suite *KeeperTestSuite) SetupTest() {
 	})
 	cAddr, err := val.GetConsAddr()
 	require.NoError(suite.T(), err)
-	cfg, err := suite.app.EvmKeeper.EVMConfig(suite.ctx, cAddr, suite.app.EvmKeeper.ChainID())
+	_, err = suite.app.EvmKeeper.EVMConfig(suite.ctx, cAddr, suite.app.EvmKeeper.ChainID())
 	require.NoError(suite.T(), err)
-	cfg = cfg
+
+	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
+		ChainID:            altheaconfig.DefaultChainID(),
+		Height:             suite.app.LastBlockHeight() + 1,
+		AppHash:            suite.app.LastCommitID().Hash,
+		ValidatorsHash:     tmhash.Sum([]byte("validators")),
+		NextValidatorsHash: tmhash.Sum([]byte("next_validators")),
+	}})
+
 }
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))

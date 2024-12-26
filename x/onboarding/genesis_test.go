@@ -20,6 +20,7 @@ import (
 
 	althea "github.com/AltheaFoundation/althea-L1/app"
 	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 	"github.com/AltheaFoundation/althea-L1/x/onboarding"
 	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
@@ -44,6 +45,10 @@ func (suite *GenesisTestSuite) SetupTest() {
 
 		gs[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 
+		microtxGenesis := microtxtypes.DefaultGenesisState()
+		microtxGenesis.PreviousProposer = sdk.AccAddress(althea.ValidatorPubKey.Address().Bytes()).String()
+
+		gs[microtxtypes.ModuleName] = app.AppCodec().MustMarshalJSON(microtxGenesis)
 		return gs
 	})
 

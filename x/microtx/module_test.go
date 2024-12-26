@@ -33,7 +33,8 @@ import (
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	althea "github.com/AltheaFoundation/althea-L1/app"
-	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
+	gasfreetypes "github.com/AltheaFoundation/althea-L1/x/gasfree/types"
 )
 
 type MicrotxTestSuite struct {
@@ -42,7 +43,7 @@ type MicrotxTestSuite struct {
 	ctx            sdk.Context
 	app            *althea.AltheaApp
 	queryClientEvm evm.QueryClient
-	queryClient    types.QueryClient
+	queryClient    erc20types.QueryClient
 	address        common.Address
 	clientCtx      client.Context
 	ethSigner      ethtypes.Signer
@@ -51,7 +52,7 @@ type MicrotxTestSuite struct {
 
 var s *MicrotxTestSuite
 
-func TestKeeperTestSuite(t *testing.T) {
+func TestMicrotxTestSuite(t *testing.T) {
 	s = new(MicrotxTestSuite)
 	suite.Run(t, s)
 
@@ -80,12 +81,16 @@ func (suite *MicrotxTestSuite) DoSetupTest(t require.TestingT) {
 
 		gs[feemarkettypes.ModuleName] = aa.AppCodec().MustMarshalJSON(feemarketGenesis)
 
+		gasfreeGenesis := gasfreetypes.DefaultGenesisState()
+		gasfreeGenesis.Params.GasFreeMessageTypes = []string{}
+		gs[gasfreetypes.ModuleName] = aa.AppCodec().MustMarshalJSON(gasfreeGenesis)
+
 		return gs
 	})
 
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
-		Height:          1,
-		ChainID:         "althea_232568-1",
+		Height:          0,
+		ChainID:         "althea_7357-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: althea.ValidatorPubKey.Address().Bytes(),
 
@@ -113,12 +118,13 @@ func (suite *MicrotxTestSuite) DoSetupTest(t require.TestingT) {
 	suite.queryClientEvm = evm.NewQueryClient(queryHelperEvm)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
-	suite.queryClient = types.NewQueryClient(queryHelper)
+	erc20types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
+	suite.queryClient = erc20types.NewQueryClient(queryHelper)
 
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
+
 }
 
 func (suite *MicrotxTestSuite) SetupTest() {

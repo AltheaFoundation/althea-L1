@@ -4,6 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto/tmhash"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -55,6 +58,24 @@ func (suite *TransferTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 1, 1)
 	suite.chainA = suite.coordinator.GetChain(ibctesting.GetChainID(2))
 	suite.chainB = suite.coordinator.GetChain(ibctesting.GetChainIDAlthea(1))
+
+	suite.chainA.App.Commit()
+	suite.chainA.App.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
+		ChainID:            "althea_7357-1",
+		Height:             suite.chainA.App.LastBlockHeight() + 1,
+		AppHash:            suite.chainA.App.LastCommitID().Hash,
+		ValidatorsHash:     tmhash.Sum([]byte("validators")),
+		NextValidatorsHash: tmhash.Sum([]byte("next_validators")),
+	}})
+
+	suite.chainB.App.Commit()
+	suite.chainB.App.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
+		ChainID:            "althea_7357-1",
+		Height:             suite.chainB.App.LastBlockHeight() + 1,
+		AppHash:            suite.chainB.App.LastCommitID().Hash,
+		ValidatorsHash:     tmhash.Sum([]byte("validators")),
+		NextValidatorsHash: tmhash.Sum([]byte("next_validators")),
+	}})
 }
 
 func NewTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {

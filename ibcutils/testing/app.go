@@ -224,11 +224,10 @@ func SetupWithGenesisValSetAlthea(t *testing.T, valSet *tmtypes.ValidatorSet, ge
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: simapp.DefaultConsensusParams,
 			AppStateBytes:   stateBytes,
+			InitialHeight:   1,
 		},
 	)
 
-	// commit genesis changes
-	app.Commit()
 	// nolint: exhaustruct
 	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
 		ChainID:            chainID,

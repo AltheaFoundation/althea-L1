@@ -49,6 +49,7 @@ import (
 	althea "github.com/AltheaFoundation/althea-L1/app"
 	altheacfg "github.com/AltheaFoundation/althea-L1/config"
 	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 type KeeperTestSuite struct {
@@ -113,6 +114,10 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 			gs[banktypes.ModuleName] = suite.app.AppCodec().MustMarshalJSON(&bankGenesis)
 
 		}
+		microtxGenesis := microtxtypes.DefaultGenesisState()
+		microtxGenesis.PreviousProposer = sdk.AccAddress(althea.ValidatorPubKey.Address().Bytes()).String()
+
+		gs[microtxtypes.ModuleName] = aa.AppCodec().MustMarshalJSON(microtxGenesis)
 
 		return gs
 	})
@@ -153,6 +158,16 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
+
+	// suite.app.Commit()
+	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
+		ChainID:            "althea_7357-1",
+		Height:             suite.app.LastBlockHeight() + 1,
+		AppHash:            suite.app.LastCommitID().Hash,
+		ValidatorsHash:     tmhash.Sum([]byte("validators")),
+		NextValidatorsHash: tmhash.Sum([]byte("next_validators")),
+	}})
+
 }
 
 func (suite *KeeperTestSuite) SetupTest() {

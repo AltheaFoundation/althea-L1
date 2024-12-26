@@ -19,6 +19,7 @@ import (
 	althea "github.com/AltheaFoundation/althea-L1/app"
 	"github.com/AltheaFoundation/althea-L1/x/erc20"
 	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 type GenesisTestSuite struct {
@@ -39,6 +40,11 @@ func (suite *GenesisTestSuite) SetupTest() {
 		feemarketGenesis.Params.EnableHeight = 1
 		feemarketGenesis.Params.NoBaseFee = false
 		gs[feemarkettypes.ModuleName] = aa.AppCodec().MustMarshalJSON(feemarketGenesis)
+
+		microtxGenesis := microtxtypes.DefaultGenesisState()
+		microtxGenesis.PreviousProposer = sdk.AccAddress(althea.ValidatorPubKey.Address().Bytes()).String()
+
+		gs[microtxtypes.ModuleName] = aa.AppCodec().MustMarshalJSON(microtxGenesis)
 		return gs
 	})
 

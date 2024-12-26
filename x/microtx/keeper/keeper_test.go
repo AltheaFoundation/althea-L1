@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	abci "github.com/tendermint/tendermint/abci/types"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -29,7 +31,8 @@ import (
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	althea "github.com/AltheaFoundation/althea-L1/app"
-	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
+	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
 type KeeperTestSuite struct {
@@ -38,7 +41,7 @@ type KeeperTestSuite struct {
 	ctx            sdk.Context
 	app            *althea.AltheaApp
 	queryClientEvm evm.QueryClient
-	queryClient    types.QueryClient
+	queryClient    erc20types.QueryClient
 	address        common.Address
 	clientCtx      client.Context
 	ethSigner      ethtypes.Signer
@@ -76,6 +79,10 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 		gs[feemarkettypes.ModuleName] = aa.AppCodec().MustMarshalJSON(feemarketGenesis)
 
+		microtxGenesis := microtxtypes.DefaultGenesisState()
+		microtxGenesis.PreviousProposer = sdk.AccAddress(althea.ValidatorPubKey.Address().Bytes()).String()
+
+		gs[microtxtypes.ModuleName] = aa.AppCodec().MustMarshalJSON(microtxGenesis)
 		return gs
 	})
 
@@ -109,12 +116,20 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.queryClientEvm = evm.NewQueryClient(queryHelperEvm)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
-	suite.queryClient = types.NewQueryClient(queryHelper)
+	erc20types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
+	suite.queryClient = erc20types.NewQueryClient(queryHelper)
 
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
+
+	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
+		ChainID:            "althea_7357-1",
+		Height:             suite.app.LastBlockHeight() + 1,
+		AppHash:            suite.app.LastCommitID().Hash,
+		ValidatorsHash:     tmhash.Sum([]byte("validators")),
+		NextValidatorsHash: tmhash.Sum([]byte("next_validators")),
+	}})
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
