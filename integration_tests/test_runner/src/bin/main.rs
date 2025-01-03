@@ -82,7 +82,7 @@ pub async fn main() {
         &web30,
         erc20_addresses.clone(),
         EVM_USER_KEYS.clone(),
-        one_eth() * 60_000u32.into(),
+        one_eth() * 10_000_000u32.into(),
     )
     .await
     .unwrap();

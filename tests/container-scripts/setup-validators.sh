@@ -29,7 +29,7 @@ EVM_MINER_ALLOCATION="5000000000000000000000000${STAKING_TOKEN}"
 EVM_MINER_ETH_PRIVKEY="b1bab011e03a9862664706fc3bbaa1b16651528e5f0e7fbfcbfdd8be302a13e7"
 EVM_MINER_ADDRESS="althea1hanqss6jsq66tfyjz56wz44z0ejtyv0768q8r4"
 EVM_MINER_ETH_ADDRESS="bf660843528035a5a4921534e156a27e64b231fe"
-EVM_USER_ALLOCATION="500000000000000000000000${STAKING_TOKEN}"
+EVM_USER_ALLOCATION="10000000000000000000000000${STAKING_TOKEN}"
 EVM_USER_MNEMONICS=( \
     "dial point debris employ position cheap inmate nominee crisp grow hello body meadow clever cloth strike agree include dirt tenant hello pattern tattoo option" \
     "poverty inside weasel way rabbit staff initial fire near machine icon favorite simple address skill couple embark acquire asthma deny census flush ensure shiver" \

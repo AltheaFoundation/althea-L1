@@ -7,9 +7,10 @@ use crate::dex_utils::{
     croc_policy_ops_resolution, croc_policy_treasury_resolution, croc_query_curve_tick,
     croc_query_dex, croc_query_pool_params, croc_query_pool_template, croc_query_price,
     croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd,
-    dex_mint_ambient_pos, dex_mint_ranged_in_amount, dex_mint_ranged_pos, dex_query_authority,
-    dex_query_safe_mode, dex_swap, dex_user_cmd, size_ambient_liq, OpsResolutionArgs,
-    ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
+    dex_mint_ambient_in_amount, dex_mint_ambient_pos, dex_mint_ranged_in_amount,
+    dex_mint_ranged_pos, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd,
+    size_ambient_liq, OpsResolutionArgs, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH,
+    COLD_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use crate::type_urls::{
     COLLECT_TREASURY_PROPOSAL_TYPE_URL, HOT_PATH_OPEN_PROPOSAL_TYPE_URL, OPS_PROPOSAL_TYPE_URL,
@@ -32,6 +33,7 @@ use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
 };
 use clarity::{Address as EthAddress, PrivateKey, Uint256};
 use deep_space::{Coin, Contact};
+use num::Zero;
 use num256::Int256;
 use num_traits::ToPrimitive;
 use rand::Rng;
@@ -130,16 +132,7 @@ pub async fn populate_pool_basic(
         .await
         .expect("Unable to approve erc20");
     }
-    let tick = croc_query_curve_tick(
-        web3,
-        dex_contracts.query,
-        Some(evm_user.eth_address),
-        base,
-        quote,
-        *POOL_IDX,
-    )
-    .await
-    .expect("Could not get curve tick for pool");
+    let tick = Int256::zero();
 
     let bid_tick = tick - 75u8.into();
     let ask_tick = tick + 75u8.into();
@@ -242,20 +235,9 @@ pub async fn advanced_dex_test(
         walthea,
     )
     .await;
-    let ambient_qty = one_eth();
-    let price_root = croc_query_price(
-        web3,
-        dex_contracts.query,
-        Some(*MINER_ETH_ADDRESS),
-        base,
-        quote,
-        *POOL_IDX,
-    )
-    .await
-    .unwrap();
-    let pr_u128 = price_root.to_u128().unwrap();
-    let liq = size_ambient_liq(ambient_qty.to_u128().unwrap(), true, pr_u128, false);
-    dex_mint_ambient_pos(
+    let ambient_qty = one_eth() * 100000u32.into();
+
+    dex_mint_ambient_in_amount(
         web3,
         dex_contracts.dex,
         dex_contracts.query,
@@ -264,25 +246,17 @@ pub async fn advanced_dex_test(
         base,
         quote,
         *POOL_IDX,
-        liq.into(),
+        ambient_qty,
+        false,
     )
     .await;
 
-    let tick = croc_query_curve_tick(
-        web3,
-        dex_contracts.query,
-        Some(evm_user.eth_address),
-        base,
-        quote,
-        *POOL_IDX,
-    )
-    .await
-    .expect("Could not get curve tick for pool");
+    let tick = Int256::zero();
 
-    let liq = one_eth() * 1024u32.into() / 100u32.into();
+    let liq = one_eth() * 1024u32.into();
     let tick_range = 10240;
     for i in 0..10 {
-        let position_width = tick_range / 10; // Make the positions 1/10th of the total range
+        let position_width = tick_range / 2; // Make the positions 1/2 of the total range
         let tick_offset = tick_range / 10 * i - (tick_range / 2); // Divide into 10 portions, center around the current tick
         let bid_tick = tick + tick_offset.into() - (Int256::from(position_width) / 2i8.into());
         let ask_tick = tick + tick_offset.into() + (Int256::from(position_width) / 2i8.into());
@@ -300,12 +274,13 @@ pub async fn advanced_dex_test(
             bid_tick,
             ask_tick,
             liq,
-            true,
+            false,
         )
         .await;
     }
     info!("Successfully tested DEX");
 }
+
 pub async fn dex_swap_many(
     web3: &Web3,
     evm_user_keys: Vec<EthermintUserKey>,
@@ -791,7 +766,18 @@ async fn swap_many(
             Some(OPERATION_TIMEOUT),
         )
         .await
-        .expect("Unable to swap quote for base");
+        .expect("Unable to swap");
+        let price = croc_query_price(
+            web3,
+            dex_contracts.query,
+            Some(*MINER_ETH_ADDRESS),
+            pool_base,
+            pool_quote,
+            *POOL_IDX,
+        )
+        .await
+        .expect("Unable to query price");
+        info!("Price: {}", price.to_string());
         let post_swap_base = web3
             .get_erc20_balance(pool_base, evm_user.eth_address)
             .await
@@ -810,6 +796,11 @@ async fn swap_many(
                 post_swap_quote > pre_swap_quote,
                 "Swap did not increase quote token balance"
             );
+            info!(
+                "Swapped {} base for {} quote",
+                pre_swap_base - post_swap_base,
+                post_swap_quote - pre_swap_quote
+            );
         } else {
             assert!(
                 post_swap_quote < pre_swap_quote && pre_swap_quote - post_swap_quote == qty,
@@ -818,6 +809,11 @@ async fn swap_many(
             assert!(
                 post_swap_base > pre_swap_base,
                 "Swap did not increase base token balance"
+            );
+            info!(
+                "Swapped {} quote for {} base",
+                pre_swap_quote - post_swap_quote,
+                post_swap_base - pre_swap_base,
             );
         }
 
@@ -925,15 +921,18 @@ pub async fn basic_dex_setup(
         info!("Dex is in safe mode, disabling safe mode");
         submit_and_pass_safe_mode_proposal(contact, validator_keys, false, true).await;
     }
-
+    info!(
+        "Evm user native token balance: {}",
+        web3.eth_get_balance(evm_user.eth_address).await.unwrap()
+    );
     if web3
         .get_erc20_balance(walthea, evm_user.eth_address)
         .await
         .unwrap()
-        < one_eth() * 60_000u32.into()
+        < one_eth() * 1_000_000u32.into()
     {
         web3.wrap_eth(
-            one_eth() * 60_000u32.into(),
+            one_eth() * 1_000_000u32.into(),
             evm_user.eth_privkey,
             Some(walthea),
             Some(Duration::from_secs(15)),
