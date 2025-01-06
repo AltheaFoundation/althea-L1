@@ -2,6 +2,7 @@ package lockup
 
 import (
 	"fmt"
+	"math/big"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -12,7 +13,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
+
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/AltheaFoundation/althea-L1/x/lockup/keeper"
 	"github.com/AltheaFoundation/althea-L1/x/lockup/types"
@@ -21,6 +25,7 @@ import (
 
 func TestLockAnteHandler(t *testing.T) {
 	// Test with the default of locked, only 0x0000.. is exempt, block bank's MsgSend and MsgMultiSend
+	sdk.GetConfig().SetBech32PrefixForAccount("althea", "altheapub")
 	input := keeper.CreateTestEnv(t)
 	ctx := input.Context
 	appCodec := keeper.MakeTestMarshaler()
@@ -35,7 +40,9 @@ func TestLockAnteHandler(t *testing.T) {
 
 	// Lock the chain
 	keeper.SetChainLocked(ctx, true)
-	keeper.SetLockExemptAddresses(ctx, []string{"0x0000000000000000000000000000000000000000"})
+	// 0x0 and its ethermint interpretation
+	lockExemptAddrs := []string{"0x0000000000000000000000000000000000000000", "althea1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8p93tc"}
+	keeper.SetLockExemptAddresses(ctx, lockExemptAddrs)
 	keeper.SetLockedTokenDenoms(ctx, []string{"aalthea"})
 
 	AnteHandlerLockedHappy(t, handler, keeper, ctx, txCfg, txFct)
@@ -86,6 +93,12 @@ func AnteHandlerLockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keeper
 	assert.Equal(t, ctx, allTransCtx)
 	assert.Nil(t, allTransErr)
 	t.Log("Successful good MsgTransfer")
+
+	allowedMsgEthereumTx := GetAllowedMsgEthereumTxTx(keeper, ctx, txFct, txCfg)
+	allEvmCtx, allEvmErr := handler(ctx, allowedMsgEthereumTx, false)
+	assert.Equal(t, ctx, allEvmCtx)
+	assert.Nil(t, allEvmErr)
+	t.Log("Successful good MsgEthereumTx")
 }
 
 // Test failing messages on a locked chain
@@ -121,6 +134,12 @@ func AnteHandlerLockedUnhappy(t *testing.T, handler sdk.AnteHandler, keeper keep
 	assert.Equal(t, ctx, unallTransCtx)
 	assert.NotNil(t, unallTransErr)
 	t.Log("Successful bad MsgTransfer")
+
+	unallowedMsgEvmTx := GetUnallowedMsgEthereumTxTx(keeper, ctx, txFct, txCfg)
+	unallEvmCtx, unallEvmErr := handler(ctx, unallowedMsgEvmTx, false)
+	assert.Equal(t, ctx, unallEvmCtx)
+	assert.NotNil(t, unallEvmErr)
+	t.Log("Successful bad MsgEthereumTx")
 }
 
 // nolint: dupl
@@ -162,6 +181,12 @@ func AnteHandlerUnlockedHappy(t *testing.T, handler sdk.AnteHandler, keeper keep
 	assert.Equal(t, ctx, unallTransCtx)
 	assert.Nil(t, unallTransErr)
 	t.Log("Successful bad MsgTransfer")
+
+	unallowedMsgEvmTx := GetUnallowedMsgEthereumTxTx(keeper, ctx, txFct, txCfg)
+	unallEvmCtx, unallEvmErr := handler(ctx, unallowedMsgEvmTx, false)
+	assert.Equal(t, ctx, unallEvmCtx)
+	assert.Nil(t, unallEvmErr)
+	t.Log("Successful bad MsgEthereumTx")
 }
 
 func GetAllowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
@@ -300,6 +325,28 @@ func GetAllowedMsgMicrotx(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.Ms
 	}
 }
 
+func GetAllowedMsgEthereumTx(keeper keeper.Keeper, ctx sdk.Context) evmtypes.MsgEthereumTx {
+	fromAddr := "0x0000000000000000000000000000000000000000"
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; !ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it needs to contain %v", fromAddr))
+	}
+	fromAddress := common.HexToAddress(fromAddr)
+	return *evmtypes.NewTx(big.NewInt(1234), 0, &fromAddress, big.NewInt(1234), 2000000, big.NewInt(1234), big.NewInt(4567), big.NewInt(7890), []byte{}, nil)
+}
+
+func GetAllowedMsgEthereumTxTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
+	msgEvmTx := GetAllowedMsgEthereumTx(keeper, ctx)
+	fromAddr := "0x0000000000000000000000000000000000000000"
+	msgEvmTx.From = fromAddr
+	txBld, err := txFct.BuildUnsignedTx(&msgEvmTx)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgEvmTx, err))
+	}
+
+	return txBld.GetTx()
+}
+
 func GetUnallowedMsgSendTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
 	fromAddr := "0x1111111111111111111111111111111111111111"
 	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
@@ -409,4 +456,26 @@ func GetUnallowedMsgMicrotx(keeper keeper.Keeper, ctx sdk.Context) microtxtypes.
 		Receiver: toAddr,
 		Amount:   amount,
 	}
+}
+
+func GetUnallowedMsgEthereumTx(keeper keeper.Keeper, ctx sdk.Context) evmtypes.MsgEthereumTx {
+	fromAddr := "0x1111111111111111111111111111111111111111"
+	exemptSet := keeper.GetLockExemptAddressesSet(ctx)
+	if _, ok := exemptSet[fromAddr]; ok {
+		panic(fmt.Sprintf("The exemptSet has been changed, it MUST NOT contain %v", fromAddr))
+	}
+	fromAddress := common.HexToAddress(fromAddr)
+	return *evmtypes.NewTx(big.NewInt(1234), 0, &fromAddress, big.NewInt(1234), 2000000, big.NewInt(1234), big.NewInt(4567), big.NewInt(7890), []byte{}, nil)
+}
+
+func GetUnallowedMsgEthereumTxTx(keeper keeper.Keeper, ctx sdk.Context, txFct tx.Factory, txCfg client.TxConfig) sdk.Tx {
+	msgEvmTx := GetUnallowedMsgEthereumTx(keeper, ctx)
+	fromAddr := "0x1111111111111111111111111111111111111111"
+	msgEvmTx.From = fromAddr
+	txBld, err := txFct.BuildUnsignedTx(&msgEvmTx)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to build unsigned transaction containing %v: %v", msgEvmTx, err))
+	}
+
+	return txBld.GetTx()
 }

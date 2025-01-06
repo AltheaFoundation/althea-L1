@@ -127,7 +127,7 @@ func (lad LockAnteDecorator) isAcceptable(ctx sdk.Context, msg sdk.Msg) error {
 	if _, typePresent := lockedMsgTypesSet[msgType]; typePresent {
 		// Check that any locked msg is permissible on a type-case basis
 		if allow, err := allowMessage(msg, exemptSet, lockedTokenDenomsSet); !allow {
-			return sdkerrors.Wrap(err, fmt.Sprintf("Transaction blocked because of message %v", msg))
+			return sdkerrors.Wrap(err, "Transaction blocked because of a message")
 		} else {
 			// The user is exempt, allow it to pass
 			return nil
