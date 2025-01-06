@@ -1,9 +1,9 @@
 use std::time::{Duration, SystemTime};
 
 use crate::type_urls::{
-    GENERIC_AUTHORIZATION_TYPE_URL, MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MICROTX_TYPE_URL,
-    MSG_MULTI_SEND_TYPE_URL, MSG_SEND_TYPE_URL, MSG_SET_WITHDRAW_ADDRESS_TYPE_URL,
-    MSG_TRANSFER_TYPE_URL,
+    EIP1559_TRANSACTION_DATA_TYPE_URL, GENERIC_AUTHORIZATION_TYPE_URL, MSG_ETHEREUM_TX_TYPE_URL,
+    MSG_EXEC_TYPE_URL, MSG_GRANT_TYPE_URL, MSG_MICROTX_TYPE_URL, MSG_MULTI_SEND_TYPE_URL,
+    MSG_SEND_TYPE_URL, MSG_SET_WITHDRAW_ADDRESS_TYPE_URL, MSG_TRANSFER_TYPE_URL,
 };
 use crate::utils::{
     create_parameter_change_proposal, encode_any, footoken_metadata, get_user_key, one_atom,
@@ -18,10 +18,13 @@ use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{Input, MsgMultiSend,
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use althea_proto::cosmos_sdk_proto::cosmos::distribution::v1beta1::MsgSetWithdrawAddress;
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParamChange;
-use clarity::Address as EthAddress;
+use althea_proto::ethermint::evm::v1::{DynamicFeeTx, MsgEthereumTx};
+use clarity::PrivateKey as EthPrivateKey;
 use clarity::Uint256;
+use clarity::{Address as EthAddress, Transaction};
 use deep_space::error::CosmosGrpcError;
-use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
+use deep_space::{Address, Coin, Contact, EthermintPrivateKey, Msg, PrivateKey};
+use num_traits::ToPrimitive;
 use web30::client::Web3;
 
 /// These *_PARAM_KEY constants are defined in x/lockup/types/types.go and must match those values exactly
@@ -44,12 +47,16 @@ pub async fn lockup_test(
     let msg_send_authorized = get_user_key(None);
     let msg_multi_send_authorized = get_user_key(None);
     let msg_microtx_authorized = get_user_key(None);
+    let msg_ethereum_tx_authorized = get_user_key(None);
     fund_lock_exempt_user(contact, &validator_keys, lock_exempt).await;
     fund_authorized_users(
         contact,
         &validator_keys,
-        msg_send_authorized,
-        msg_multi_send_authorized,
+        &[
+            msg_send_authorized,
+            msg_multi_send_authorized,
+            msg_ethereum_tx_authorized,
+        ],
     )
     .await;
     lockup_the_chain(
@@ -61,14 +68,16 @@ pub async fn lockup_test(
     send_evm_tx(evm_user_keys[1], web3, &erc20_addresses, false).await;
     send_evm_tx(evm_user_keys[0], web3, &erc20_addresses, true).await;
 
-    // TODO: Add ibc transfer and check that transfers are blocked outbound for aalthea
     fail_to_send(
         contact,
+        web3,
         &validator_keys,
+        evm_user_keys[0],
         [
             msg_send_authorized,
             msg_multi_send_authorized,
             msg_microtx_authorized,
+            msg_ethereum_tx_authorized,
         ],
     )
     .await;
@@ -79,6 +88,8 @@ pub async fn lockup_test(
     successfully_send(contact, &validator_keys, lock_exempt).await;
     send_evm_tx(evm_user_keys[1], web3, &erc20_addresses, true).await;
     send_evm_tx(evm_user_keys[0], web3, &erc20_addresses, true).await;
+
+    info!("Successfully tested Lockup module");
 }
 
 async fn fund_lock_exempt_user(
@@ -108,36 +119,26 @@ async fn fund_lock_exempt_user(
 async fn fund_authorized_users(
     contact: &Contact,
     validator_keys: &[ValidatorKeys],
-    auth_1: EthermintUserKey,
-    auth_2: EthermintUserKey,
+    auth_users: &[EthermintUserKey],
 ) {
     let sender = validator_keys.first().unwrap().validator_key;
     let amount = Coin {
         denom: STAKING_TOKEN.clone(),
         amount: one_atom(),
     };
-    info!("Funding auth_1 user {}", auth_1.ethermint_address);
-    contact
-        .send_coins(
-            amount.clone(),
-            Some(amount.clone()),
-            auth_1.ethermint_address,
-            Some(OPERATION_TIMEOUT),
-            sender,
-        )
-        .await
-        .expect("Unable to send funds to auth_1 user!");
-    info!("Funding auth_2 user {}", auth_2.ethermint_address);
-    contact
-        .send_coins(
-            amount.clone(),
-            Some(amount),
-            auth_2.ethermint_address,
-            Some(OPERATION_TIMEOUT),
-            sender,
-        )
-        .await
-        .expect("Unable to send funds to auth_2 user!");
+    for (i, auth) in auth_users.iter().enumerate() {
+        info!("Funding auth user {} {}", i, auth.ethermint_address);
+        contact
+            .send_coins(
+                amount.clone(),
+                Some(amount.clone()),
+                auth.ethermint_address,
+                Some(OPERATION_TIMEOUT),
+                sender,
+            )
+            .await
+            .unwrap_or_else(|_| panic!("Unable to send funds to auth user {}!", i));
+    }
 }
 
 pub async fn lockup_the_chain(
@@ -198,8 +199,10 @@ pub fn create_lockup_param_changes(exempt_users: Vec<&EthermintUserKey>) -> Vec<
 
 pub async fn fail_to_send(
     contact: &Contact,
+    web3: &Web3,
     validator_keys: &[ValidatorKeys],
-    authorized_users: [EthermintUserKey; 3],
+    evm_key: EthermintUserKey,
+    authorized_users: [EthermintUserKey; 4],
 ) {
     let sender = validator_keys.first().unwrap().validator_key;
     let receiver = get_user_key(None);
@@ -326,7 +329,7 @@ pub async fn fail_to_send(
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgMultiSend)? Should not be possible!");
-    let msg_microtx_authorized = authorized_users[1];
+    let msg_microtx_authorized = authorized_users[2];
     let authz_msg_microtx = create_authz_microtx_msg_microtx(
         contact,
         sender,
@@ -347,6 +350,16 @@ pub async fn fail_to_send(
         )
         .await;
     res.expect_err("Successfully sent via authz Exec(MsgMicrotx)? Should not be possible!");
+    let msg_ethereum_tx_authorized = authorized_users[3];
+    let _ = create_authz_evm_msg_ethereum_tx(
+        contact,
+        web3,
+        evm_key,
+        msg_ethereum_tx_authorized,
+        amount.amount.parse().unwrap(),
+    )
+    .await
+    .expect_err("Authorization of EVM transaction should fail!");
 }
 
 /// Creates a x/bank MsgSend to transfer `amount` from `sender` to `receiver`
@@ -405,6 +418,61 @@ pub fn create_distribution_msg_set_withdraw_address(
         withdraw_address: withdraw_addr.to_string(),
     };
     Msg::new(MSG_SET_WITHDRAW_ADDRESS_TYPE_URL, send)
+}
+
+/// Creates a x/evm MsgEthereumTx to transfer `amount` from `sender` to `receiver`
+pub async fn create_evm_msg_ethereum_tx(
+    web3: &Web3,
+    sender: EthPrivateKey,
+    receiver: EthAddress,
+    amount: Uint256,
+) -> Msg {
+    // Generate a simple Ethereum transaction
+    let evm_tx = web3
+        .prepare_transaction(receiver, vec![], amount, sender, vec![])
+        .await
+        .expect("Unable to generate EVM transaction!");
+    // Now map the EIP1559 transaction to the MsgEthereumTx type via the DynamicFeeTx transaction Data type
+    if let Transaction::Eip1559 {
+        chain_id,
+        nonce,
+        max_priority_fee_per_gas: _,
+        max_fee_per_gas: _,
+        gas_limit,
+        to,
+        value,
+        data,
+        signature,
+        access_list: _,
+    } = evm_tx
+    {
+        let sig = signature.unwrap();
+        let send = MsgEthereumTx {
+            hash: String::new(),
+            from: String::new(),
+            data: Some(encode_any(
+                DynamicFeeTx {
+                    chain_id: chain_id.to_string(),
+                    nonce: nonce.to_u64().unwrap(),
+                    gas_tip_cap: "0".to_string(),
+                    gas_fee_cap: gas_limit.to_string(),
+                    gas: gas_limit.to_u64().unwrap(),
+                    to: to.to_string(),
+                    value: value.to_string(),
+                    data,
+                    accesses: vec![],
+                    v: sig.get_v().to_be_bytes().to_vec(),
+                    r: sig.get_r().to_be_bytes().to_vec(),
+                    s: sig.get_s().to_be_bytes().to_vec(),
+                },
+                EIP1559_TRANSACTION_DATA_TYPE_URL,
+            )),
+            size: 0.0,
+        };
+        Msg::new(MSG_MICROTX_TYPE_URL, send)
+    } else {
+        panic!("Unexpected transaction type!");
+    }
 }
 
 /// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
@@ -570,6 +638,48 @@ pub async fn create_authz_microtx_msg_microtx(
     Ok(exec_msg)
 }
 
+/// Submits an Authorization using x/authz to give the returned private key control over `sender`'s tokens, then crafts
+/// an authz MsgExec-wrapped evm MsgEthereumTx and returns that as well
+pub async fn create_authz_evm_msg_ethereum_tx(
+    contact: &Contact,
+    web3: &Web3,
+    sender: EthermintUserKey,
+    authorizee: EthermintUserKey,
+    amount: Uint256,
+) -> Result<Msg, CosmosGrpcError> {
+    let grant_msg_ethereum_tx = create_authorization(
+        sender.ethermint_key,
+        authorizee.ethermint_address,
+        MSG_ETHEREUM_TX_TYPE_URL.to_string(),
+    );
+
+    let res = contact
+        .send_message(
+            &[grant_msg_ethereum_tx],
+            None,
+            &[],
+            Some(OPERATION_TIMEOUT),
+            None,
+            sender.ethermint_key,
+        )
+        .await;
+    info!(
+        "Granted MsgEthereumTx authorization with response {:?}",
+        res
+    );
+    res?;
+
+    let evmtx =
+        create_evm_msg_ethereum_tx(web3, sender.eth_privkey, authorizee.eth_address, amount).await;
+    let evmtx_any: prost_types::Any = evmtx.into();
+    let exec = MsgExec {
+        grantee: authorizee.ethermint_address.to_string(),
+        msgs: vec![evmtx_any],
+    };
+    let exec_msg = Msg::new(MSG_EXEC_TYPE_URL, exec);
+
+    Ok(exec_msg)
+}
 /// Creates a MsgGrant to give a GenericAuthorization for `authorizee` to submit any Msg with the given `msg_type_url`
 /// on behalf of `authorizer`
 pub fn create_authorization(

@@ -39,6 +39,10 @@ pub const SOFTWARE_UPGRADE_PROPOSAL_TYPE_URL: &str =
 // ibc-go msgs
 pub const MSG_TRANSFER_TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
+// ethermint
+pub const MSG_ETHEREUM_TX_TYPE_URL: &str = "/ethermint.evm.v1.MsgEthereumTx";
+pub const EIP1559_TRANSACTION_DATA_TYPE_URL: &str = "/ethermint.evm.v1.DynamicFeeTx";
+
 // canto
 pub const MSG_CONVERT_ERC20_TYPE_URL: &str = "/canto.erc20.v1.MsgConvertERC20";
 pub const MSG_CONVERT_COIN_TYPE_URL: &str = "/canto.erc20.v1.MsgConvertCoin";
