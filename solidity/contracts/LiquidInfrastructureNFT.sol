@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19; // Force solidity compliance
+pragma solidity 0.8.28; // Force solidity compliance
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -132,11 +132,7 @@ contract LiquidInfrastructureNFT is ERC721, OwnableApprovableERC721 {
      *
      * @notice This function is access controlled, only the owner or an approved msg.sender may call this function
      */
-    function withdrawBalances(address[] calldata erc20s) public virtual {
-        require(
-            _isApprovedOrOwner(_msgSender(), AccountId),
-            "caller is not the owner of the Account token and is not approved either"
-        );
+    function withdrawBalances(address[] calldata erc20s) public virtual onlyOwnerOrApproved(AccountId) {
         address destination = ownerOf(AccountId);
         _withdrawBalancesTo(erc20s, destination);
     }
@@ -153,11 +149,7 @@ contract LiquidInfrastructureNFT is ERC721, OwnableApprovableERC721 {
     function withdrawBalancesTo(
         address[] calldata erc20s,
         address destination
-    ) public virtual {
-        require(
-            _isApprovedOrOwner(_msgSender(), AccountId),
-            "caller is not the owner of the Account token and is not approved either"
-        );
+    ) public virtual onlyOwnerOrApproved(AccountId) {
         _withdrawBalancesTo(erc20s, destination);
     }
 
