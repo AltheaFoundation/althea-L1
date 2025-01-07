@@ -1,11 +1,21 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.3.2 (token/ERC20/presets/ERC20PresetMinterPauser.sol)
 
-pragma solidity 0.8.28; // Force solidity compliance
+// Note: This contract is a copy of a removed OpenZeppelin contract located at
+// https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.3.1/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol
+// This contract was removed from recent versions of the openzeppelin-contracts repo in favor of using their contracts wizard.
+// The contract is being copied here so that ERC20DirectBalanceManipulation can work as intended in the tests. The only
+// changes made to it were:
+// * the solidity compiler version
+// * the imports were fixed for the new version of the repo
+// * _setupRole was changed to _grantRole and _beforeTokenTransfer was changed to _update
+
+pragma solidity 0.8.28;
+
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
@@ -23,48 +33,21 @@ import "@openzeppelin/contracts/utils/Context.sol";
  * roles, as well as the default admin role, which will let it grant both minter
  * and pauser roles to other accounts.
  */
-contract ERC20MinterBurnerDecimals is
-    Context,
-    AccessControlEnumerable,
-    ERC20Burnable,
-    ERC20Pausable
-{
+contract ERC20PresetMinterPauser is Context, AccessControlEnumerable, ERC20Burnable, ERC20Pausable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-    uint8 private _decimals;
 
     /**
      * @dev Grants `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE` and `PAUSER_ROLE` to the
-     * account that deploys the contract and customizes tokens decimals
+     * account that deploys the contract.
      *
      * See {ERC20-constructor}.
      */
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint8 decimals_
-    ) ERC20(name, symbol) {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _grantRole(MINTER_ROLE, _msgSender());
         _grantRole(PAUSER_ROLE, _msgSender());
-        _grantRole(BURNER_ROLE, _msgSender());
-        _setupDecimals(decimals_);
-    }
-
-    /**
-     * @dev Sets `_decimals` as `decimals_ once at Deployment'
-     */
-    function _setupDecimals(uint8 decimals_) private {
-        _decimals = decimals_;
-    }
-
-    /**
-     * @dev Overrides the `decimals()` method with custom `_decimals`
-     */
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
     }
 
     /**
@@ -77,28 +60,8 @@ contract ERC20MinterBurnerDecimals is
      * - the caller must have the `MINTER_ROLE`.
      */
     function mint(address to, uint256 amount) public virtual {
-        require(
-            hasRole(MINTER_ROLE, _msgSender()),
-            "ERC20MinterBurnerDecimals: must have minter role to mint"
-        );
+        require(hasRole(MINTER_ROLE, _msgSender()), "ERC20PresetMinterPauser: must have minter role to mint");
         _mint(to, amount);
-    }
-
-    /**
-     * @dev Destroys `amount` new tokens for `to`.
-     *
-     * See {ERC20-_burn}.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `BURNER_ROLE`.
-     */
-    function burnCoins(address from, uint256 amount) public virtual {
-        require(
-            hasRole(BURNER_ROLE, _msgSender()),
-            "ERC20MinterBurnerDecimals: must have burner role to burn"
-        );
-        _burn(from, amount);
     }
 
     /**
@@ -111,10 +74,7 @@ contract ERC20MinterBurnerDecimals is
      * - the caller must have the `PAUSER_ROLE`.
      */
     function pause() public virtual {
-        require(
-            hasRole(PAUSER_ROLE, _msgSender()),
-            "ERC20MinterBurnerDecimals: must have pauser role to pause"
-        );
+        require(hasRole(PAUSER_ROLE, _msgSender()), "ERC20PresetMinterPauser: must have pauser role to pause");
         _pause();
     }
 
@@ -128,10 +88,7 @@ contract ERC20MinterBurnerDecimals is
      * - the caller must have the `PAUSER_ROLE`.
      */
     function unpause() public virtual {
-        require(
-            hasRole(PAUSER_ROLE, _msgSender()),
-            "ERC20MinterBurnerDecimals: must have pauser role to unpause"
-        );
+        require(hasRole(PAUSER_ROLE, _msgSender()), "ERC20PresetMinterPauser: must have pauser role to unpause");
         _unpause();
     }
 

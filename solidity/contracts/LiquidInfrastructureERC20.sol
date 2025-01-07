@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.12; // Force solidity compliance
+pragma solidity 0.8.28; // Force solidity compliance
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -83,11 +83,12 @@ contract LiquidInfrastructureERC20 is
      * @param to  token receiver
      * @param amount  amount sent
      */
-    function _beforeTokenTransfer(
+    function _update(
         address from,
         address to,
         uint256 amount
     ) internal virtual override {
+        // Before transfer
         require(!LockedForDistribution, "distribution in progress");
         if (from == address(0)) {
             _beforeMint(to, amount);
@@ -99,6 +100,22 @@ contract LiquidInfrastructureERC20 is
         if (!exists) {
             holders.push(to);
         }
+
+        // Transfer
+        super._update(from, to, amount);
+
+        // After transfer
+        bool stillHolding = (this.balanceOf(from) == 0);
+        if (!stillHolding) {
+            for (uint i = 0; i < holders.length; i++) {
+                if (holders[i] == from) {
+                    // Remove the element at i by copying the last one into its place and removing the last element
+                    holders[i] = holders[holders.length - 1];
+                    holders.pop();
+                }
+            }
+        }
+
     }
 
     /**
@@ -127,29 +144,6 @@ contract LiquidInfrastructureERC20 is
             !_isPastMinDistributionPeriod(),
             "must distribute before burning"
         );
-    }
-
-    /**
-     * Removes `from` from the list of holders when they no longer hold any balance
-     * @param from token sender
-     * @param to  token receiver
-     * @param amount  amount sent
-     */
-    function _afterTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override {
-        bool stillHolding = (this.balanceOf(from) == 0);
-        if (!stillHolding) {
-            for (uint i = 0; i < holders.length; i++) {
-                if (holders[i] == from) {
-                    // Remove the element at i by copying the last one into its place and removing the last element
-                    holders[i] = holders[holders.length - 1];
-                    holders.pop();
-                }
-            }
-        }
     }
 
     /**
@@ -346,8 +340,9 @@ contract LiquidInfrastructureERC20 is
     constructor(
         string memory _name,
         string memory _symbol,
+        address initialOwner,
         address[] memory _managedNFTs
-    ) ERC20(_name, _symbol) Ownable() {
+    ) ERC20(_name, _symbol) Ownable(initialOwner == address(0) ? msg.sender : initialOwner) {
         ManagedNFTs = _managedNFTs;
         LastDistribution = block.number;
     }

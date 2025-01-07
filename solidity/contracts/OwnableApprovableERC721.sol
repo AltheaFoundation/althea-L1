@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.12; // Force solidity compliance
+pragma solidity 0.8.28; // Force solidity compliance
 
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -21,7 +21,8 @@ abstract contract OwnableApprovableERC721 is Context, ERC721 {
      * @dev Throws if called by any account other than the owner.
      */
     modifier onlyOwner(uint256 tokenId) {
-        require(ERC721(this).ownerOf(tokenId) == _msgSender(), "OwnableApprovable: caller is not the owner");
+        address owner = _requireOwned(tokenId);
+        require(owner == _msgSender(), "OwnableApprovable: caller is not the owner");
         _;
     }
 
@@ -29,8 +30,10 @@ abstract contract OwnableApprovableERC721 is Context, ERC721 {
      * @dev Throws if called by any account other than the owner or someone approved by the owner
      */
     modifier onlyOwnerOrApproved(uint256 tokenId) {
+        address owner = _requireOwned(tokenId);
+        address sender = _msgSender();
         // Get approval directly from ERC721's internal method
-        if (_isApprovedOrOwner(_msgSender(), tokenId)) {
+        if (owner == sender || _isAuthorized(owner, sender, tokenId)) {
             _;
         } else {
             revert("OwnableApprovable: caller is not owner nor approved");

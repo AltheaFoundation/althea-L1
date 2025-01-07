@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.12; // Force solidity compliance
+pragma solidity 0.8.28; // Force solidity compliance
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -29,7 +29,7 @@ import "./OwnableApprovableERC721.sol";
  * will ignore thresholds and transfer all of the Liquid Account's balances to this NFT, which may be withdrawn
  * normally with withdrawBalances().
  */
-contract LiquidInfrastructureNFT is ERC721, OwnableApprovableERC721 {
+contract LiquidInfrastructureNFT is OwnableApprovableERC721 {
     event SuccessfulWithdrawal(address[] erc20s);
     event TryRecover();
     event SuccessfulRecovery(address[] erc20s, uint256[] amounts);

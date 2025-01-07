@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.12;
+pragma solidity 0.8.28;
 
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
+import "./ERC20PresetMinterPauser.sol";
 
 // This is an evil token. Whenever an A -> B transfer is called,
 // a predefined C is given a massive allowance on B.
@@ -11,7 +11,7 @@ contract ERC20MaliciousDelayed is ERC20PresetMinterPauser {
   uint256 private _bigNum = 1000000000000000000; // ~uint256(0)
   constructor(uint256 initialSupply)
     ERC20PresetMinterPauser("ERC20MaliciousDelayed", "ERC20MALICIOUSDELAYED") {
-      _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+      _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
       _mint(msg.sender, initialSupply);
 
   }
