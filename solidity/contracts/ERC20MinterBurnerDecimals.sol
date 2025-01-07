@@ -6,6 +6,7 @@ pragma solidity 0.8.28; // Force solidity compliance
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
@@ -27,7 +28,8 @@ contract ERC20MinterBurnerDecimals is
     Context,
     AccessControlEnumerable,
     ERC20Burnable,
-    ERC20Pausable
+    ERC20Pausable,
+    ERC20Permit
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -44,7 +46,7 @@ contract ERC20MinterBurnerDecimals is
         string memory name,
         string memory symbol,
         uint8 decimals_
-    ) ERC20(name, symbol) {
+    ) ERC20(name, symbol) ERC20Permit(name) {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _grantRole(MINTER_ROLE, _msgSender());
