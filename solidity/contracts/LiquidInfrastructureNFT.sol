@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.28; // Force solidity compliance
+pragma solidity 0.8.19; // Force solidity compliance
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -10,7 +10,8 @@ import "./OwnableApprovableERC721.sol";
  * @author Christian Borst <christian@althea.systems>
  *
  * @dev An NFT contract used to control a Liquid Infrastructure Account - a Cosmos Bank module account intrinsically connected to the EVM
- * through Althea's x/microtx module.
+ * through Althea's x/microtx module. On chains which are not Althea-L1 this is a standalone ERC721 which should receive revenue periodically,
+ * and the protocol manager must ensure LiquidInfrastructureNFTs receive the revenue they are owed.
  *
  * A Liquid Infrastructure Account typically represents some form of infrastructure involved in an Althea pay-per-forward network
  * which frequently receives payments from peers on the network for performing an automated service (e.g. providing internet).
@@ -29,8 +30,8 @@ import "./OwnableApprovableERC721.sol";
  * will ignore thresholds and transfer all of the Liquid Account's balances to this NFT, which may be withdrawn
  * normally with withdrawBalances().
  */
-contract LiquidInfrastructureNFT is OwnableApprovableERC721 {
-    event SuccessfulWithdrawal(address[] erc20s);
+contract LiquidInfrastructureNFT is ERC721, OwnableApprovableERC721 {
+    event SuccessfulWithdrawal(address to, address[] erc20s, uint256[] amounts);
     event TryRecover();
     event SuccessfulRecovery(address[] erc20s, uint256[] amounts);
     event ThresholdsChanged(address[] newErc20s, uint256[] newAmounts);
@@ -53,14 +54,22 @@ contract LiquidInfrastructureNFT is OwnableApprovableERC721 {
 
     /**
      * Constructs the underlying ERC721 with a URI like "althea://liquid-infrastructure-account/{accountName}", and
-     * a symbol like "TA:{accountName}".
+     * a symbol like "LIA:{accountName}".
      * Mints the Account token (ID=1), the only token held in this NFT.
      *
      * @param accountName The bech32 address of the controlled x/bank account
      */
-    constructor(string memory accountName)
-        ERC721(string.concat("althea://liquid-infrastructure-account/", accountName), string.concat("LIA:", accountName)) {
-
+    constructor(
+        string memory accountName
+    )
+        ERC721(
+            string.concat(
+                "althea://liquid-infrastructure-account/",
+                accountName
+            ),
+            string.concat("LIA:", accountName)
+        )
+    {
         _mint(msg.sender, AccountId);
     }
 
@@ -72,7 +81,12 @@ contract LiquidInfrastructureNFT is OwnableApprovableERC721 {
      * @return address[]: The ERC20 balances to control
      * @return uint256[]: The maximum operating amount of the associated ERC20
      */
-    function getThresholds() public virtual view returns (address[] memory, uint256[] memory) {
+    function getThresholds()
+        public
+        view
+        virtual
+        returns (address[] memory, uint256[] memory)
+    {
         return (thresholdErc20s, thresholdAmounts);
     }
 
@@ -91,13 +105,19 @@ contract LiquidInfrastructureNFT is OwnableApprovableERC721 {
      *
      * @notice this function is access controlled, only the owner or an approved msg.sender may call this function
      */
-    function setThresholds(address[] calldata newErc20s, uint256[] calldata newAmounts) public virtual onlyOwnerOrApproved(AccountId) {
-        require(newErc20s.length == newAmounts.length, "threshold values must have the same length");
+    function setThresholds(
+        address[] calldata newErc20s,
+        uint256[] calldata newAmounts
+    ) public virtual onlyOwnerOrApproved(AccountId) {
+        require(
+            newErc20s.length == newAmounts.length,
+            "threshold values must have the same length"
+        );
         // Clear the thresholds before overwriting
         delete thresholdErc20s;
         delete thresholdAmounts;
 
-        for (uint i=0; i<newErc20s.length; i++) {
+        for (uint i = 0; i < newErc20s.length; i++) {
             thresholdErc20s.push(newErc20s[i]);
             thresholdAmounts.push(newAmounts[i]);
         }
@@ -112,7 +132,11 @@ contract LiquidInfrastructureNFT is OwnableApprovableERC721 {
      *
      * @notice This function is access controlled, only the owner or an approved msg.sender may call this function
      */
-    function withdrawBalances(address[] calldata erc20s) public virtual onlyOwnerOrApproved(AccountId) {
+    function withdrawBalances(address[] calldata erc20s) public virtual {
+        require(
+            _isApprovedOrOwner(_msgSender(), AccountId),
+            "caller is not the owner of the Account token and is not approved either"
+        );
         address destination = ownerOf(AccountId);
         _withdrawBalancesTo(erc20s, destination);
     }
@@ -125,8 +149,15 @@ contract LiquidInfrastructureNFT is OwnableApprovableERC721 {
      * @param destination The address to send all the NFT's ERC20 balances to
      *
      * @notice This function is access controlled, only the owner or an approved msg.sender may call this function
-    */
-    function withdrawBalancesTo(address[] calldata erc20s, address destination) public virtual onlyOwnerOrApproved(AccountId) {
+     */
+    function withdrawBalancesTo(
+        address[] calldata erc20s,
+        address destination
+    ) public virtual {
+        require(
+            _isApprovedOrOwner(_msgSender(), AccountId),
+            "caller is not the owner of the Account token and is not approved either"
+        );
         _withdrawBalancesTo(erc20s, destination);
     }
 
@@ -136,16 +167,21 @@ contract LiquidInfrastructureNFT is OwnableApprovableERC721 {
      * @param erc20s A list of ERC20 tokens to withdraw NFT balances from
      * @param destination The address to send all the NFT's ERC20 balances to
      */
-    function _withdrawBalancesTo(address[] calldata erc20s, address destination) internal {
-        for (uint i=0; i<erc20s.length; i++) {
+    function _withdrawBalancesTo(
+        address[] calldata erc20s,
+        address destination
+    ) internal {
+        uint256[] memory amounts = new uint256[](erc20s.length);
+        for (uint i = 0; i < erc20s.length; i++) {
             address erc20 = erc20s[i];
             uint256 balance = IERC20(erc20).balanceOf(address(this));
             if (balance > 0) {
                 bool result = IERC20(erc20).transfer(destination, balance);
                 require(result, "unsuccessful withdrawal");
+                amounts[i] = balance;
             }
         }
-        emit SuccessfulWithdrawal(erc20s);
+        emit SuccessfulWithdrawal(destination, erc20s, amounts);
     }
 
     /**
