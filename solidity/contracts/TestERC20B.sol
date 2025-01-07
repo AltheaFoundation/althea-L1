@@ -1,10 +1,11 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.28; // Force solidity compliance
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 // One of three testing coins
-contract TestERC20B is ERC20 {
-    constructor() ERC20("2 Ethereum", "E2H") {
+contract TestERC20B is ERC20, ERC20Permit {
+    constructor() ERC20("2 Ethereum", "E2H") ERC20Permit("2 Ethereum") {
         _mint(
             0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
             100000000000000000000000000
