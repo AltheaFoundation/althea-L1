@@ -12,7 +12,7 @@ use super::erc20_conversion::erc20_conversion_test;
 use super::microtx_fees::microtx_fees_test;
 use super::native_token::native_token_test;
 
-pub const UPGRADE_NAME: &str = "neutrino";
+pub const UPGRADE_NAME: &str = "tethys";
 
 /// Perform a series of integration tests to seed the system with data, then submit and pass a chain
 /// upgrade proposal

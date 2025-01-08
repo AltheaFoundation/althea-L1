@@ -1,6 +1,6 @@
-# Neutrino UPGRADE
+# Tethys UPGRADE
 
-The *Neutrino* upgrade contains the following changes.
+The *Tethys* upgrade contains the following changes.
 
 ## Summary of Changes
 

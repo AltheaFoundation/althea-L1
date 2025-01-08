@@ -210,5 +210,5 @@ jobs:
         with:
           workspaces: integration_tests/
           cache-on-failure: true
-      - name: Tests the Neutrino upgrade
+      - name: Tests the Tethys upgrade
         run: tests/run-upgrade-test.sh v1.4.0
