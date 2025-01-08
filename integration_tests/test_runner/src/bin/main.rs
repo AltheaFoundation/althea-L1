@@ -325,11 +325,13 @@ pub async fn main() {
         } else {
             panic!("Unknown test type: {:?}", test_type);
         }
-    }
 
-    // this checks that the chain is continuing at the end of each test.
-    contact
-        .wait_for_next_block(TOTAL_TIMEOUT)
-        .await
-        .expect("Error chain has halted unexpectedly!");
+        // this checks that the chain is continuing at the end of each test (but not for upgrade part 1, which should halt)
+        if test_type != "UPGRADE_PART_1" {
+            contact
+                .wait_for_next_block(TOTAL_TIMEOUT)
+                .await
+                .expect("Error chain has halted unexpectedly!");
+        }
+    }
 }

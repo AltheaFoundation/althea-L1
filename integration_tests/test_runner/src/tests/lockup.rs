@@ -23,7 +23,7 @@ use clarity::PrivateKey as EthPrivateKey;
 use clarity::Uint256;
 use clarity::{Address as EthAddress, Transaction};
 use deep_space::error::CosmosGrpcError;
-use deep_space::{Address, Coin, Contact, EthermintPrivateKey, Msg, PrivateKey};
+use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
 use num_traits::ToPrimitive;
 use web30::client::Web3;
 

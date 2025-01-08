@@ -55,6 +55,7 @@ read -p "Old binary is running, use tests/run-tests.sh to run tests/populate pre
 unset OLD_BINARY_LOCATION
 # Run the new binary
 pkill oldalthea || true # allowed to fail
+pkill gaiad || true # allowed to fail
 tests/container-scripts/run-testnet.sh $NODES
 
 # This allows the tester to run the first part of the test
