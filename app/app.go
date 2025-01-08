@@ -12,6 +12,7 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
+	// Tendermint
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -113,8 +114,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing/types"
 
-	// EVM + ERC20
-
+	// EVM
 	ethante "github.com/evmos/ethermint/app/ante"
 	"github.com/evmos/ethermint/ethereum/eip712"
 	ethermintsrvflags "github.com/evmos/ethermint/server/flags"
@@ -133,7 +133,7 @@ import (
 	"github.com/AltheaFoundation/althea-L1/app/ante"
 	altheaappparams "github.com/AltheaFoundation/althea-L1/app/params"
 	"github.com/AltheaFoundation/althea-L1/app/upgrades"
-	"github.com/AltheaFoundation/althea-L1/app/upgrades/neutrino"
+	"github.com/AltheaFoundation/althea-L1/app/upgrades/tethys"
 	altheacfg "github.com/AltheaFoundation/althea-L1/config"
 	"github.com/AltheaFoundation/althea-L1/x/erc20"
 	erc20client "github.com/AltheaFoundation/althea-L1/x/erc20/client"
@@ -1291,7 +1291,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // registerUpgradeHandlers registers in-place upgrades, which are faster and easier than genesis-based upgrades
 func (app *AltheaApp) registerUpgradeHandlers() {
 	upgrades.RegisterUpgradeHandlers(
-		app.MM, app.Configurator, app.UpgradeKeeper, app.CrisisKeeper,
+		app.MM, app.Configurator, app.UpgradeKeeper, app.CrisisKeeper, app.DistrKeeper,
 	)
 }
 
@@ -1311,10 +1311,10 @@ func (app *AltheaApp) registerStoreLoaders() {
 	// Deleted: []string{"bazmodule"}, example deleted bazmodule
 
 	// <name> Group module store loader setup
-	if upgradeInfo.Name == neutrino.PlanName {
-		// Register the Group module as a new module that needs a new store allocated
+	if upgradeInfo.Name == tethys.PlanName {
+		// Register the Group and Feegrant modules as new modules that need new stores allocated
 		storeUpgrades := storetypes.StoreUpgrades{
-			Added:   []string{group.StoreKey},
+			Added:   []string{group.StoreKey, feegrant.StoreKey},
 			Renamed: nil,
 			Deleted: nil,
 		}
