@@ -3,6 +3,7 @@ pragma solidity 0.8.28; // Force solidity compliance
 
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
 /**
  * An abstract contract which provides onlyOwner(id) and onlyOwnerOrApproved(id) modifiers derived from ERC721's
  * onwerOf, getApproved, and isApprovedForAll functions
@@ -32,6 +33,7 @@ abstract contract OwnableApprovableERC721 is Context, ERC721 {
     modifier onlyOwnerOrApproved(uint256 tokenId) {
         address owner = _requireOwned(tokenId);
         address sender = _msgSender();
+
         // Get approval directly from ERC721's internal method
         if (owner == sender || _isAuthorized(owner, sender, tokenId)) {
             _;
