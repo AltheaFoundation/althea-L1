@@ -62,6 +62,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/evidence"
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
+	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
@@ -189,6 +192,7 @@ var (
 		staking.AppModuleBasic{},
 		mint.AppModuleBasic{},
 		distr.AppModuleBasic{},
+		feegrantmodule.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
 				paramsclient.ProposalHandler,
@@ -274,19 +278,19 @@ type AltheaApp struct { // nolint: golint
 
 	// keepers
 	// NOTE: If you add anything to this struct, add a nil check to ValidateMembers below!
-	AccountKeeper    *authkeeper.AccountKeeper
-	AuthzKeeper      *authzkeeper.Keeper
-	BankKeeper       *bankkeeper.BaseKeeper
-	CapabilityKeeper *capabilitykeeper.Keeper
-	StakingKeeper    *stakingkeeper.Keeper
-	SlashingKeeper   *slashingkeeper.Keeper
-	MintKeeper       *mintkeeper.Keeper
-	DistrKeeper      *distrkeeper.Keeper
-	GovKeeper        *govkeeper.Keeper
-	CrisisKeeper     *crisiskeeper.Keeper
-	UpgradeKeeper    *upgradekeeper.Keeper
-	ParamsKeeper     *paramskeeper.Keeper
-	// TODO: Add feegrant
+	AccountKeeper     *authkeeper.AccountKeeper
+	AuthzKeeper       *authzkeeper.Keeper
+	BankKeeper        *bankkeeper.BaseKeeper
+	CapabilityKeeper  *capabilitykeeper.Keeper
+	StakingKeeper     *stakingkeeper.Keeper
+	SlashingKeeper    *slashingkeeper.Keeper
+	MintKeeper        *mintkeeper.Keeper
+	DistrKeeper       *distrkeeper.Keeper
+	GovKeeper         *govkeeper.Keeper
+	CrisisKeeper      *crisiskeeper.Keeper
+	UpgradeKeeper     *upgradekeeper.Keeper
+	ParamsKeeper      *paramskeeper.Keeper
+	FeegrantKeeper    *feegrantkeeper.Keeper
 	IbcKeeper         *ibckeeper.Keeper
 	EvidenceKeeper    *evidencekeeper.Keeper
 	IbcTransferKeeper *ibctransferkeeper.Keeper
@@ -363,6 +367,9 @@ func (app AltheaApp) ValidateMembers() {
 	}
 	if app.ParamsKeeper == nil {
 		panic("Nil ParamsKeeper!")
+	}
+	if app.FeegrantKeeper == nil {
+		panic("Nil FeegrantKeeper!")
 	}
 	if app.IbcKeeper == nil {
 		panic("Nil IbcKeeper!")
@@ -457,8 +464,7 @@ func NewAltheaApp(
 		ibchost.StoreKey, upgradetypes.StoreKey, evidencetypes.StoreKey,
 		ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		erc20types.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey,
-		icahosttypes.StoreKey, group.StoreKey,
-		// TODO: Add feegrant
+		icahosttypes.StoreKey, group.StoreKey, feegrant.StoreKey,
 
 		lockuptypes.StoreKey, microtxtypes.StoreKey, gasfreetypes.StoreKey,
 		onboardingtypes.StoreKey, nativedextypes.StoreKey,
@@ -710,7 +716,8 @@ func NewAltheaApp(
 	)
 	app.CrisisKeeper = &crisisKeeper
 
-	// TODO: add feegrant keeper
+	feegrantKeeper := feegrantkeeper.NewKeeper(appCodec, keys[feegrant.StoreKey], app.AccountKeeper)
+	app.FeegrantKeeper = &feegrantKeeper
 
 	// Nativedex allows management of the native DEX instance from the Cosmos side
 	nativedexKeeper := nativedexkeeper.NewKeeper(
@@ -820,7 +827,7 @@ func NewAltheaApp(
 			&crisisKeeper,
 			skipGenesisInvariants,
 		),
-		// TODO: Add feegrant app module
+		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, *app.FeegrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(
 			appCodec,
 			govKeeper,
@@ -896,7 +903,7 @@ func NewAltheaApp(
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		authz.ModuleName,
-		//TODO: Add feegrant
+		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		gasfreetypes.ModuleName,
@@ -930,7 +937,7 @@ func NewAltheaApp(
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		authz.ModuleName,
-		// TODO: add feegrant
+		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
@@ -961,7 +968,7 @@ func NewAltheaApp(
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
 		authz.ModuleName,
-		// TODO: add feegrant
+		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
@@ -1319,11 +1326,10 @@ func (app *AltheaApp) registerStoreLoaders() {
 func (app *AltheaApp) NewAnteHandlerOptions(appOpts servertypes.AppOptions) ante.HandlerOptions {
 	maxGasWanted := cast.ToUint64(appOpts.Get(ethermintsrvflags.EVMMaxTxGasWanted))
 	return ante.HandlerOptions{
-		AccountKeeper:   app.AccountKeeper,
-		BankKeeper:      app.BankKeeper,
-		SignModeHandler: app.EncodingConfig.TxConfig.SignModeHandler(),
-		// TODO: Add feegrant
-		FeegrantKeeper:         nil,
+		AccountKeeper:          app.AccountKeeper,
+		BankKeeper:             app.BankKeeper,
+		SignModeHandler:        app.EncodingConfig.TxConfig.SignModeHandler(),
+		FeegrantKeeper:         app.FeegrantKeeper,
 		SigGasConsumer:         SigVerificationGasConsumer,
 		IBCKeeper:              app.IbcKeeper,
 		EvmKeeper:              app.EvmKeeper,
