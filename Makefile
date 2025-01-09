@@ -58,6 +58,8 @@ install: go.sum install-core
 
 # does not run go mod verify
 install-core:
+		@echo "Formatting solidity contracts for Cosmos use"
+		sh scripts/compile-contracts-for-go.sh
 		export GOFLAGS='-buildmode=pie'
 		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
