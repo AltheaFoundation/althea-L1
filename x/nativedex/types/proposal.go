@@ -45,6 +45,7 @@ func init() {
 	govv1beta1.RegisterProposalType(ProposalTypeHotPathOpen)
 	govv1beta1.RegisterProposalType(ProposalTypeSetSafeMode)
 	govv1beta1.RegisterProposalType(ProposalTypeTransferGovernance)
+	govv1beta1.RegisterProposalType(ProposalTypeOps)
 }
 
 func NewUpgradeProxyProposal(title, description string, md UpgradeProxyMetadata) govv1beta1.Content {
