@@ -131,6 +131,22 @@ pub async fn populate_pool_basic(
         .await
         .expect("Unable to approve erc20");
     }
+
+    let ambient_qty = one_eth() * 100000u32.into();
+    dex_mint_ambient_in_amount(
+        web3,
+        dex_contracts.dex,
+        dex_contracts.query,
+        evm_user.eth_privkey,
+        evm_user.eth_address,
+        base,
+        quote,
+        *POOL_IDX,
+        ambient_qty,
+        false,
+    )
+    .await;
+
     let tick = Int256::zero();
 
     let bid_tick = tick - 75u8.into();
@@ -154,7 +170,7 @@ pub async fn populate_pool_basic(
     if range_pos.liq > 0u8.into() {
         info!("Range position already exists: {:?}", range_pos);
     } else {
-        let qty: Uint256 = 1024000000000000000u128.into(); // 1.024 eth
+        let qty: Uint256 = one_eth() * 1024u32.into(); // 1024 eth
         let bb = web3
             .get_erc20_balance(base, evm_user.eth_address)
             .await
