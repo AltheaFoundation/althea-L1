@@ -7,11 +7,6 @@ NODES=4
 sudo apt-get update
 sudo apt-get install -y git make gcc g++ iproute2 iputils-ping procps vim tmux net-tools htop tar jq npm libssl-dev perl rustc cargo wget
 
-# Setup Althea L1 binary
-GOPROXY=https://proxy.golang.org make
-make install
-sudo cp ~/go/bin/althea /usr/bin/althea
-
 # Download the althea gaia fork as a IBC test chain
 sudo wget https://github.com/althea-net/ibc-test-chain/releases/download/v9.1.2/gaiad-v9.1.2-linux-amd64 -O /usr/bin/gaiad
 
@@ -30,13 +25,14 @@ sudo touch /ibc-relayer-logs/channel-creation
 # Compile the solidity contracts
 pushd solidity/
 HUSKY_SKIP_INSTALL=1 npm install
-npm run typechain
+npx hardhat compile
 ls -lah
 ls -lah artifacts/
 ls -lah artifacts/contracts/
 pwd
 popd
 
+# Compile the DEX contracts
 git clone https://github.com/AltheaFoundation/althea-dex.git solidity-dex/
 pushd solidity-dex/
 HUSKY_SKIP_INSTALL=1 npm install
@@ -45,6 +41,12 @@ ls -lah
 ls -lah misc/scripts/
 pwd
 popd
+
+# Setup Althea L1 binary
+GOPROXY=https://proxy.golang.org make
+make install
+sudo cp ~/go/bin/althea /usr/bin/althea
+
 
 sudo bash tests/container-scripts/setup-validators.sh $NODES
 sudo bash tests/container-scripts/setup-ibc-validators.sh $NODES
