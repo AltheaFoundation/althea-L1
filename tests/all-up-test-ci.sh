@@ -8,7 +8,7 @@ sudo apt-get update
 sudo apt-get install -y git make gcc g++ iproute2 iputils-ping procps vim tmux net-tools htop tar jq npm libssl-dev perl rustc cargo wget
 
 # Download the althea gaia fork as a IBC test chain
-sudo wget https://github.com/althea-net/ibc-test-chain/releases/download/v9.1.2/gaiad-v9.1.2-linux-amd64 -O /usr/bin/gaiad
+sudo wget https://github.com/althea-net/ibc-test-chain/releases/download/v9.1.5/gaiad-v9.1.5-linux-amd64 -O /usr/bin/gaiad
 
 # Setup Hermes for IBC connections between chains
 pushd /tmp/
