@@ -59,6 +59,7 @@ pub async fn onboarding_default_params(
     erc20_contracts: Vec<EthAddress>,
     evm_user_keys: Vec<EthermintUserKey>,
 ) {
+    info!("Start onboarding default params test");
     onboarding_test(
         althea_contact,
         ibc_contact,
@@ -84,6 +85,7 @@ pub async fn onboarding_disabled_whitelisted(
     erc20_contracts: Vec<EthAddress>,
     evm_user_keys: Vec<EthermintUserKey>,
 ) {
+    info!("Start onboarding disabled yet whitelisted test");
     onboarding_test(
         althea_contact,
         ibc_contact,
@@ -109,6 +111,7 @@ pub async fn onboarding_disable_after(
     erc20_contracts: Vec<EthAddress>,
     evm_user_keys: Vec<EthermintUserKey>,
 ) {
+    info!("Start onboarding disable after test");
     onboarding_test(
         althea_contact,
         ibc_contact,
@@ -135,6 +138,7 @@ pub async fn onboarding_delist_after(
     erc20_contracts: Vec<EthAddress>,
     evm_user_keys: Vec<EthermintUserKey>,
 ) {
+    info!("Start onboarding delist after test");
     onboarding_test(
         althea_contact,
         ibc_contact,

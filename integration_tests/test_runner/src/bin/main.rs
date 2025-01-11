@@ -117,7 +117,6 @@ pub async fn main() {
     info!("Starting tests with {:?}", test_type);
     if let Ok(test_type) = test_type {
         if test_type == "LOCKUP" {
-            info!("Starting Lockup test");
             lockup_test(
                 &contact,
                 keys,
@@ -128,11 +127,9 @@ pub async fn main() {
             .await;
             return;
         } else if test_type == "MICROTX_FEES" {
-            info!("Starting microtx fees test");
             microtx_fees_test(&contact, keys).await;
             return;
         } else if test_type == "ERC20_CONVERSION" {
-            info!("Starting erc20 conversion test");
             erc20_conversion_test(
                 &contact,
                 &web30,
@@ -143,11 +140,9 @@ pub async fn main() {
             .await;
             return;
         } else if test_type == "NATIVE_TOKEN" {
-            info!("Starting native token test");
             native_token_test(&contact, &web30, keys).await;
             return;
         } else if test_type == "LIQUID_ACCOUNTS" {
-            info!("Start Liquid Infrastructure Accounts test");
             liquid_accounts_test(
                 &contact,
                 &web30,
@@ -159,12 +154,10 @@ pub async fn main() {
             return;
         } else if test_type == "ICA_HOST" {
             start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
-            info!("Start ICA Host test");
             ica_host_happy_path(&contact, &ibc_contact, keys, ibc_keys).await;
             return;
         } else if test_type == "ONBOARDING_DEFAULT_PARAMS" {
             start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
-            info!("Start onboarding default params test");
             onboarding_default_params(
                 &contact,
                 &ibc_contact,
@@ -177,7 +170,6 @@ pub async fn main() {
             return;
         } else if test_type == "ONBOARDING_DISABLED_WHITELISTED" {
             start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
-            info!("Start onboarding disabled yet whitelisted test");
             onboarding_disabled_whitelisted(
                 &contact,
                 &ibc_contact,
@@ -190,7 +182,6 @@ pub async fn main() {
             return;
         } else if test_type == "ONBOARDING_DISABLE_AFTER" {
             start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
-            info!("Start onboarding disable after test");
             onboarding_disable_after(
                 &contact,
                 &ibc_contact,
@@ -203,7 +194,6 @@ pub async fn main() {
             return;
         } else if test_type == "ONBOARDING_DELIST_AFTER" {
             start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
-            info!("Start onboarding delist after test");
             onboarding_delist_after(
                 &contact,
                 &ibc_contact,
@@ -215,7 +205,6 @@ pub async fn main() {
             .await;
             return;
         } else if test_type == "DEX" {
-            info!("Start dex test");
             basic_dex_test(
                 &contact,
                 &web30,
@@ -228,7 +217,6 @@ pub async fn main() {
             .await;
             return;
         } else if test_type == "DEX_ADVANCED" {
-            info!("Start advanced dex test");
             advanced_dex_test(
                 &contact,
                 &web30,
@@ -250,7 +238,6 @@ pub async fn main() {
             .await;
             return;
         } else if test_type == "DEX_UPGRADE" {
-            info!("Start dex upgrade test");
             dex_upgrade_test(
                 &contact,
                 &web30,
@@ -263,7 +250,6 @@ pub async fn main() {
             .await;
             return;
         } else if test_type == "DEX_SAFE_MODE" {
-            info!("Start dex safe mode test");
             dex_safe_mode_test(
                 &contact,
                 &web30,
@@ -276,7 +262,6 @@ pub async fn main() {
             .await;
             return;
         } else if test_type == "DEX_OPS_PROPOSAL" {
-            info!("Start dex OpsProposal test");
             dex_ops_proposal_test(
                 &contact,
                 &web30,
@@ -292,7 +277,6 @@ pub async fn main() {
             || test_type == "EVM_FEE_BURNING"
             || test_type == "EVM_FEE_BURN"
         {
-            info!("Start evm fee burning test");
             evm_fee_burning_test(
                 &contact,
                 &web30,

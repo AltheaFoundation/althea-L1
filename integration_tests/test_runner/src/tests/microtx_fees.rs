@@ -18,6 +18,7 @@ pub const MICROTX_FEE_BASIS_POINTS_PARAM_KEY: &str = "MicrotxFeeBasisPoints";
 /// Simulates activity of automated peer-to-peer transactions on Althea networks,
 /// asserting that the correct fees are deducted and transfers succeed
 pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) {
+    info!("Starting microtx fees test");
     let num_users = 64;
     // Make users who will send tokens
     let senders = bulk_get_user_keys(None, num_users);

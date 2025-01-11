@@ -32,6 +32,7 @@ pub async fn erc20_conversion_test(
     evm_user_keys: Vec<EthermintUserKey>,
     erc20_contracts: Vec<EthAddress>,
 ) {
+    info!("Starting erc20 conversion test");
     erc20_register_and_round_trip_test(
         contact,
         web3,
