@@ -53,6 +53,7 @@ pub async fn basic_dex_test(
     dex_contracts: DexAddresses,
     walthea: EthAddress,
 ) {
+    info!("Start dex test");
     let DexTestParams {
         evm_user,
         caller: _,
@@ -222,6 +223,7 @@ pub async fn advanced_dex_test(
     dex_contracts: DexAddresses,
     walthea: EthAddress,
 ) {
+    info!("Start advanced dex test");
     let DexTestParams {
         evm_user,
         caller: _,
@@ -302,6 +304,7 @@ pub async fn dex_swap_many(
     erc20_contracts: Vec<EthAddress>,
     dex_contracts: DexAddresses,
 ) {
+    info!("Start dex swap test");
     let DexTestParams {
         evm_user,
         caller: _,
@@ -373,6 +376,7 @@ pub async fn dex_upgrade_test(
     dex_contracts: DexAddresses,
     walthea: EthAddress,
 ) {
+    info!("Start dex upgrade test");
     let evm_user = evm_user_keys.first().unwrap();
     let emergency_user = evm_user_keys.last().unwrap();
     let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
@@ -530,6 +534,7 @@ pub async fn dex_safe_mode_test(
     dex_contracts: DexAddresses,
     walthea: EthAddress,
 ) {
+    info!("Start dex safe mode test");
     let emergency_user = evm_user_keys.last().unwrap();
     let evm_user = evm_user_keys.first().unwrap();
     let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
@@ -647,6 +652,7 @@ pub async fn dex_ops_proposal_test(
     dex_contracts: DexAddresses,
     walthea: EthAddress,
 ) {
+    info!("Start dex OpsProposal test");
     let evm_user = evm_user_keys.first().unwrap();
     let (pool_base, pool_quote) = pool_tokens(erc20_contracts.clone());
 

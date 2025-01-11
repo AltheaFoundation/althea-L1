@@ -43,6 +43,7 @@ pub async fn lockup_test(
     evm_user_keys: Vec<EthermintUserKey>,
     erc20_addresses: Vec<EthAddress>,
 ) {
+    info!("Starting Lockup test");
     let lock_exempt = get_user_key(None);
     let msg_send_authorized = get_user_key(None);
     let msg_multi_send_authorized = get_user_key(None);

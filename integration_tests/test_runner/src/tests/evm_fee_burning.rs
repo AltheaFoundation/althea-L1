@@ -24,6 +24,7 @@ pub async fn evm_fee_burning_test(
     evm_user_keys: Vec<EthermintUserKey>,
     erc20_contracts: Vec<EthAddress>,
 ) {
+    info!("Start evm fee burning test");
     info!("Set inflation to 0");
     set_inflation_to_zero(contact, &validator_keys).await;
 

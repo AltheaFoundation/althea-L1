@@ -48,6 +48,7 @@ pub async fn ica_host_happy_path(
     keys: Vec<ValidatorKeys>,
     ibc_keys: Vec<CosmosPrivateKey>,
 ) {
+    info!("Start ICA Host test");
     let althea_channel_qc = IbcChannelQueryClient::connect(COSMOS_NODE_GRPC.as_str())
         .await
         .expect("Could not connect channel query client");
