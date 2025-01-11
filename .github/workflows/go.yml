@@ -14,6 +14,14 @@ jobs:
       matrix:
         node-version: [ 18.x ]
     steps:
+      - uses: actions/checkout@v2
+      - name: Build and test Solidity contracts
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: cd solidity && npm ci
+      - run: cd solidity && npm run typechain
+      - run: cd solidity && npm run test
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
