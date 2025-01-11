@@ -392,6 +392,21 @@ pub async fn execute_register_erc20_proposal(
     timeout: Option<Duration>,
     erc20_params: RegisterErc20ProposalParams,
 ) {
+    let mut erc20_qc = Erc20QueryClient::connect(contact.get_url())
+        .await
+        .expect("Unable to connect to erc20 query client");
+    let pair = erc20_qc
+        .token_pair(QueryTokenPairRequest {
+            token: erc20_params.erc20_address.clone(),
+        })
+        .await;
+
+    if let Ok(pair) = pair {
+        if pair.into_inner().token_pair.is_some() {
+            info!("ERC20 token already has a token pair registered");
+            return;
+        }
+    }
     let duration = match timeout {
         Some(dur) => dur,
         None => OPERATION_TIMEOUT,
