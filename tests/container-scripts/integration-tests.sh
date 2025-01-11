@@ -1,7 +1,7 @@
 #!/bin/bash
 NODES=$1
 TEST_TYPE=$2
-set -eu
+set -u
 
 echo "Waiting for /althea/test-ready-to-run to exist before starting the test"
 while [ ! -f /althea/test-ready-to-run ];

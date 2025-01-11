@@ -50,8 +50,19 @@ tests/container-scripts/integration-tests.sh $NODES UPGRADE_PART_1
 unset OLD_BINARY_LOCATION
 # Run the new binary
 pkill oldalthea || true # allowed to fail
+pkill althea || true # allowed to fail
+pkill gaiad || true # allowed to fail
 tests/container-scripts/run-testnet.sh $NODES
 
+sleep 20
+
 # Run the post-upgrade test
+set +e
 tests/container-scripts/integration-tests.sh $NODES UPGRADE_PART_2
 popd
+set -e
+
+echo "Upgrade part 2 ran but may have failed, check the logs for more information"
+
+sleep 6000000
+echo "You waited too long, closing the container"

@@ -70,7 +70,7 @@ jq ".app_state.evm.params.evm_denom=\"${STAKING_TOKEN}\"" /genesis.json > tmp_ge
 jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000000"' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 
 # a 120 second voting period to allow us to pass governance proposals in the tests
-jq '.app_state.gov.voting_params.voting_period = "120s"' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
+jq '.app_state.gov.voting_params.voting_period = "20s"' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 
 # rename base denom to aalthea
 sed -i 's/stake/aalthea/g' /genesis.json
