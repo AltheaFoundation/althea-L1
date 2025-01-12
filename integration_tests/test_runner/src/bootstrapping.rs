@@ -59,14 +59,6 @@ pub fn parse_validator_keys() -> (Vec<CosmosPrivateKey>, Vec<String>) {
     parse_phrases(filename)
 }
 
-/// The same as parse_validator_keys() except for a second chain accessed
-/// over IBC for testing purposes
-// pub fn parse_ibc_validator_keys() -> (Vec<CosmosPrivateKey>, Vec<String>) {
-//     let filename = "/ibc-validator-phrases";
-//     info!("Reading mnemonics from {}", filename);
-//     parse_phrases(filename)
-// }
-
 pub fn get_keys() -> Vec<ValidatorKeys> {
     let (cosmos_keys, cosmos_phrases) = parse_validator_keys();
     let mut ret = Vec::new();
@@ -416,7 +408,8 @@ pub fn setup_relayer_keys() -> Result<(), Box<dyn std::error::Error>> {
             mnemonic_path,
         ])
         .spawn()
-        .expect("Failed to add althea key");
+        .expect("Failed to add althea key")
+        .wait();
     info!("Added altheakey to hermes keybase");
 
     let mut command = hermes_base();
@@ -432,7 +425,8 @@ pub fn setup_relayer_keys() -> Result<(), Box<dyn std::error::Error>> {
             mnemonic_path,
         ])
         .spawn()
-        .expect("Failed to add ibc key");
+        .expect("Failed to add ibc key")
+        .wait();
     info!("Added ibckey to hermes keybase");
 
     Ok(())
@@ -473,7 +467,11 @@ pub fn create_ibc_channel(hermes_base: Command) {
         let create_channel = create_channel
             .stdout(Stdio::from_raw_fd(out_file))
             .stderr(Stdio::from_raw_fd(out_file));
-        create_channel.spawn().expect("Could not create channel");
+        create_channel
+            .spawn()
+            .expect("Could not create channel")
+            .wait()
+            .expect("Child exited with error");
     }
 }
 
@@ -500,7 +498,9 @@ pub fn run_ibc_relayer(hermes_base: Command, full_scan: bool) {
             .stdout(Stdio::from_raw_fd(out_file))
             .stderr(Stdio::from_raw_fd(out_file))
             .spawn()
-            .expect("Could not run hermes");
+            .expect("Could not run hermes")
+            .wait()
+            .expect("Child exited with error");
     }
 }
 
