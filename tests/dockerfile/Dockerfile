@@ -19,10 +19,12 @@ RUN git clone https://github.com/AltheaFoundation/althea-dex.git /althea/solidit
 RUN pushd /althea/integration_tests && PATH=$PATH:$HOME/.cargo/bin cargo build --bin test-runner --release
 # generate artifacts for the ethereum contracts
 RUN pushd /althea/solidity/ && HUSKY_SKIP_INSTALL=1 npm install && npm run typechain
+# copy the contracts over so that the althea bin can use them
+RUN pushd /althea/ && bash scripts/compile-contracts-for-go.sh
 # generate artifacts for the dex contracts
 RUN pushd /althea/solidity-dex/ && HUSKY_SKIP_INSTALL=1 npm install && npx hardhat compile
 # The althea bin now depends on the output of the contracts
-RUN pushd /althea && make contracts
+RUN pushd /althea && make
 # build the althea chain binary
 RUN pushd /althea/ && PATH=$PATH:/usr/local/go/bin GOPROXY=https://proxy.golang.org make && PATH=$PATH:/usr/local/go/bin make install
 RUN git config --global --add safe.directory /althea
