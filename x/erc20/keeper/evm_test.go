@@ -163,8 +163,8 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
 				suite.Require().NoError(err)
 				account := tests.GenerateAddress()
-				data, err := erc20.Pack("", account)
-				suite.Require().NoError(err)
+				data, err := erc20.Pack("notACall", account)
+				suite.Require().Error(err)
 				return data, &contract
 			},
 			false,
