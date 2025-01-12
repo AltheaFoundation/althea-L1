@@ -14,6 +14,7 @@ import (
 	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
 )
 
+// nolint: exhaustruct
 var _ types.QueryServer = Keeper{}
 
 // TokenPairs returns all registered pairs

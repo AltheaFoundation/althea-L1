@@ -37,16 +37,20 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "valid genesis",
+			//nolint: exhaustruct
 			genState: &GenesisState{
-				Params:     DefaultParams(),
+				Params: DefaultParams(),
+				//nolint: exhaustruct
 				TokenPairs: []TokenPair{},
 			},
 			expPass: true,
 		},
 		{
 			name: "valid genesis - with tokens pairs",
+			//nolint: exhaustruct
 			genState: &GenesisState{
 				Params: DefaultParams(),
+				//nolint: exhaustruct
 				TokenPairs: []TokenPair{
 					{
 						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
@@ -59,8 +63,10 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "invalid genesis - duplicated token pair",
+			//nolint: exhaustruct
 			genState: &GenesisState{
 				Params: DefaultParams(),
+				//nolint: exhaustruct
 				TokenPairs: []TokenPair{
 					{
 						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
@@ -78,8 +84,10 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "invalid genesis - duplicated token pair",
+			//nolint: exhaustruct
 			genState: &GenesisState{
 				Params: DefaultParams(),
+				//nolint: exhaustruct
 				TokenPairs: []TokenPair{
 					{
 						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
@@ -97,8 +105,10 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "invalid genesis - duplicated token pair",
+			//nolint: exhaustruct
 			genState: &GenesisState{
 				Params: DefaultParams(),
+				//nolint: exhaustruct
 				TokenPairs: []TokenPair{
 					{
 						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
@@ -116,8 +126,10 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "invalid genesis - invalid token pair",
+			//nolint: exhaustruct
 			genState: &GenesisState{
 				Params: DefaultParams(),
+				//nolint: exhaustruct
 				TokenPairs: []TokenPair{
 					{
 						Erc20Address: "0xinvalidaddress",
@@ -130,7 +142,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			// Voting period cant be zero
-			name:     "empty genesis",
+			name: "empty genesis",
+			//nolint: exhaustruct
 			genState: &GenesisState{},
 			expPass:  true,
 		},

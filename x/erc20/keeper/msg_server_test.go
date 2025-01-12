@@ -15,6 +15,7 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
+// nolint: dupl
 func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 	testCases := []struct {
 		name           string
@@ -89,15 +90,18 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 		{
 			"fail - force evm fail", 100, 10, func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
@@ -106,22 +110,28 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 		{
 			"fail - force evm balance error", 100, 10, func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				// first balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				// convert coin
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil).Once()
 				// second balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, fmt.Errorf("third")).Once()
 				// Extra call on test
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			}, false, false,
@@ -135,9 +145,11 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Times(4)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			}, false, false,
@@ -145,6 +157,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			var err error
 			suite.mintFeeCollector = true
 			suite.SetupTest()
 			metadata, pair := suite.setupRegisterCoin()
@@ -162,8 +175,10 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 				sender,
 			)
 
-			suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
-			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err = suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			suite.Require().NoError(err)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			suite.Require().NoError(err)
 
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
@@ -199,6 +214,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 	suite.mintFeeCollector = false
 }
 
+// nolint: dupl
 func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 	testCases := []struct {
 		name      string
@@ -229,6 +245,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -247,6 +264,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -271,6 +289,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -289,6 +308,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 		{
 			"fail - force fail unescrow", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockBankKeeper := &MockBankKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -304,6 +324,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 		{
 			"fail - force fail balance after transfer", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockBankKeeper := &MockBankKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -319,6 +340,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			var err error
 			suite.mintFeeCollector = true
 			suite.SetupTest()
 			metadata, pair := suite.setupRegisterCoin()
@@ -328,8 +350,10 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 			// Precondition: Convert Coin to ERC20
 			coins := sdk.NewCoins(sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.mint)))
 			sender := sdk.AccAddress(suite.address.Bytes())
-			suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
-			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err = suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			suite.Require().NoError(err)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			suite.Require().NoError(err)
 			msg := types.NewMsgConvertCoin(
 				sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.burn)),
 				suite.address,
@@ -337,7 +361,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 			)
 
 			ctx := sdk.WrapSDKContext(suite.ctx)
-			_, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
+			_, err = suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
 			suite.Require().NoError(err, tc.name)
 			suite.Commit()
 			balance := suite.BalanceOf(common.HexToAddress(pair.Erc20Address), suite.address)
@@ -374,6 +398,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 	suite.mintFeeCollector = false
 }
 
+// nolint: dupl
 func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 	var contractAddr common.Address
 	var coinName string
@@ -513,6 +538,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -536,6 +562,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				balance[31] = uint8(1)
@@ -560,6 +587,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -584,6 +612,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -601,6 +630,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockBankKeeper := &MockBankKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -622,6 +652,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockBankKeeper := &MockBankKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -643,6 +674,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockBankKeeper := &MockBankKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -717,6 +749,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 	suite.mintFeeCollector = false
 }
 
+// nolint: dupl
 func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 	var contractAddr common.Address
 
@@ -798,6 +831,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -820,6 +854,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -842,6 +877,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				balance[31] = uint8(1)
@@ -865,6 +901,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -889,8 +926,11 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			sender := sdk.AccAddress(suite.address.Bytes())
 
 			// Precondition: Mint Coins to convert on sender account
-			suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
-			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			suite.Require().NoError(err)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			suite.Require().NoError(err)
+
 			cosmosBalance := suite.app.BankKeeper.GetBalance(suite.ctx, sender, coinName)
 			suite.Require().Equal(sdk.NewInt(tc.mint), cosmosBalance.Amount)
 
@@ -932,6 +972,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 	suite.mintFeeCollector = false
 }
 
+// nolint: dupl
 func (suite *KeeperTestSuite) TestWrongPairOwnerERC20NativeCoin() {
 	testCases := []struct {
 		name      string
@@ -953,8 +994,11 @@ func (suite *KeeperTestSuite) TestWrongPairOwnerERC20NativeCoin() {
 			// Precondition: Convert Coin to ERC20
 			coins := sdk.NewCoins(sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.mint)))
 			sender := sdk.AccAddress(suite.address.Bytes())
-			suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
-			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			var err error
+			err = suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			suite.Require().NoError(err)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			suite.Require().NoError(err)
 			msg := types.NewMsgConvertCoin(
 				sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.burn)),
 				suite.address,
@@ -965,7 +1009,7 @@ func (suite *KeeperTestSuite) TestWrongPairOwnerERC20NativeCoin() {
 			suite.app.Erc20Keeper.SetTokenPair(suite.ctx, *pair)
 
 			ctx := sdk.WrapSDKContext(suite.ctx)
-			_, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
+			_, err = suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
 			suite.Require().Error(err, tc.name)
 
 			// Convert ERC20s back to Coins
@@ -984,6 +1028,7 @@ func (suite *KeeperTestSuite) TestWrongPairOwnerERC20NativeCoin() {
 	}
 }
 
+// nolint: dupl
 func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 	testCases := []struct {
 		name           string
@@ -1064,6 +1109,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -1081,6 +1127,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -1104,6 +1151,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -1131,8 +1179,11 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 				sender,
 			)
 
-			suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
-			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			var err error
+			err = suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			suite.Require().NoError(err)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			suite.Require().NoError(err)
 
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
@@ -1168,6 +1219,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 	suite.mintFeeCollector = false
 }
 
+// nolint: dupl
 func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 	testCases := []struct {
 		name      string
@@ -1198,6 +1250,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -1216,6 +1269,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -1240,6 +1294,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 				erc20Keeper := keeper.NewKeeper(suite.app.GetKey("erc20"), suite.app.AppCodec(), sp, suite.app.AccountKeeper, suite.app.BankKeeper, mockEVMKeeper)
 				suite.app.Erc20Keeper = &erc20Keeper
 
+				//nolint: exhaustruct
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
@@ -1258,6 +1313,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 		{
 			"fail - force fail unescrow", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockBankKeeper := &MockBankKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -1273,6 +1329,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 		{
 			"fail - force fail balance after transfer", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockBankKeeper := &MockBankKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -1297,8 +1354,10 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 			// Precondition: Convert Coin to ERC20
 			coins := sdk.NewCoins(sdk.NewCoin(ibcBase, sdk.NewInt(tc.mint)))
 			sender := sdk.AccAddress(suite.address.Bytes())
-			suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
-			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			var err error
+			err = suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			suite.Require().NoError(err)
 			msg := types.NewMsgConvertCoin(
 				sdk.NewCoin(ibcBase, sdk.NewInt(tc.burn)),
 				suite.address,
@@ -1306,7 +1365,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 			)
 
 			ctx := sdk.WrapSDKContext(suite.ctx)
-			_, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
+			_, err = suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
 			suite.Require().NoError(err, tc.name)
 			suite.Commit()
 			balance := suite.BalanceOf(common.HexToAddress(pair.Erc20Address), suite.address)

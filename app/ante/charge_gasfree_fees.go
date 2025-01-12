@@ -1,8 +1,9 @@
 package ante
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 	microtxkeeper "github.com/AltheaFoundation/althea-L1/x/microtx/keeper"
@@ -32,7 +33,7 @@ func (satd ChargeGasfreeFeesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, si
 	// Handle any microtxs individually
 	err := satd.DeductAnyMicrotxFees(ctx, tx)
 	if err != nil {
-		return ctx, sdkerrors.Wrap(err, "failed to deduct microtx fees")
+		return ctx, errorsmod.Wrap(err, "failed to deduct microtx fees")
 	}
 
 	return next(ctx, tx, simulate)
@@ -49,7 +50,7 @@ func (satd ChargeGasfreeFeesDecorator) DeductAnyMicrotxFees(ctx sdk.Context, tx 
 		if isMicrotx {
 			feeCollected, err := satd.microtxKeeper.DeductMsgMicrotxFee(ctx, msgMicrotx)
 			if err != nil {
-				return sdkerrors.Wrap(err, "unable to collect microtx fee prior to msg execution")
+				return errorsmod.Wrap(err, "unable to collect microtx fee prior to msg execution")
 			}
 			ctx.EventManager().EmitEvent(microtxtypes.NewEventMicrotxFeeCollected(msgMicrotx.Sender, *feeCollected))
 		}

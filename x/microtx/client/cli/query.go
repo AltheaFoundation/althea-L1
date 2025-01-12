@@ -3,9 +3,10 @@ package cli
 import (
 	"strconv"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
@@ -80,7 +81,7 @@ func CmdQueryMicrotxFee() *cobra.Command {
 
 			amount, err := strconv.ParseUint(args[0], 10, 64)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid amount, expecting a nonnegative integer")
+				return errorsmod.Wrap(err, "invalid amount, expecting a nonnegative integer")
 			}
 
 			req := types.QueryMicrotxFeeRequest{

@@ -3,7 +3,8 @@ package types
 import (
 	"math/big"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -19,7 +20,7 @@ func NewLiquidAccountThreshold(token common.Address, amount big.Int) LiquidAccou
 
 func NewLiquidAccountThresholds(tokens []common.Address, amounts []big.Int) ([]LiquidAccountThreshold, error) {
 	if len(tokens) != len(amounts) {
-		return nil, sdkerrors.Wrap(ErrInvalidThresholds, "token addresses must match limiting amounts")
+		return nil, errorsmod.Wrap(ErrInvalidThresholds, "token addresses must match limiting amounts")
 	}
 	out := []LiquidAccountThreshold{}
 	for i := 0; i < len(tokens); i++ {

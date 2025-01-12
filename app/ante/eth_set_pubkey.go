@@ -5,6 +5,8 @@ import (
 	"errors"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -51,24 +53,24 @@ func (espd EthSetPubkeyDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 	for _, msg := range tx.GetMsgs() {
 		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
 		if !ok {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
 		}
 
 		// sender address should be in the tx cache from the previous AnteHandle call
 		from := msgEthTx.GetFrom()
 		if from == nil || from.Empty() {
-			return ctx, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "from address cannot be empty")
+			return ctx, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "from address cannot be empty")
 		}
 
 		fromAddr := common.BytesToAddress(from)
 		acct := espd.evmKeeper.GetAccount(ctx, fromAddr)
 		if acct.IsContract() {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "tx submitted by a contract account: %s", fromAddr.Hex())
+			return ctx, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "tx submitted by a contract account: %s", fromAddr.Hex())
 		}
 
 		fromCosmosAcc := espd.ak.GetAccount(ctx, from)
 		if fromCosmosAcc == nil {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "account %s does not exist", from)
+			return ctx, errorsmod.Wrapf(sdkerrors.ErrUnknownAddress, "account %s does not exist", from)
 		}
 
 		if fromCosmosAcc.GetPubKey() != nil {
@@ -81,7 +83,7 @@ func (espd EthSetPubkeyDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 
 		pubkey, err := recoverPubKey(ethCfg, blockNum, ethTx)
 		if err != nil {
-			return ctx, sdkerrors.Wrapf(
+			return ctx, errorsmod.Wrapf(
 				sdkerrors.ErrorInvalidSigner,
 				"couldn't retrieve sender pubkey from the ethereum transaction: %s",
 				err.Error(),
@@ -90,7 +92,7 @@ func (espd EthSetPubkeyDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 
 		// Set the pubkey on the account
 		if err := fromCosmosAcc.SetPubKey(pubkey); err != nil {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidPubKey, "failed to set pubkey on account: %s", err.Error())
+			return ctx, errorsmod.Wrapf(sdkerrors.ErrInvalidPubKey, "failed to set pubkey on account: %s", err.Error())
 		}
 		espd.ak.SetAccount(ctx, fromCosmosAcc)
 	}

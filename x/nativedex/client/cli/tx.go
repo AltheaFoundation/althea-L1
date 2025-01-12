@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/version"
-
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
@@ -63,13 +63,13 @@ Where metadata.json contains (example):
 
 			setup, err := GenericProposalCmdSetup(cmd)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid arguments to command")
+				return errorsmod.Wrap(err, "invalid arguments to command")
 			}
 			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
 
 			propMetaData, err := ParseUpgradeProxyMetadata(clientCtx.Codec, args[0])
 			if err != nil {
-				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+				return errorsmod.Wrap(err, "Failure to parse JSON object")
 			}
 
 			content := types.NewUpgradeProxyProposal(title, description, propMetaData)
@@ -104,18 +104,18 @@ Where metadata.json contains (example):
 
 			setup, err := GenericProposalCmdSetup(cmd)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid arguments to command")
+				return errorsmod.Wrap(err, "invalid arguments to command")
 			}
 			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
 
 			propMetaData, err := ParseCollectTreasuryMetadata(clientCtx.Codec, args[0])
 			if err != nil {
-				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+				return errorsmod.Wrap(err, "Failure to parse JSON object")
 			}
 
 			inSafeMode, err := strconv.ParseBool(args[1])
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid in-safe-mode")
+				return errorsmod.Wrap(err, "invalid in-safe-mode")
 			}
 
 			content := types.NewCollectTreasuryProposal(title, description, propMetaData, inSafeMode)
@@ -150,18 +150,18 @@ Where metadata.json contains (example):
 
 			setup, err := GenericProposalCmdSetup(cmd)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid arguments to command")
+				return errorsmod.Wrap(err, "invalid arguments to command")
 			}
 			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
 
 			propMetaData, err := ParseSetTreasuryMetadata(clientCtx.Codec, args[0])
 			if err != nil {
-				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+				return errorsmod.Wrap(err, "Failure to parse JSON object")
 			}
 
 			inSafeMode, err := strconv.ParseBool(args[1])
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid in-safe-mode")
+				return errorsmod.Wrap(err, "invalid in-safe-mode")
 			}
 
 			content := types.NewSetTreasuryProposal(title, description, propMetaData, inSafeMode)
@@ -197,18 +197,18 @@ Where metadata.json contains (example):
 
 			setup, err := GenericProposalCmdSetup(cmd)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid arguments to command")
+				return errorsmod.Wrap(err, "invalid arguments to command")
 			}
 			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
 
 			propMetaData, err := ParseAuthorityTransferMetadata(clientCtx.Codec, args[0])
 			if err != nil {
-				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+				return errorsmod.Wrap(err, "Failure to parse JSON object")
 			}
 
 			inSafeMode, err := strconv.ParseBool(args[1])
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid in-safe-mode")
+				return errorsmod.Wrap(err, "invalid in-safe-mode")
 			}
 
 			content := types.NewAuthorityTransferProposal(title, description, propMetaData, inSafeMode)
@@ -243,18 +243,18 @@ Where metadata.json contains (example):
 
 			setup, err := GenericProposalCmdSetup(cmd)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid arguments to command")
+				return errorsmod.Wrap(err, "invalid arguments to command")
 			}
 			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
 
 			propMetaData, err := ParseHotPathOpenMetadata(clientCtx.Codec, args[0])
 			if err != nil {
-				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+				return errorsmod.Wrap(err, "Failure to parse JSON object")
 			}
 
 			inSafeMode, err := strconv.ParseBool(args[1])
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid in-safe-mode")
+				return errorsmod.Wrap(err, "invalid in-safe-mode")
 			}
 
 			content := types.NewHotPathOpenProposal(title, description, propMetaData, inSafeMode)
@@ -289,18 +289,18 @@ Where metadata.json contains (example):
 
 			setup, err := GenericProposalCmdSetup(cmd)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid arguments to command")
+				return errorsmod.Wrap(err, "invalid arguments to command")
 			}
 			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
 
 			propMetaData, err := ParseSetSafeModeMetadata(clientCtx.Codec, args[0])
 			if err != nil {
-				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+				return errorsmod.Wrap(err, "Failure to parse JSON object")
 			}
 
 			inSafeMode, err := strconv.ParseBool(args[1])
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid in-safe-mode")
+				return errorsmod.Wrap(err, "invalid in-safe-mode")
 			}
 
 			content := types.NewSetSafeModeProposal(title, description, propMetaData, inSafeMode)
@@ -335,13 +335,13 @@ Where metadata.json contains (example):
 
 			setup, err := GenericProposalCmdSetup(cmd)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid arguments to command")
+				return errorsmod.Wrap(err, "invalid arguments to command")
 			}
 			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
 
 			propMetaData, err := ParseTransferGovernanceMetadata(clientCtx.Codec, args[0])
 			if err != nil {
-				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+				return errorsmod.Wrap(err, "Failure to parse JSON object")
 			}
 
 			content := types.NewTransferGovernanceProposal(title, description, propMetaData)
@@ -376,13 +376,13 @@ Where metadata.json contains (example):
 
 			setup, err := GenericProposalCmdSetup(cmd)
 			if err != nil {
-				return sdkerrors.Wrap(err, "invalid arguments to command")
+				return errorsmod.Wrap(err, "invalid arguments to command")
 			}
 			var clientCtx, title, description, deposit, from = setup.ClientCtx, setup.Title, setup.Description, setup.Deposit, setup.From
 
 			propMetaData, err := ParseOpsMetadata(clientCtx.Codec, args[0])
 			if err != nil {
-				return sdkerrors.Wrap(err, "Failure to parse JSON object")
+				return errorsmod.Wrap(err, "Failure to parse JSON object")
 			}
 
 			content := types.NewOpsProposal(title, description, propMetaData)

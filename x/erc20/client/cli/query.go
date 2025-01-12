@@ -12,6 +12,7 @@ import (
 
 // GetQueryCmd returns the parent command for all erc20 CLI query commands
 func GetQueryCmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "Querying commands for the erc20 module",
@@ -30,6 +31,7 @@ func GetQueryCmd() *cobra.Command {
 
 // GetTokenPairsCmd queries all registered token pairs
 func GetTokenPairsCmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "token-pairs",
 		Short: "Gets registered token pairs",
@@ -67,6 +69,7 @@ func GetTokenPairsCmd() *cobra.Command {
 
 // GetTokenPairsCmd queries a registered token pair
 func GetTokenPairCmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "token-pair [token]",
 		Short: "Get a registered token pair",
@@ -99,6 +102,7 @@ func GetTokenPairCmd() *cobra.Command {
 
 // GetParamsCmd queries erc20 module params
 func GetParamsCmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "params",
 		Short: "Gets erc20 params",

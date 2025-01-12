@@ -117,12 +117,14 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 		return gs
 	})
 
+	//nolint: exhaustruct
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
 		Height:          1,
 		ChainID:         "althea_7357-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: althea.ValidatorPubKey.Address().Bytes(),
 
+		//nolint: exhaustruct
 		Version: tmversion.Consensus{
 			Block: version.BlockProtocol,
 		},
@@ -151,6 +153,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.queryClient = types.NewQueryClient(queryHelper)
 
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	//nolint: exhaustruct
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
 }
@@ -171,6 +174,7 @@ func (suite *KeeperTestSuite) MintFeeBurner(coins sdk.Coins) {
 }
 
 // DeployContract deploys the ERC20MinterBurnerDecimalsContract.
+// nolint: dupl
 func (suite *KeeperTestSuite) DeployContract(name, symbol string, decimals uint8) (common.Address, error) {
 	ctx := sdk.WrapSDKContext(suite.ctx)
 	chainID := suite.app.EvmKeeper.ChainID()
@@ -181,6 +185,7 @@ func (suite *KeeperTestSuite) DeployContract(name, symbol string, decimals uint8
 	}
 
 	data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...)
+	//nolint: exhaustruct
 	args, err := json.Marshal(&evm.TransactionArgs{
 		From: &suite.address,
 		Data: (*hexutil.Bytes)(&data),
@@ -189,6 +194,7 @@ func (suite *KeeperTestSuite) DeployContract(name, symbol string, decimals uint8
 		return common.Address{}, err
 	}
 
+	//nolint: exhaustruct
 	res, err := suite.queryClientEvm.EstimateGas(ctx, &evm.EthCallRequest{
 		Args:   args,
 		GasCap: uint64(config.DefaultGasCap),
@@ -226,6 +232,7 @@ func (suite *KeeperTestSuite) DeployContract(name, symbol string, decimals uint8
 	return crypto.CreateAddress(suite.address, nonce), nil
 }
 
+// nolint: dupl
 func (suite *KeeperTestSuite) DeployContractMaliciousDelayed(name string, symbol string) common.Address {
 	ctx := sdk.WrapSDKContext(suite.ctx)
 	chainID := suite.app.EvmKeeper.ChainID()
@@ -234,12 +241,14 @@ func (suite *KeeperTestSuite) DeployContractMaliciousDelayed(name string, symbol
 	suite.Require().NoError(err)
 
 	data := append(contracts.ERC20MaliciousDelayedContract.Bin, ctorArgs...)
+	//nolint: exhaustruct
 	args, err := json.Marshal(&evm.TransactionArgs{
 		From: &suite.address,
 		Data: (*hexutil.Bytes)(&data),
 	})
 	suite.Require().NoError(err)
 
+	//nolint: exhaustruct
 	res, err := suite.queryClientEvm.EstimateGas(ctx, &evm.EthCallRequest{
 		Args:   args,
 		GasCap: uint64(config.DefaultGasCap),
@@ -277,12 +286,14 @@ func (suite *KeeperTestSuite) DeployContractDirectBalanceManipulation(name strin
 	suite.Require().NoError(err)
 
 	data := append(contracts.ERC20DirectBalanceManipulationContract.Bin, ctorArgs...)
+	//nolint: exhaustruct
 	args, err := json.Marshal(&evm.TransactionArgs{
 		From: &suite.address,
 		Data: (*hexutil.Bytes)(&data),
 	})
 	suite.Require().NoError(err)
 
+	//nolint: exhaustruct
 	res, err := suite.queryClientEvm.EstimateGas(ctx, &evm.EthCallRequest{
 		Args:   args,
 		GasCap: uint64(config.DefaultGasCap),
@@ -316,6 +327,7 @@ func (suite *KeeperTestSuite) Commit() {
 	_ = suite.app.Commit()
 	header := suite.ctx.BlockHeader()
 	header.Height += 1
+	//nolint: exhaustruct
 	suite.app.BeginBlock(abci.RequestBeginBlock{
 		Header: header,
 	})
@@ -356,8 +368,10 @@ func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transfer
 	ctx := sdk.WrapSDKContext(suite.ctx)
 	chainID := suite.app.EvmKeeper.ChainID()
 
+	//nolint: exhaustruct
 	args, err := json.Marshal(&evm.TransactionArgs{To: &contractAddr, From: &from, Data: (*hexutil.Bytes)(&transferData)})
 	suite.Require().NoError(err)
+	//nolint: exhaustruct
 	res, err := suite.queryClientEvm.EstimateGas(ctx, &evm.EthCallRequest{
 		Args:   args,
 		GasCap: uint64(config.DefaultGasCap),
@@ -400,6 +414,9 @@ func (suite *KeeperTestSuite) BalanceOf(contract, account common.Address) interf
 	}
 
 	unpacked, err := erc20.Unpack("balanceOf", res.Ret)
+	if err != nil {
+		return nil
+	}
 	if len(unpacked) == 0 {
 		return nil
 	}
@@ -427,6 +444,7 @@ func (suite *KeeperTestSuite) TransferERC20Token(contractAddr, from, to common.A
 	return suite.sendTx(contractAddr, from, transferData)
 }
 
+// nolint: exhaustruct
 var _ types.EVMKeeper = &MockEVMKeeper{}
 
 type MockEVMKeeper struct {
@@ -463,6 +481,7 @@ func (m *MockEVMKeeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer v
 	return args.Get(0).(*evmtypes.MsgEthereumTxResponse), args.Error(1)
 }
 
+// nolint: exhaustruct
 var _ types.BankKeeper = &MockBankKeeper{}
 
 type MockBankKeeper struct {

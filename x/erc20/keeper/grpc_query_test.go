@@ -24,7 +24,9 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 		{
 			"no pairs registered",
 			func() {
+				//nolint: exhaustruct
 				req = &types.QueryTokenPairsRequest{}
+				//nolint: exhaustruct
 				expRes = &types.QueryTokenPairsResponse{Pagination: &query.PageResponse{}}
 			},
 			true,
@@ -32,13 +34,17 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 		{
 			"1 pair registered w/pagination",
 			func() {
+				//nolint: exhaustruct
 				req = &types.QueryTokenPairsRequest{
+					//nolint: exhaustruct
 					Pagination: &query.PageRequest{Limit: 10, CountTotal: true},
 				}
 				pair := types.NewTokenPair(tests.GenerateAddress(), "coin", true, types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
+				//nolint: exhaustruct
 				expRes = &types.QueryTokenPairsResponse{
+					//nolint: exhaustruct
 					Pagination: &query.PageResponse{Total: 1},
 					TokenPairs: []types.TokenPair{pair},
 				}
@@ -48,6 +54,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 		{
 			"2 pairs registered wo/pagination",
 			func() {
+				//nolint: exhaustruct
 				req = &types.QueryTokenPairsRequest{}
 				pair := types.NewTokenPair(tests.GenerateAddress(), "coin", true, types.OWNER_MODULE)
 				pair2 := types.NewTokenPair(tests.GenerateAddress(), "coin2", true, types.OWNER_MODULE)
@@ -55,6 +62,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair2)
 
 				expRes = &types.QueryTokenPairsResponse{
+					//nolint: exhaustruct
 					Pagination: &query.PageResponse{Total: 2},
 					TokenPairs: []types.TokenPair{pair, pair2},
 				}
@@ -95,7 +103,9 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 		{
 			"invalid token address",
 			func() {
+				//nolint: exhaustruct
 				req = &types.QueryTokenPairRequest{}
+				//nolint: exhaustruct
 				expRes = &types.QueryTokenPairResponse{}
 			},
 			false,
@@ -103,9 +113,11 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 		{
 			"token pair not found",
 			func() {
+				//nolint: exhaustruct
 				req = &types.QueryTokenPairRequest{
 					Token: tests.GenerateAddress().Hex(),
 				}
+				//nolint: exhaustruct
 				expRes = &types.QueryTokenPairResponse{}
 			},
 			false,

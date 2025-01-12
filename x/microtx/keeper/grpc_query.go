@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerror "github.com/cosmos/cosmos-sdk/types/errors"
@@ -72,7 +74,7 @@ func (k Keeper) LiquidAccount(c context.Context, req *types.QueryLiquidAccountRe
 
 			return &types.QueryLiquidAccountResponse{Accounts: accs}, nil
 		} else {
-			return nil, sdkerror.Wrapf(sdkerror.ErrInvalidAddress, "owner must start with 0x (eip-55) or %v (bech32)", cosmosPrefix)
+			return nil, errorsmod.Wrapf(sdkerror.ErrInvalidAddress, "owner must start with 0x (eip-55) or %v (bech32)", cosmosPrefix)
 		}
 	}
 

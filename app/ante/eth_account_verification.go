@@ -3,6 +3,8 @@ package ante
 import (
 	"github.com/ethereum/go-ethereum/common"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -47,18 +49,18 @@ func (avd EthAccountVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx
 	for i, msg := range tx.GetMsgs() {
 		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
 		if !ok {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
+			return ctx, errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
 		}
 
 		txData, err := evmtypes.UnpackTxData(msgEthTx.Data)
 		if err != nil {
-			return ctx, sdkerrors.Wrapf(err, "failed to unpack tx data any for tx %d", i)
+			return ctx, errorsmod.Wrapf(err, "failed to unpack tx data any for tx %d", i)
 		}
 
 		// sender address should be in the tx cache from the previous AnteHandle call
 		from := msgEthTx.GetFrom()
 		if from.Empty() {
-			return ctx, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "from address cannot be empty")
+			return ctx, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "from address cannot be empty")
 		}
 
 		// check whether the sender address is EOA
@@ -69,17 +71,17 @@ func (avd EthAccountVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx
 			acc := ethtypes.ProtoAccount()
 			err := acc.SetAddress(from)
 			if err != nil {
-				return ctx, sdkerrors.Wrap(err, "failed to set address")
+				return ctx, errorsmod.Wrap(err, "failed to set address")
 			}
 			avd.ak.NewAccount(ctx, acc)
 			acct = statedb.NewEmptyAccount()
 		} else if acct.IsContract() {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidType,
+			return ctx, errorsmod.Wrapf(sdkerrors.ErrInvalidType,
 				"the sender is not EOA: address %s, codeHash <%s>", fromAddr, acct.CodeHash)
 		}
 
 		if err := evmkeeper.CheckSenderBalance(sdk.NewIntFromBigInt(acct.Balance), txData); err != nil {
-			return ctx, sdkerrors.Wrap(err, "failed to check sender balance")
+			return ctx, errorsmod.Wrap(err, "failed to check sender balance")
 		}
 
 	}

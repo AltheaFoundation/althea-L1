@@ -7,6 +7,8 @@ package lockup
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -95,7 +97,7 @@ func (lad LockAnteDecorator) AnteHandle(
 					err := lad.cdc.UnpackAny(m, &inner)
 					if err != nil {
 						return ctx,
-							sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "unable to unpack authz msgexec message: %v", err)
+							errorsmod.Wrapf(sdkerrors.ErrInvalidType, "unable to unpack authz msgexec message: %v", err)
 					}
 					// Check if the inner Msg is acceptable or not, returning an error kicks this whole Tx out of the mempool
 					if err := lad.isAcceptable(ctx, inner); err != nil {
@@ -127,21 +129,21 @@ func (lad LockAnteDecorator) isAcceptable(ctx sdk.Context, msg sdk.Msg) error {
 	if _, typePresent := lockedMsgTypesSet[msgType]; typePresent {
 		// Check that any locked msg is permissible on a type-case basis
 		if allow, err := allowMessage(msg, exemptSet, lockedTokenDenomsSet); !allow {
-			return sdkerrors.Wrap(err, "Transaction blocked because of a message")
+			return errorsmod.Wrap(err, "Transaction blocked because of a message")
 		} else {
 			// The user is exempt, allow it to pass
 			return nil
 		}
 	}
 	if msgType == "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress" {
-		return sdkerrors.Wrap(types.ErrLocked, "The chain is locked, only exempt addresses may submit this Msg type")
+		return errorsmod.Wrap(types.ErrLocked, "The chain is locked, only exempt addresses may submit this Msg type")
 	}
 	if msgType == "/cosmos.authz.v1beta1.MsgExec" {
-		return sdkerrors.Wrap(types.ErrLocked, "The chain is locked, recursively MsgExec-wrapped Msgs are not allowed")
+		return errorsmod.Wrap(types.ErrLocked, "The chain is locked, recursively MsgExec-wrapped Msgs are not allowed")
 	}
 	if msgType == "/ethermint.evm.v1.MsgEthereumTx" {
 		if allow, err := allowMessage(msg, exemptSet, lockedTokenDenomsSet); !allow {
-			return sdkerrors.Wrap(err, "The chain is locked, only exempt addresses may submit this Msg type")
+			return errorsmod.Wrap(err, "The chain is locked, only exempt addresses may submit this Msg type")
 		} else {
 			return nil
 		}
@@ -166,7 +168,7 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 			// Message sent from a non-exempt address while the chain is locked up, is the transfer a locked coin?
 			for _, coin := range msgSend.Amount {
 				if _, present := lockedTokenDenomsSet[coin.Denom]; present {
-					return false, sdkerrors.Wrap(types.ErrLocked,
+					return false, errorsmod.Wrap(types.ErrLocked,
 						"The chain is locked, only exempt addresses may send locked denoms")
 				}
 			}
@@ -189,7 +191,7 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 			}
 
 			if lockedToken && blockedAddress {
-				return false, sdkerrors.Wrap(types.ErrLocked,
+				return false, errorsmod.Wrap(types.ErrLocked,
 					"The chain is locked, only exempt addresses may be inputs in a MultiSend message containing a locked token denom")
 			}
 		}
@@ -203,7 +205,7 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 			// The sender is not exempt, but are they sending a locked token?
 			if _, present := lockedTokenDenomsSet[msgTransfer.Token.Denom]; present {
 				// The token is locked, return an error
-				return false, sdkerrors.Wrap(types.ErrLocked,
+				return false, errorsmod.Wrap(types.ErrLocked,
 					"The chain is locked, only exempt addresses may Transfer a locked token denom over IBC")
 			}
 		}
@@ -217,7 +219,7 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 			// The sender is not exempt, but are they sending a locked token?
 			if _, present := lockedTokenDenomsSet[msgMicrotx.Amount.Denom]; present {
 				// The token is locked, return an error
-				return false, sdkerrors.Wrap(types.ErrLocked,
+				return false, errorsmod.Wrap(types.ErrLocked,
 					"The chain is locked, only exempt addresses may Microtx a locked token denom")
 			}
 		}
@@ -230,13 +232,13 @@ func allowMessage(msg sdk.Msg, exemptSet map[string]struct{}, lockedTokenDenomsS
 		addressBytes := common.HexToAddress(msgEvmTx.From).Bytes()
 		ethermintAddr := sdk.AccAddress(addressBytes)
 		if _, present := exemptSet[ethermintAddr.String()]; !present {
-			return false, sdkerrors.Wrap(types.ErrLocked,
+			return false, errorsmod.Wrap(types.ErrLocked,
 				"The chain is locked, only exempt addresses may send a MsgEthereumTx")
 		}
 		return true, nil
 
 	default:
-		return false, sdkerrors.Wrap(types.ErrUnhandled,
+		return false, errorsmod.Wrap(types.ErrUnhandled,
 			fmt.Sprintf("Message type %v does not have a case in allowMessage, unable to handle messages like this",
 				sdk.MsgTypeURL(msg),
 			),

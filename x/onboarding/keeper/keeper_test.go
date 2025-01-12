@@ -89,10 +89,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 	})
 	cAddr, err := val.GetConsAddr()
 	require.NoError(suite.T(), err)
-	cfg, err := suite.app.EvmKeeper.EVMConfig(suite.ctx, cAddr, suite.app.EvmKeeper.ChainID())
+	_, err = suite.app.EvmKeeper.EVMConfig(suite.ctx, cAddr, suite.app.EvmKeeper.ChainID())
 	require.NoError(suite.T(), err)
-	cfg = cfg
 }
+
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }

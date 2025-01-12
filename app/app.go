@@ -1278,7 +1278,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(lockuptypes.ModuleName)
 	paramsKeeper.Subspace(microtxtypes.ModuleName)
 	paramsKeeper.Subspace(gasfreetypes.ModuleName)
-	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable())
+	// Ethermint marks evmtypes.ParamKeyTable() as deprecated but does not have a documented replacement. For now, disable the linting error.
+	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable()) //nolint: staticcheck
 	paramsKeeper.Subspace(erc20types.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
@@ -1338,7 +1339,9 @@ func (app *AltheaApp) NewAnteHandlerOptions(appOpts servertypes.AppOptions) ante
 		ExtensionOptionChecker: ante.CosmosExtensionOptionChecker,
 		TxFeeChecker:           ethante.NewDynamicFeeChecker(app.EvmKeeper),
 		DisabledAuthzMsgs: []string{
+			//nolint: exhaustruct
 			sdk.MsgTypeURL((&evmtypes.MsgEthereumTx{})),
+			//nolint: exhaustruct
 			sdk.MsgTypeURL((&vestingtypes.MsgCreateVestingAccount{})),
 		},
 		Cdc:           app.AppCodec(),

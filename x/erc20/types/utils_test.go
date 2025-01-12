@@ -98,9 +98,11 @@ func TestEqualMetadata(t *testing.T) {
 		},
 		{
 			"different base field",
+			//nolint: exhaustruct
 			banktypes.Metadata{
 				Base: "acanto",
 			},
+			//nolint: exhaustruct
 			banktypes.Metadata{
 				Base: "tacanto",
 			},

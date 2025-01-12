@@ -6,11 +6,12 @@ import (
 	"log"
 	"os"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/genutil/types"
 	slashing "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -71,7 +72,7 @@ func loadKeydataFromFile(clientCtx client.Context, replacementrJSON string, genD
 
 			toReplaceValConsAddress, err := val.GetConsAddr()
 			if err != nil {
-				panic(sdkerrors.Wrapf(err, "unable to get validator cons addr for validator %v", val.Description))
+				panic(errorsmod.Wrapf(err, "unable to get validator cons addr for validator %v", val.Description))
 			}
 
 			consPubKeyBz, err := sdk.GetFromBech32(replacement.ConsensusPubkey, sdk.GetConfig().GetBech32ConsensusPubPrefix())
@@ -91,18 +92,18 @@ func loadKeydataFromFile(clientCtx client.Context, replacementrJSON string, genD
 
 			replaceValConsAddress, err := val.GetConsAddr()
 			if err != nil {
-				panic(sdkerrors.Wrapf(err, "unable to get new validator cons addr for pubkey %v", consPubKey.String()))
+				panic(errorsmod.Wrapf(err, "unable to get new validator cons addr for pubkey %v", consPubKey.String()))
 			}
 
 			// nolint: errcheck
 			protoReplaceValConsPubKey, err := val.TmConsPublicKey()
 			if err != nil {
-				panic(sdkerrors.Wrapf(err, "unable to get validator tm cons public key for  validator %v", val.Description))
+				panic(errorsmod.Wrapf(err, "unable to get validator tm cons public key for  validator %v", val.Description))
 			}
 			// nolint: errcheck
 			replaceValConsPubKey, err := cryptocodec.PubKeyFromProto(protoReplaceValConsPubKey)
 			if err != nil {
-				panic(sdkerrors.Wrapf(err, "unable to decode pubkey %v", protoReplaceValConsPubKey.String()))
+				panic(errorsmod.Wrapf(err, "unable to decode pubkey %v", protoReplaceValConsPubKey.String()))
 			}
 
 			for i, signingInfo := range slashingGenesis.SigningInfos {

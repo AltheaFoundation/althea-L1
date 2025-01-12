@@ -13,6 +13,8 @@ import (
 	apitypes "github.com/ethereum/go-ethereum/signer/core/apitypes"
 	"github.com/stretchr/testify/suite"
 
+	sdkmath "cosmossdk.io/math"
+
 	client "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -242,6 +244,7 @@ func (suite *AnteTestSuite) CreateTestEVMTxBuilder(
 
 		// Second round: all signer infos are set, so each signer can sign.
 
+		//nolint: exhaustruct
 		signerData := authsigning.SignerData{
 			ChainID:       suite.ctx.ChainID(),
 			AccountNumber: accNum,
@@ -262,21 +265,21 @@ func (suite *AnteTestSuite) CreateTestEVMTxBuilder(
 	return txBuilder
 }
 
-func (suite *AnteTestSuite) CreateTestCosmosMsgSend(gasPrice sdk.Int, denom string, amount sdk.Int, from sdk.AccAddress, to sdk.AccAddress) client.TxBuilder {
+func (suite *AnteTestSuite) CreateTestCosmosMsgSend(gasPrice sdkmath.Int, denom string, amount sdkmath.Int, from sdk.AccAddress, to sdk.AccAddress) client.TxBuilder {
 	return suite.CreateTestCosmosTxBuilder(gasPrice, denom, banktypes.NewMsgSend(from, to, sdk.NewCoins(sdk.NewCoin(denom, amount))))
 }
 
-func (suite *AnteTestSuite) CreateTestCosmosMsgMicrotx(gasPrice sdk.Int, denom string, amount sdk.Int, from sdk.AccAddress, to sdk.AccAddress) client.TxBuilder {
+func (suite *AnteTestSuite) CreateTestCosmosMsgMicrotx(gasPrice sdkmath.Int, denom string, amount sdkmath.Int, from sdk.AccAddress, to sdk.AccAddress) client.TxBuilder {
 	return suite.CreateTestCosmosTxBuilder(gasPrice, denom, microtxtypes.NewMsgMicrotx(from.String(), to.String(), sdk.NewCoin(denom, amount)))
 }
 
-func (suite *AnteTestSuite) CreateTestCosmosMsgMicrotxMsgSend(gasPrice sdk.Int, denom string, amount sdk.Int, from sdk.AccAddress, to sdk.AccAddress) client.TxBuilder {
+func (suite *AnteTestSuite) CreateTestCosmosMsgMicrotxMsgSend(gasPrice sdkmath.Int, denom string, amount sdkmath.Int, from sdk.AccAddress, to sdk.AccAddress) client.TxBuilder {
 	msgMicrotx := microtxtypes.NewMsgMicrotx(from.String(), to.String(), sdk.NewCoin(denom, amount))
 	msgSend := banktypes.NewMsgSend(from, to, sdk.NewCoins(sdk.NewCoin(denom, amount)))
 	return suite.CreateTestCosmosTxBuilder(gasPrice, denom, msgMicrotx, msgSend)
 }
 
-func (suite *AnteTestSuite) CreateTestCosmosTxBuilder(gasPrice sdk.Int, denom string, msgs ...sdk.Msg) client.TxBuilder {
+func (suite *AnteTestSuite) CreateTestCosmosTxBuilder(gasPrice sdkmath.Int, denom string, msgs ...sdk.Msg) client.TxBuilder {
 	txBuilder := suite.clientCtx.TxConfig.NewTxBuilder()
 
 	txBuilder.SetGasLimit(TestGasLimit)
@@ -290,6 +293,7 @@ func (suite *AnteTestSuite) CreateTestCosmosTxBuilder(gasPrice sdk.Int, denom st
 func (suite *AnteTestSuite) SignTestCosmosTx(chainId string, txBuilder client.TxBuilder, privkey cryptotypes.PrivKey, accNum uint64, sequence uint64) client.TxBuilder {
 	signMode := suite.clientCtx.TxConfig.SignModeHandler().DefaultMode()
 	pubKey := privkey.PubKey()
+	//nolint: exhaustruct
 	signerData := authsigning.SignerData{
 		ChainID:       chainId,
 		AccountNumber: accNum,

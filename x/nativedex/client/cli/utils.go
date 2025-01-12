@@ -7,11 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
@@ -83,13 +84,13 @@ func AddGenericProposalCommandFlags(cmd *cobra.Command) {
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(cli.FlagDeposit, "1aalthea", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
-		panic(sdkerrors.Wrap(err, "No title provided"))
+		panic(errorsmod.Wrap(err, "No title provided"))
 	}
 	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
-		panic(sdkerrors.Wrap(err, "No description provided"))
+		panic(errorsmod.Wrap(err, "No description provided"))
 	}
 	if err := cmd.MarkFlagRequired(cli.FlagDeposit); err != nil {
-		panic(sdkerrors.Wrap(err, "No deposit provided"))
+		panic(errorsmod.Wrap(err, "No deposit provided"))
 	}
 }
 

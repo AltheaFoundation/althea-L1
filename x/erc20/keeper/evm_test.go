@@ -13,6 +13,7 @@ import (
 	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
 )
 
+// nolint: exhaustruct
 func (suite *KeeperTestSuite) TestQueryERC20() {
 	var contract common.Address
 	testCases := []struct {
@@ -27,7 +28,11 @@ func (suite *KeeperTestSuite) TestQueryERC20() {
 		},
 		{
 			"ok",
-			func() { contract, _ = suite.DeployContract("coin", "token", erc20Decimals) },
+			func() {
+				var err error
+				contract, err = suite.DeployContract("coin", "token", erc20Decimals)
+				suite.Require().NoError(err)
+			},
 			true,
 		},
 	}
@@ -49,6 +54,7 @@ func (suite *KeeperTestSuite) TestQueryERC20() {
 	}
 }
 
+// nolint: exhaustruct
 func (suite *KeeperTestSuite) TestBalanceOf() {
 	var mockEVMKeeper *MockEVMKeeper
 	contract := tests.GenerateAddress()
@@ -105,6 +111,7 @@ func (suite *KeeperTestSuite) TestBalanceOf() {
 	}
 }
 
+// nolint: exhaustruct
 func (suite *KeeperTestSuite) TestCallEVM() {
 	testCases := []struct {
 		name    string
@@ -140,6 +147,7 @@ func (suite *KeeperTestSuite) TestCallEVM() {
 	}
 }
 
+// nolint: exhaustruct
 func (suite *KeeperTestSuite) TestCallEVMWithData() {
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
 	testCases := []struct {
@@ -155,7 +163,8 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
 				suite.Require().NoError(err)
 				account := tests.GenerateAddress()
-				data, _ := erc20.Pack("", account)
+				data, err := erc20.Pack("", account)
+				suite.Require().NoError(err)
 				return data, &contract
 			},
 			false,
@@ -167,7 +176,8 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
 				suite.Require().NoError(err)
 				account := tests.GenerateAddress()
-				data, _ := erc20.Pack("balanceOf", account)
+				data, err := erc20.Pack("balanceOf", account)
+				suite.Require().NoError(err)
 				return data, &contract
 			},
 			true,
@@ -197,7 +207,8 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 			"deploy",
 			types.ModuleAddress,
 			func() ([]byte, *common.Address) {
-				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
+				ctorArgs, err := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
+				suite.Require().NoError(err)
 				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...)
 				return data, nil
 			},
@@ -207,10 +218,13 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 			"fail deploy",
 			types.ModuleAddress,
 			func() ([]byte, *common.Address) {
+				var err error
 				params := suite.app.EvmKeeper.GetParams(suite.ctx)
 				params.EnableCreate = false
-				suite.app.EvmKeeper.SetParams(suite.ctx, params)
-				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
+				err = suite.app.EvmKeeper.SetParams(suite.ctx, params)
+				suite.Require().NoError(err)
+				ctorArgs, err := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
+				suite.Require().NoError(err)
 				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...)
 				return data, nil
 			},
@@ -235,6 +249,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 	}
 }
 
+// nolint: exhaustruct
 func (suite *KeeperTestSuite) TestForceFail() {
 	var mockEVMKeeper *MockEVMKeeper
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
@@ -286,7 +301,8 @@ func (suite *KeeperTestSuite) TestForceFail() {
 			contract, err := suite.DeployContract("coin", "token", erc20Decimals)
 			suite.Require().NoError(err)
 			account := tests.GenerateAddress()
-			data, _ := erc20.Pack("balanceOf", account)
+			data, err := erc20.Pack("balanceOf", account)
+			suite.Require().NoError(err)
 
 			res, err := suite.app.Erc20Keeper.CallEVMWithData(suite.ctx, types.ModuleAddress, &contract, data, tc.commit)
 			if tc.expPass {
@@ -299,6 +315,7 @@ func (suite *KeeperTestSuite) TestForceFail() {
 	}
 }
 
+// nolint: exhaustruct
 func (suite *KeeperTestSuite) TestQueryERC20ForceFail() {
 	var mockEVMKeeper *MockEVMKeeper
 	contract := tests.GenerateAddress()
@@ -364,6 +381,7 @@ func (suite *KeeperTestSuite) TestQueryERC20ForceFail() {
 	}
 	for _, tc := range testCases {
 		suite.SetupTest() // reset
+		//nolint: exhaustruct
 		mockEVMKeeper = &MockEVMKeeper{}
 		sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 		suite.Require().True(found)

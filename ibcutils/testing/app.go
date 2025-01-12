@@ -13,6 +13,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -75,7 +77,7 @@ func SetupTestingAltheaApp() (TestingApp, map[string]json.RawMessage) {
 	return app, althea.NewDefaultGenesisState()
 }
 
-func initializeValsAndDelegations(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, bondAmt sdk.Int) ([]stakingtypes.Validator, []stakingtypes.Delegation) {
+func initializeValsAndDelegations(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, bondAmt sdkmath.Int) ([]stakingtypes.Validator, []stakingtypes.Delegation) {
 	validators := make([]stakingtypes.Validator, 0, len(valSet.Validators))
 	delegations := make([]stakingtypes.Delegation, 0, len(valSet.Validators))
 
@@ -105,7 +107,7 @@ func initializeValsAndDelegations(t *testing.T, valSet *tmtypes.ValidatorSet, ge
 	return validators, delegations
 }
 
-func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction sdk.Int, balances ...banktypes.Balance) TestingApp {
+func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, powerReduction sdkmath.Int, balances ...banktypes.Balance) TestingApp {
 	app, genesisState := DefaultTestingAppInit()
 
 	// set genesis accounts

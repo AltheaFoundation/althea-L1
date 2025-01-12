@@ -44,7 +44,9 @@ func (suite *KeeperTestSuite) setupRegisterERC20Pair(contractType int) common.Ad
 	case contractMaliciousDelayed:
 		contract = suite.DeployContractMaliciousDelayed(erc20Name, erc20Symbol)
 	default:
-		contract, _ = suite.DeployContract(erc20Name, erc20Symbol, erc20Decimals)
+		var err error
+		contract, err = suite.DeployContract(erc20Name, erc20Symbol, erc20Decimals)
+		suite.Require().NoError(err)
 	}
 	suite.Commit()
 
@@ -54,6 +56,7 @@ func (suite *KeeperTestSuite) setupRegisterERC20Pair(contractType int) common.Ad
 }
 
 func (suite *KeeperTestSuite) setupRegisterCoin() (banktypes.Metadata, *types.TokenPair) {
+	//nolint: exhaustruct
 	validMetadata := banktypes.Metadata{
 		Description: "description of the token",
 		Base:        cosmosTokenBase,
@@ -86,6 +89,7 @@ func (suite *KeeperTestSuite) setupRegisterCoin() (banktypes.Metadata, *types.To
 func (suite *KeeperTestSuite) setupRegisterIBCVoucher() (banktypes.Metadata, *types.TokenPair) {
 	suite.SetupTest()
 
+	//nolint: exhaustruct
 	validMetadata := banktypes.Metadata{
 		Description: "ATOM IBC voucher (channel 14)",
 		Base:        ibcBase,
@@ -111,7 +115,8 @@ func (suite *KeeperTestSuite) setupRegisterIBCVoucher() (banktypes.Metadata, *ty
 	return validMetadata, pair
 }
 
-func (suite KeeperTestSuite) TestRegisterCoin() {
+func (suite *KeeperTestSuite) TestRegisterCoin() {
+	//nolint: exhaustruct
 	metadata := banktypes.Metadata{
 		Description: "description",
 		Base:        cosmosTokenBase,
@@ -290,7 +295,7 @@ func (suite KeeperTestSuite) TestRegisterCoin() {
 	}
 }
 
-func (suite KeeperTestSuite) TestRegisterERC20() {
+func (suite *KeeperTestSuite) TestRegisterERC20() {
 	var (
 		contractAddr common.Address
 		pair         types.TokenPair
@@ -326,7 +331,8 @@ func (suite KeeperTestSuite) TestRegisterERC20() {
 		{
 			"meta data already stored",
 			func() {
-				suite.app.Erc20Keeper.CreateCoinMetadata(suite.ctx, contractAddr)
+				_, err := suite.app.Erc20Keeper.CreateCoinMetadata(suite.ctx, contractAddr)
+				suite.Require().NoError(err)
 			},
 			false,
 		},
@@ -390,7 +396,7 @@ func (suite *KeeperTestSuite) TestRegisterIBCVoucher() {
 	suite.setupRegisterIBCVoucher()
 }
 
-func (suite KeeperTestSuite) TestToggleConverision() {
+func (suite *KeeperTestSuite) TestToggleConverision() {
 	var (
 		contractAddr common.Address
 		id           []byte
@@ -442,7 +448,9 @@ func (suite KeeperTestSuite) TestToggleConverision() {
 				contractAddr = suite.setupRegisterERC20Pair(contractMinterBurner)
 				id = suite.app.Erc20Keeper.GetTokenPairID(suite.ctx, contractAddr.String())
 				pair, _ = suite.app.Erc20Keeper.GetTokenPair(suite.ctx, id)
-				pair, _ = suite.app.Erc20Keeper.ToggleConversion(suite.ctx, contractAddr.String())
+				var err error
+				pair, err = suite.app.Erc20Keeper.ToggleConversion(suite.ctx, contractAddr.String())
+				suite.Require().NoError(err)
 			},
 			true,
 			true,

@@ -157,8 +157,11 @@ func (suite *KeeperTestSuite) TestEvmHooksRegisteredCoin() {
 			contractAddr := common.HexToAddress(pair.Erc20Address)
 
 			coins := sdk.NewCoins(sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.mint)))
-			suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
-			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			var err error
+			err = suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			suite.Require().NoError(err)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			suite.Require().NoError(err)
 
 			convertCoin := types.NewMsgConvertCoin(
 				sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.burn)),
@@ -167,7 +170,7 @@ func (suite *KeeperTestSuite) TestEvmHooksRegisteredCoin() {
 			)
 
 			ctx := sdk.WrapSDKContext(suite.ctx)
-			_, err := suite.app.Erc20Keeper.ConvertCoin(ctx, convertCoin)
+			_, err = suite.app.Erc20Keeper.ConvertCoin(ctx, convertCoin)
 			suite.Require().NoError(err, tc.name)
 			suite.Commit()
 
@@ -179,7 +182,6 @@ func (suite *KeeperTestSuite) TestEvmHooksRegisteredCoin() {
 			// Burn the 10 tokens of suite.address (owner)
 			_ = suite.TransferERC20TokenToModule(contractAddr, suite.address, big.NewInt(tc.reconvert))
 
-			balance = suite.BalanceOf(common.HexToAddress(pair.Erc20Address), suite.address)
 			cosmosBalance = suite.app.BankKeeper.GetBalance(suite.ctx, sender, metadata.Base)
 
 			if tc.result {
@@ -232,7 +234,9 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 		{
 			"Empty logs",
 			func() {
+				//nolint: exhaustruct
 				log := ethtypes.Log{}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -243,9 +247,11 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 			"No log data",
 			func() {
 				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics: topics,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -256,10 +262,12 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 			"Non recognized event",
 			func() {
 				topics := []common.Hash{{}, account.Hash(), account.Hash()}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics: topics,
 					Data:   transferData,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -271,10 +279,12 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 			func() {
 				aprovalEvent := erc20.Events["Approval"]
 				topics := []common.Hash{aprovalEvent.ID, account.Hash(), account.Hash()}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics: topics,
 					Data:   transferData,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -285,10 +295,12 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 			"No log address",
 			func() {
 				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics: topics,
 					Data:   transferData,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -299,10 +311,12 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 			"No data on topic",
 			func() {
 				topics := []common.Hash{transferEvent.ID}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics: topics,
 					Data:   transferData,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -320,11 +334,13 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 				suite.Require().NoError(err)
 
 				topics := []common.Hash{transferEvent.ID, account.Hash(), account.Hash()}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics:  topics,
 					Data:    transferData,
 					Address: contractAddr,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -342,11 +358,13 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 				suite.Require().NoError(err)
 
 				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics:  topics,
 					Data:    transferData,
 					Address: contractAddr,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -367,11 +385,13 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, *pair)
 
 				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics:  topics,
 					Data:    transferData,
 					Address: contractAddr,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}
@@ -392,11 +412,13 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, *pair)
 
 				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				//nolint: exhaustruct
 				log := ethtypes.Log{
 					Topics:  topics,
 					Data:    transferData,
 					Address: contractAddr,
 				}
+				//nolint: exhaustruct
 				receipt = &ethtypes.Receipt{
 					Logs: []*ethtypes.Log{&log},
 				}

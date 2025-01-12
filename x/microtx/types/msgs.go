@@ -1,8 +1,9 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authlegacy "github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 )
 
@@ -37,18 +38,18 @@ func (msg MsgMicrotx) Type() string { return TypeMsgMicrotx }
 func (msg *MsgMicrotx) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return sdkerrors.Wrap(err, "invalid sender in microtx msg microtx")
+		return errorsmod.Wrap(err, "invalid sender in microtx msg microtx")
 	}
 	_, err = sdk.AccAddressFromBech32(msg.Receiver)
 	if err != nil {
-		return sdkerrors.Wrap(err, "invalid receiver in microtx msg microtx")
+		return errorsmod.Wrap(err, "invalid receiver in microtx msg microtx")
 	}
 	if err := msg.Amount.Validate(); err != nil {
-		return sdkerrors.Wrap(err, "invalid coin in microtx msg microtx")
+		return errorsmod.Wrap(err, "invalid coin in microtx msg microtx")
 	}
 
 	if msg.Amount.Amount.Equal(sdk.ZeroInt()) {
-		return sdkerrors.Wrap(ErrInvalidMicrotx, "zero amount in microtx msg microtx")
+		return errorsmod.Wrap(ErrInvalidMicrotx, "zero amount in microtx msg microtx")
 	}
 	return nil
 }
@@ -83,7 +84,7 @@ func (msg MsgLiquify) Type() string { return TypeMsgLiquify }
 func (msg *MsgLiquify) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
-		return sdkerrors.Wrap(err, "invalid sender in microtx msg liquify")
+		return errorsmod.Wrap(err, "invalid sender in microtx msg liquify")
 	}
 
 	return nil

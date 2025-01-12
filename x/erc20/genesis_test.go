@@ -42,12 +42,14 @@ func (suite *GenesisTestSuite) SetupTest() {
 		return gs
 	})
 
+	//nolint: exhaustruct
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
 		ChainID:         "althea_7357-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: althea.ValidatorPubKey.Address().Bytes(),
 
+		//nolint: exhaustruct
 		Version: tmversion.Consensus{
 			Block: version.BlockProtocol,
 		},
@@ -75,6 +77,7 @@ func (suite *GenesisTestSuite) TestERC20InitGenesis() {
 	}{
 		{
 			"empty genesis",
+			//nolint: exhaustruct
 			types.GenesisState{},
 		},
 		{
@@ -120,6 +123,7 @@ func (suite *GenesisTestSuite) TestErc20ExportGenesis() {
 	}{
 		{
 			"empty genesis",
+			//nolint: exhaustruct
 			types.GenesisState{},
 		},
 		{

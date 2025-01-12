@@ -3,6 +3,8 @@ package microtx
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -21,7 +23,7 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 			res, err := msgServer.Microtx(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		default:
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, fmt.Sprintf("Unrecognized microtx Msg type: %v", sdk.MsgTypeURL(msg)))
+			return nil, errorsmod.Wrap(sdkerrors.ErrUnknownRequest, fmt.Sprintf("Unrecognized microtx Msg type: %v", sdk.MsgTypeURL(msg)))
 		}
 	}
 }

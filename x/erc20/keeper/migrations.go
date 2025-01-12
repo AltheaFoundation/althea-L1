@@ -7,6 +7,7 @@ import (
 	v2 "github.com/AltheaFoundation/althea-L1/x/erc20/migrations/v2"
 )
 
+// nolint: exhaustruct
 var _ module.MigrationHandler = Migrator{}.Migrate1to2
 
 // Migrator is a struct for handling in-place store migrations.

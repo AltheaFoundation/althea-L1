@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
@@ -21,8 +22,11 @@ const (
 
 // Implements Proposal Interface
 var (
+	//nolint: exhaustruct
 	_ govv1beta1.Content = &RegisterCoinProposal{}
+	//nolint: exhaustruct
 	_ govv1beta1.Content = &RegisterERC20Proposal{}
+	//nolint: exhaustruct
 	_ govv1beta1.Content = &ToggleTokenConversionProposal{}
 )
 
@@ -127,7 +131,7 @@ func (*RegisterERC20Proposal) ProposalType() string {
 // ValidateBasic performs a stateless check of the proposal fields
 func (rtbp *RegisterERC20Proposal) ValidateBasic() error {
 	if err := ethermint.ValidateAddress(rtbp.Erc20Address); err != nil {
-		return sdkerrors.Wrap(err, "ERC20 address")
+		return errorsmod.Wrap(err, "ERC20 address")
 	}
 	return govv1beta1.ValidateAbstract(rtbp)
 }

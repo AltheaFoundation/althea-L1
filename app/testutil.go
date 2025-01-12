@@ -114,6 +114,7 @@ func SetupWithDB(isCheckTx bool, patchGenesis func(*AltheaApp, simapp.GenesisSta
 
 		// Initialize the chain
 		app.InitChain(
+			//nolint: exhaustruct
 			abci.RequestInitChain{
 				ChainId:         "althea_7357-1",
 				Validators:      []abci.ValidatorUpdate{},
@@ -191,12 +192,13 @@ func genesisStateWithValSet(codec codec.Codec, genesisState simapp.GenesisState,
 			panic(err)
 		}
 		validator := stakingtypes.Validator{
-			OperatorAddress:   sdk.ValAddress(val.Address).String(),
-			ConsensusPubkey:   pkAny,
-			Jailed:            false,
-			Status:            stakingtypes.Bonded,
-			Tokens:            bondAmt,
-			DelegatorShares:   sdk.OneDec(),
+			OperatorAddress: sdk.ValAddress(val.Address).String(),
+			ConsensusPubkey: pkAny,
+			Jailed:          false,
+			Status:          stakingtypes.Bonded,
+			Tokens:          bondAmt,
+			DelegatorShares: sdk.OneDec(),
+			//nolint: exhaustruct
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),

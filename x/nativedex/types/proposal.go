@@ -3,7 +3,7 @@ package types
 import (
 	"github.com/ethereum/go-ethereum/common"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
@@ -69,7 +69,7 @@ func (p *UpgradeProxyProposal) ValidateBasic() error {
 
 	md := p.GetMetadata()
 	if !common.IsHexAddress(md.CallpathAddress) {
-		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid callpath address")
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid callpath address")
 	}
 
 	if md.CallpathIndex == 0 {
@@ -101,7 +101,7 @@ func (p *CollectTreasuryProposal) ValidateBasic() error {
 
 	md := p.GetMetadata()
 	if !common.IsHexAddress(md.TokenAddress) {
-		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid token address")
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid token address")
 	}
 
 	return nil
@@ -129,7 +129,7 @@ func (p *SetTreasuryProposal) ValidateBasic() error {
 
 	md := p.GetMetadata()
 	if !common.IsHexAddress(md.TreasuryAddress) {
-		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid treasury address")
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid treasury address")
 	}
 
 	return nil
@@ -157,7 +157,7 @@ func (p *AuthorityTransferProposal) ValidateBasic() error {
 
 	md := p.GetMetadata()
 	if !common.IsHexAddress(md.AuthAddress) {
-		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid auth address")
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid auth address")
 	}
 
 	return nil
@@ -237,11 +237,11 @@ func (p *TransferGovernanceProposal) ValidateBasic() error {
 	md := p.GetMetadata()
 
 	if !common.IsHexAddress(md.Ops) {
-		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid ops address")
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid ops address")
 	}
 
 	if !common.IsHexAddress(md.Emergency) {
-		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid emergency address")
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid emergency address")
 	}
 
 	return nil
@@ -273,7 +273,7 @@ func (p *OpsProposal) ValidateBasic() error {
 	}
 
 	if len(md.CmdArgs) == 0 {
-		return sdkerrors.Wrap(govtypes.ErrInvalidProposalContent, "cmd args has zero length")
+		return errorsmod.Wrap(govtypes.ErrInvalidProposalContent, "cmd args has zero length")
 	}
 
 	return nil

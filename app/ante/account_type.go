@@ -1,6 +1,8 @@
 package ante
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -34,7 +36,7 @@ func NewSetAccountTypeDecorator(ak AccountKeeper, ethAccountProto func(sdk.AccAd
 func (satd SetAccountTypeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	sigTx, ok := tx.(SignedTx)
 	if !ok {
-		return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "invalid tx type")
+		return ctx, errorsmod.Wrap(sdkerrors.ErrTxDecode, "invalid tx type")
 	}
 
 	signers := sigTx.GetSigners()
@@ -56,13 +58,13 @@ func (satd SetAccountTypeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 
 			// Copy over the BaseAccount values
 			if err = replacement.SetAccountNumber(baseAccount.GetAccountNumber()); err != nil {
-				return ctx, sdkerrors.Wrap(err, "unable to set account number on replacement EthAccount")
+				return ctx, errorsmod.Wrap(err, "unable to set account number on replacement EthAccount")
 			}
 			if err = replacement.SetSequence(baseAccount.GetSequence()); err != nil {
-				return ctx, sdkerrors.Wrap(err, "unable to set sequence on replacement EthAccount")
+				return ctx, errorsmod.Wrap(err, "unable to set sequence on replacement EthAccount")
 			}
 			if err = replacement.SetPubKey(storedPubKey); err != nil {
-				return ctx, sdkerrors.Wrap(err, "unable to set pubkey on replacement EthAccount")
+				return ctx, errorsmod.Wrap(err, "unable to set pubkey on replacement EthAccount")
 			}
 
 			satd.ak.SetAccount(ctx, replacement)

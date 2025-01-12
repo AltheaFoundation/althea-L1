@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/evmos/ethermint/tests"
 
@@ -20,6 +22,7 @@ func TestMsgsTestSuite(t *testing.T) {
 }
 
 func (suite *MsgsTestSuite) TestMsgConvertCoinGetters() {
+	//nolint: exhaustruct
 	msgInvalid := MsgConvertCoin{}
 	msg := NewMsgConvertCoin(
 		sdk.NewCoin("test", sdk.NewInt(100)),
@@ -139,6 +142,7 @@ func (suite *MsgsTestSuite) TestMsgConvertCoin() {
 }
 
 func (suite *MsgsTestSuite) TestMsgConvertERC20Getters() {
+	//nolint: exhaustruct
 	msgInvalid := MsgConvertERC20{}
 	msg := NewMsgConvertERC20(
 		sdk.NewInt(100),
@@ -155,7 +159,7 @@ func (suite *MsgsTestSuite) TestMsgConvertERC20Getters() {
 func (suite *MsgsTestSuite) TestMsgConvertERC20New() {
 	testCases := []struct {
 		msg        string
-		amount     sdk.Int
+		amount     sdkmath.Int
 		receiver   sdk.AccAddress
 		contract   common.Address
 		sender     common.Address
@@ -186,7 +190,7 @@ func (suite *MsgsTestSuite) TestMsgConvertERC20New() {
 func (suite *MsgsTestSuite) TestMsgConvertERC20() {
 	testCases := []struct {
 		msg        string
-		amount     sdk.Int
+		amount     sdkmath.Int
 		receiver   string
 		contract   string
 		sender     string

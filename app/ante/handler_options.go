@@ -149,6 +149,8 @@ func newCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		// Note: signature verification uses EIP instead of the cosmos signature validator
+		// Ethermint has deprecated this initial EIP-712 verifier, but we still want to use it for the time being, so we disable the linter for now
+		// nolint: staticcheck
 		ethante.NewLegacyEip712SigVerificationDecorator(options.AccountKeeper, options.SignModeHandler, ""), // Pass no chain id to have it parsed from the Cosmos chain id
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),

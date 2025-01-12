@@ -4,8 +4,9 @@ import (
 	"math/big"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	altheaconfig "github.com/AltheaFoundation/althea-L1/config"
@@ -24,65 +25,65 @@ func runBypassTest(suite *AnteTestSuite, expErrorStr string, gasfreeMicrotxCtx, 
 	// Expect bypass for the Microtx tx
 	cached, _ := gasfreeMicrotxCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, msgMicrotxTx, false); err != nil {
-		return sdkerrors.Wrap(err, "microtx gasfree expected no error")
+		return errorsmod.Wrap(err, "microtx gasfree expected no error")
 	}
 	// Expect failure for the Send tx
 	cached, _ = gasfreeMicrotxCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, msgSendTx, false); !strings.Contains(err.Error(), expErrorStr) {
-		return sdkerrors.Wrap(err, "microtx gasfree sent send - expected error")
+		return errorsmod.Wrap(err, "microtx gasfree sent send - expected error")
 	}
 	// Expect failure for both msg tx
 	cached, _ = gasfreeMicrotxCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, bothTx, false); !strings.Contains(err.Error(), expErrorStr) {
-		return sdkerrors.Wrap(err, "microtx gasfree sent send and microtx - expected error")
+		return errorsmod.Wrap(err, "microtx gasfree sent send and microtx - expected error")
 	}
 
 	// --- Send is the only Gasfree Msg type ---
 	cached, _ = gasfreeSendCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, msgMicrotxTx, false); !strings.Contains(err.Error(), expErrorStr) {
-		return sdkerrors.Wrap(err, "send gasfree sent microtx - expected error")
+		return errorsmod.Wrap(err, "send gasfree sent microtx - expected error")
 	}
 	// Expect failure for the Send tx
 	cached, _ = gasfreeSendCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, msgSendTx, false); err != nil {
-		return sdkerrors.Wrap(err, "send gasfree expected no error")
+		return errorsmod.Wrap(err, "send gasfree expected no error")
 	}
 	// Expect failure for both msg tx
 	cached, _ = gasfreeSendCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, bothTx, false); !strings.Contains(err.Error(), expErrorStr) {
-		return sdkerrors.Wrap(err, "send gasfree sent send and microtx - expected error")
+		return errorsmod.Wrap(err, "send gasfree sent send and microtx - expected error")
 	}
 
 	// --- No Gasfree Msg types ---
 	// Expect failure for the Microtx tx
 	cached, _ = noGasfreeCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, msgMicrotxTx, false); !strings.Contains(err.Error(), expErrorStr) {
-		return sdkerrors.Wrap(err, "no gasfree msgs sent microtx - expected error")
+		return errorsmod.Wrap(err, "no gasfree msgs sent microtx - expected error")
 	}
 	// Expect failure for the Send tx
 	cached, _ = noGasfreeCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, msgSendTx, false); !strings.Contains(err.Error(), expErrorStr) {
-		return sdkerrors.Wrap(err, "no gasfree msgs sent send - expected error")
+		return errorsmod.Wrap(err, "no gasfree msgs sent send - expected error")
 	}
 	// Expect failure for both msg tx
 	cached, _ = noGasfreeCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, bothTx, false); !strings.Contains(err.Error(), expErrorStr) {
-		return sdkerrors.Wrap(err, "no gasfree msgs sent send and microtx - expected error")
+		return errorsmod.Wrap(err, "no gasfree msgs sent send and microtx - expected error")
 	}
 
 	// --- Send and Microtx are gasfree Msg types ---
 	// Expect success on all txs
 	cached, _ = bothGasfreeCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, msgMicrotxTx, false); err != nil {
-		return sdkerrors.Wrap(err, "send + microtx gasfree expected no error")
+		return errorsmod.Wrap(err, "send + microtx gasfree expected no error")
 	}
 	cached, _ = bothGasfreeCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, msgSendTx, false); err != nil {
-		return sdkerrors.Wrap(err, "send + microtx gasfree expected no error")
+		return errorsmod.Wrap(err, "send + microtx gasfree expected no error")
 	}
 	cached, _ = bothGasfreeCtx.CacheContext()
 	if _, err := suite.anteHandler(cached, bothTx, false); err != nil {
-		return sdkerrors.Wrap(err, "send + microtx gasfree expected no error")
+		return errorsmod.Wrap(err, "send + microtx gasfree expected no error")
 	}
 	return nil
 
@@ -126,7 +127,8 @@ func (suite *AnteTestSuite) TestCosmosAnteHandlerMinGasPricesBypass() {
 	suite.ctx = suite.ctx.WithIsCheckTx(false) // use checkTx false to avoid triggering mempool fee decorator
 	feemarketParams := suite.app.FeemarketKeeper.GetParams(suite.ctx)
 	feemarketParams.MinGasPrice = sdk.NewDec(100)
-	suite.app.FeemarketKeeper.SetParams(suite.ctx, feemarketParams) // Set the min gas price to trigger failure in the MinGasPricesDecorator
+	err := suite.app.FeemarketKeeper.SetParams(suite.ctx, feemarketParams) // Set the min gas price to trigger failure in the MinGasPricesDecorator
+	suite.Require().NoError(err)
 	privKey := suite.NewCosmosPrivkey()
 	addr := sdk.AccAddress(privKey.PubKey().Address().Bytes())
 	suite.FundAccount(suite.ctx, addr, big.NewInt(10000000000))
@@ -158,7 +160,8 @@ func (suite *AnteTestSuite) TestCosmosAnteHandlerDeductFeeBypass() {
 	suite.ctx = suite.ctx.WithIsCheckTx(false) // use checkTx false to avoid triggering mempool fee decorator
 	feemarketParams := suite.app.FeemarketKeeper.GetParams(suite.ctx)
 	feemarketParams.MinGasPrice = sdk.NewDec(0)
-	suite.app.FeemarketKeeper.SetParams(suite.ctx, feemarketParams) // Set the min gas price to avoid failure from MinGasPricesDecorator
+	err := suite.app.FeemarketKeeper.SetParams(suite.ctx, feemarketParams) // Set the min gas price to avoid failure from MinGasPricesDecorator
+	suite.Require().NoError(err)
 	privKey := suite.NewCosmosPrivkey()
 	addr := sdk.AccAddress(privKey.PubKey().Address().Bytes())
 	suite.FundAccount(suite.ctx, addr, big.NewInt(1))

@@ -80,6 +80,7 @@ func CantoSigVerificationGasConsumer(
 		// Multisig keys
 		multisignature, ok := sig.Data.(*signing.MultiSignatureData)
 		if !ok {
+			//nolint: exhaustruct
 			return fmt.Errorf("expected %T, got, %T", &signing.MultiSignatureData{}, sig.Data)
 		}
 		return ConsumeMultisignatureVerificationGas(meter, multisignature, pubkey, params, sig.Sequence)

@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
+
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
@@ -26,7 +27,7 @@ var (
 // calling their validation functions
 func (s GenesisState) ValidateBasic() error {
 	if err := s.Params.ValidateBasic(); err != nil {
-		return sdkerrors.Wrap(err, "params")
+		return errorsmod.Wrap(err, "params")
 	}
 	return nil
 }
@@ -48,7 +49,7 @@ func DefaultParams() *Params {
 // ValidateBasic checks that the parameters have valid values.
 func (p Params) ValidateBasic() error {
 	if err := validateMicrotxFeeBasisPoints(p.MicrotxFeeBasisPoints); err != nil {
-		return sdkerrors.Wrap(err, "MicrotxFeeBasisPoints")
+		return errorsmod.Wrap(err, "MicrotxFeeBasisPoints")
 	}
 	return nil
 }
