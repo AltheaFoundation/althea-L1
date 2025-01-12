@@ -15,6 +15,7 @@ import (
 	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
 )
 
+// nolint: exhaustruct
 var _ evmtypes.EvmHooks = Hooks{}
 
 // Hooks wrapper struct for erc20 keeper

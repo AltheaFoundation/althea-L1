@@ -21,11 +21,17 @@ func TestProposalTestSuite(t *testing.T) {
 }
 
 func (suite *ProposalTestSuite) TestKeysTypes() {
+	//nolint: exhaustruct
 	suite.Require().Equal("erc20", (&RegisterCoinProposal{}).ProposalRoute())
+	//nolint: exhaustruct
 	suite.Require().Equal("RegisterCoin", (&RegisterCoinProposal{}).ProposalType())
+	//nolint: exhaustruct
 	suite.Require().Equal("erc20", (&RegisterERC20Proposal{}).ProposalRoute())
+	//nolint: exhaustruct
 	suite.Require().Equal("RegisterERC20", (&RegisterERC20Proposal{}).ProposalType())
+	//nolint: exhaustruct
 	suite.Require().Equal("erc20", (&ToggleTokenConversionProposal{}).ProposalRoute())
+	//nolint: exhaustruct
 	suite.Require().Equal("ToggleTokenConversion", (&ToggleTokenConversionProposal{}).ProposalType())
 }
 
@@ -152,6 +158,7 @@ func (suite *ProposalTestSuite) TestRegisterERC20Proposal() {
 }
 
 func createFullMetadata(denom, symbol, name string) banktypes.Metadata {
+	//nolint: exhaustruct
 	return banktypes.Metadata{
 		Description: "desc",
 		Base:        denom,
@@ -177,6 +184,7 @@ func createMetadata(denom, symbol string) banktypes.Metadata {
 }
 
 func (suite *ProposalTestSuite) TestRegisterCoinProposal() {
+	//nolint: exhaustruct
 	validMetadata := banktypes.Metadata{
 		Description: "desc",
 		Base:        "coin",

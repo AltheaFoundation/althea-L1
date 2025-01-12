@@ -3,6 +3,9 @@ package keeper
 import (
 	"context"
 
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	sdkante "github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -48,12 +51,12 @@ func (m msgServer) Microtx(c context.Context, msg *types.MsgMicrotx) (*types.Msg
 	}
 
 	if m.bankKeeper.BlockedAddr(receiver) {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", msg.Receiver)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", msg.Receiver)
 	}
 
 	// Call the actual transfer implementation
 	if err := m.Keeper.Microtx(ctx, sender, receiver, msg.Amount); err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to complete the transfer")
+		return nil, errorsmod.Wrap(err, "unable to complete the transfer")
 	}
 
 	return &types.MsgMicrotxResponse{}, err
@@ -72,7 +75,7 @@ func (k Keeper) Microtx(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.Acc
 	if !k.gasfreeKeeper.IsGasFreeMsgType(ctx, sdk.MsgTypeURL(&types.MsgMicrotx{})) {
 		collected, err := k.DeductMicrotxFee(ctx, sender, amount)
 		if err != nil {
-			return sdkerrors.Wrap(err, "unable to collect MsgMicrotx fees")
+			return errorsmod.Wrap(err, "unable to collect MsgMicrotx fees")
 		}
 		ctx.EventManager().EmitEvent(types.NewEventMicrotxFeeCollected(sender.String(), *collected))
 	}
@@ -80,7 +83,7 @@ func (k Keeper) Microtx(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.Acc
 	// Perform the transfer now that fees have been collected
 	err = k.bankKeeper.SendCoins(ctx, sender, receiver, sdk.NewCoins(amount))
 	if err != nil {
-		return sdkerrors.Wrap(err, "unable to send tokens via the bank module")
+		return errorsmod.Wrap(err, "unable to send tokens via the bank module")
 	}
 
 	// Emit an event for the block's event log
@@ -92,7 +95,7 @@ func (k Keeper) Microtx(ctx sdk.Context, sender sdk.AccAddress, receiver sdk.Acc
 	// migrate balances to the NFT if the amounts are in excess of any configured threshold
 	k.Logger(ctx).Debug("Detecting and funneling excess balances for liquid infrastructure accounts")
 	if err := k.RedirectLiquidAccountExcessBalance(ctx, receiver, erc20Address); err != nil {
-		return sdkerrors.Wrapf(err, "failed to redirect excess balance")
+		return errorsmod.Wrapf(err, "failed to redirect excess balance")
 	}
 
 	return nil
@@ -105,10 +108,10 @@ func (k Keeper) ValidateAndGetERC20Address(ctx sdk.Context, amount sdk.Coin) (co
 		// Ensure the input tokens are actively registered as an ERC20-convertible token
 		pair, found := k.erc20Keeper.GetTokenPair(ctx, k.erc20Keeper.GetTokenPairID(ctx, amount.Denom))
 		if !found {
-			return common.Address{}, sdkerrors.Wrapf(types.ErrInvalidMicrotx, "token %v is not registered as an erc20, only evm-compatible tokens may be used", amount.Denom)
+			return common.Address{}, errorsmod.Wrapf(types.ErrInvalidMicrotx, "token %v is not registered as an erc20, only evm-compatible tokens may be used", amount.Denom)
 		}
 		if !pair.Enabled {
-			return common.Address{}, sdkerrors.Wrapf(types.ErrInvalidMicrotx, "token %v is registered as an erc20 (%v), but the pair is not enabled", amount.Denom, pair.Erc20Address)
+			return common.Address{}, errorsmod.Wrapf(types.ErrInvalidMicrotx, "token %v is registered as an erc20 (%v), but the pair is not enabled", amount.Denom, pair.Erc20Address)
 		}
 		// Collect the ERC20 address for later use in funneling
 		erc20Address = common.HexToAddress(pair.Erc20Address)
@@ -125,7 +128,7 @@ func (k Keeper) ValidateAndGetERC20Address(ctx sdk.Context, amount sdk.Coin) (co
 func (k Keeper) DeductMsgMicrotxFee(ctx sdk.Context, msg *types.MsgMicrotx) (feeCollected *sdk.Coin, err error) {
 	_, err = k.ValidateAndGetERC20Address(ctx, msg.Amount)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to deduct Microtx fees")
+		return nil, errorsmod.Wrap(err, "unable to deduct Microtx fees")
 	}
 
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
@@ -136,7 +139,7 @@ func (k Keeper) DeductMsgMicrotxFee(ctx sdk.Context, msg *types.MsgMicrotx) (fee
 	feeCollected, err = k.DeductMicrotxFee(ctx, sender, msg.Amount)
 
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to collect fees")
+		return nil, errorsmod.Wrap(err, "unable to collect fees")
 	}
 
 	return
@@ -156,7 +159,7 @@ func (k Keeper) DeductMicrotxFee(ctx sdk.Context, sender sdk.AccAddress, sendAmo
 	if !microtxFee.IsZero() { // Ignore fees too low to collect
 		balance := k.bankKeeper.GetBalance(ctx, sender, microtxFeeCoin.Denom)
 		if balance.IsLT(microtxFeeCoin) {
-			err := sdkerrors.Wrapf(
+			err := errorsmod.Wrapf(
 				sdkerrors.ErrInsufficientFee,
 				"balance is insufficient to pay the fee (%v < %v)",
 				balance.Amount,
@@ -179,7 +182,7 @@ func (k Keeper) DeductMicrotxFee(ctx sdk.Context, sender sdk.AccAddress, sendAmo
 }
 
 // getMicrotxFeeForAmount Computes the fee a user must pay for any input `amount`, given the current `basisPoints`
-func (k Keeper) getMicrotxFeeForAmount(amount sdk.Int, basisPoints uint64) sdk.Int {
+func (k Keeper) getMicrotxFeeForAmount(amount sdkmath.Int, basisPoints uint64) sdkmath.Int {
 	return sdk.NewDecFromInt(amount).
 		MulInt64(int64(basisPoints)).
 		QuoInt64(int64(BasisPointDivisor)).
@@ -201,7 +204,7 @@ func (m *msgServer) Liquify(c context.Context, msg *types.MsgLiquify) (*types.Ms
 	}
 	senderAcc := m.accountKeeper.GetAccount(ctx, sender)
 	if !IsEthermintAccount(senderAcc) {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrorInvalidSigner, "liquid infrastructure accounts must use ethermint keys, perhaps this is the first message the sender has sent?")
+		return nil, errorsmod.Wrap(sdkerrors.ErrorInvalidSigner, "liquid infrastructure accounts must use ethermint keys, perhaps this is the first message the sender has sent?")
 	}
 
 	if m.Keeper.IsLiquidAccount(ctx, sender) {
@@ -211,7 +214,7 @@ func (m *msgServer) Liquify(c context.Context, msg *types.MsgLiquify) (*types.Ms
 	// Call the actual liquify implementation
 	nft, err := m.Keeper.DoLiquify(ctx, sender)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to liquify account")
+		return nil, errorsmod.Wrap(err, "failed to liquify account")
 	}
 
 	return &types.MsgLiquifyResponse{

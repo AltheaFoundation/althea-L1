@@ -3,8 +3,9 @@ package types
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
@@ -51,13 +52,13 @@ func DefaultParams() *Params {
 
 func (s GenesisState) ValidateBasic() error {
 	if err := ValidateLockExempt(s.Params.LockExempt); err != nil {
-		return sdkerrors.Wrap(err, "Invalid LockExempt GenesisState")
+		return errorsmod.Wrap(err, "Invalid LockExempt GenesisState")
 	}
 	if err := ValidateLockedMessageTypes(s.Params.LockedMessageTypes); err != nil {
-		return sdkerrors.Wrap(err, "Invalid LockedMessageTypes GenesisState")
+		return errorsmod.Wrap(err, "Invalid LockedMessageTypes GenesisState")
 	}
 	if err := ValidateLockedTokenDenoms(s.Params.LockedTokenDenoms); err != nil {
-		return sdkerrors.Wrap(err, "Invalid LockedTokenDenoms GenesisState")
+		return errorsmod.Wrap(err, "Invalid LockedTokenDenoms GenesisState")
 	}
 	return nil
 }

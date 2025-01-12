@@ -12,6 +12,8 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -129,7 +131,7 @@ func (AppModule) QuerierRoute() string {
 // LegacyQuerierHandler returns the legacy sdk.Querier (NOT IMPLEMENTED)
 func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) ([]byte, error) {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Legacy querier is not implemented!")
+		return nil, errorsmod.Wrap(sdkerrors.ErrUnknownRequest, "Legacy querier is not implemented!")
 	}
 }
 

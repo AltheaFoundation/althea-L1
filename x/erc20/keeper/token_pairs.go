@@ -10,6 +10,7 @@ import (
 
 // GetTokenPairs - get all registered token tokenPairs
 func (k Keeper) GetTokenPairs(ctx sdk.Context) []types.TokenPair {
+	//nolint: exhaustruct
 	tokenPairs := []types.TokenPair{}
 
 	store := ctx.KVStore(k.storeKey)
@@ -38,6 +39,7 @@ func (k Keeper) GetTokenPairID(ctx sdk.Context, token string) []byte {
 // GetTokenPair - get registered token pair from the identifier
 func (k Keeper) GetTokenPair(ctx sdk.Context, id []byte) (types.TokenPair, bool) {
 	if id == nil {
+		//nolint: exhaustruct
 		return types.TokenPair{}, false
 	}
 
@@ -45,6 +47,7 @@ func (k Keeper) GetTokenPair(ctx sdk.Context, id []byte) (types.TokenPair, bool)
 	var tokenPair types.TokenPair
 	bz := store.Get(id)
 	if len(bz) == 0 {
+		//nolint: exhaustruct
 		return types.TokenPair{}, false
 	}
 

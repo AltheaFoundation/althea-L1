@@ -3,6 +3,8 @@ package ibcutils
 import (
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -24,21 +26,21 @@ func GetTransferSenderRecipient(packet channeltypes.Packet) (
 	// unmarshal packet data to obtain the sender and recipient
 	var data transfertypes.FungibleTokenPacketData
 	if err := transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return nil, nil, "", "", sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data")
+		return nil, nil, "", "", errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data")
 	}
 
 	// validate the sender bech32 address from the counterparty chain
 	// and change the bech32 human readable prefix (HRP) of the sender to `althea`
 	sender, err = GetAltheaAddressFromBech32(data.Sender)
 	if err != nil {
-		return nil, nil, "", "", sdkerrors.Wrap(err, "invalid sender")
+		return nil, nil, "", "", errorsmod.Wrap(err, "invalid sender")
 	}
 
 	// validate the recipient bech32 address from the counterparty chain
 	// and change the bech32 human readable prefix (HRP) of the recipient to `althea`
 	recipient, err = GetAltheaAddressFromBech32(data.Receiver)
 	if err != nil {
-		return nil, nil, "", "", sdkerrors.Wrap(err, "invalid recipient")
+		return nil, nil, "", "", errorsmod.Wrap(err, "invalid recipient")
 	}
 
 	return sender, recipient, data.Sender, data.Receiver, nil
@@ -49,15 +51,15 @@ func GetTransferAmount(packet channeltypes.Packet) (string, error) {
 	// unmarshal packet data to obtain the sender and recipient
 	var data transfertypes.FungibleTokenPacketData
 	if err := transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return "", sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data")
+		return "", errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data")
 	}
 
 	if data.Amount == "" {
-		return "", sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "empty amount")
+		return "", errorsmod.Wrapf(sdkerrors.ErrInvalidCoins, "empty amount")
 	}
 
 	if _, ok := sdk.NewIntFromString(data.Amount); !ok {
-		return "", sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "invalid amount")
+		return "", errorsmod.Wrapf(sdkerrors.ErrInvalidCoins, "invalid amount")
 	}
 
 	return data.Amount, nil
@@ -115,12 +117,12 @@ func GetReceivedCoin(srcPort, srcChannel, dstPort, dstChannel, rawDenom, rawAmt 
 func GetAltheaAddressFromBech32(address string) (sdk.AccAddress, error) {
 	bech32Prefix := strings.SplitN(address, "1", 2)[0]
 	if bech32Prefix == address {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid bech32 address: %s", address)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "invalid bech32 address: %s", address)
 	}
 
 	addressBz, err := sdk.GetFromBech32(address, bech32Prefix)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid address %s, %s", address, err.Error())
+		return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "invalid address %s, %s", address, err.Error())
 	}
 
 	// safety check: shouldn't happen

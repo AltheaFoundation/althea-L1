@@ -8,6 +8,8 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -24,6 +26,8 @@ import (
 	althea "github.com/AltheaFoundation/althea-L1/app"
 	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
 )
+
+const STAKING_TOKEN = "aalthea"
 
 var _ = Describe("Performing EVM transactions", Ordered, func() {
 	BeforeEach(func() {
@@ -94,7 +98,9 @@ var _ = Describe("ERC20: Converting", Ordered, func() {
 
 	BeforeEach(func() {
 		s.SetupTest()
-		priv, _ = ethsecp256k1.GenerateKey()
+		var err error
+		priv, err = ethsecp256k1.GenerateKey()
+		s.Require().NoError(err)
 		addrBz := priv.PubKey().Address().Bytes()
 		accAddr = sdk.AccAddress(addrBz)
 		addr = common.BytesToAddress(addrBz)
@@ -108,7 +114,7 @@ var _ = Describe("ERC20: Converting", Ordered, func() {
 			coin = sdk.NewCoin(pair.Denom, amt)
 
 			// denom := s.app.ClaimsKeeper.GetParams(s.ctx).ClaimsDenom
-			denom := "aalthea"
+			denom := STAKING_TOKEN
 
 			err := testutil.FundAccount(s.app.BankKeeper, s.ctx, accAddr, sdk.NewCoins(sdk.NewCoin(denom, sdk.TokensFromConsensusPower(100, ethermint.PowerReduction))))
 			s.Require().NoError(err)
@@ -169,7 +175,7 @@ var _ = Describe("ERC20: Converting", Ordered, func() {
 			coin = sdk.NewCoin(pair.Denom, amt)
 
 			// denom := s.app.ClaimsKeeper.GetParams(s.ctx).ClaimsDenom
-			denom := "aalthea" //use default denom for claimsDenom
+			denom := STAKING_TOKEN
 
 			err := testutil.FundAccount(s.app.BankKeeper, s.ctx, accAddr, sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(1000_000_000))))
 			s.Require().NoError(err)
@@ -234,7 +240,7 @@ func convertCoin(priv *ethsecp256k1.PrivKey, coin sdk.Coin) {
 	Expect(res.IsOK()).To(BeTrue(), "failed to convert coin: %s", res.Log)
 }
 
-func convertERC20(priv *ethsecp256k1.PrivKey, amt sdk.Int, contract common.Address) {
+func convertERC20(priv *ethsecp256k1.PrivKey, amt sdkmath.Int, contract common.Address) {
 	addrBz := priv.PubKey().Address().Bytes()
 
 	convertERC20Msg := types.NewMsgConvertERC20(amt, sdk.AccAddress(addrBz), contract, common.BytesToAddress(addrBz))
@@ -246,7 +252,7 @@ func deliverTx(priv *ethsecp256k1.PrivKey, msgs ...sdk.Msg) abci.ResponseDeliver
 	encodingConfig := encoding.MakeConfig(althea.ModuleBasics)
 	accountAddress := sdk.AccAddress(priv.PubKey().Address().Bytes())
 	// denom := s.app.ClaimsKeeper.GetParams(s.ctx).ClaimsDenom
-	denom := "aalthea"
+	denom := STAKING_TOKEN
 
 	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
 
@@ -276,6 +282,7 @@ func deliverTx(priv *ethsecp256k1.PrivKey, msgs ...sdk.Msg) abci.ResponseDeliver
 
 	// Second round: all signer infos are set, so each signer can sign.
 	accNumber := s.app.AccountKeeper.GetAccount(s.ctx, accountAddress).GetAccountNumber()
+	//nolint: exhaustruct
 	signerData := authsigning.SignerData{
 		ChainID:       s.ctx.ChainID(),
 		AccountNumber: accNumber,

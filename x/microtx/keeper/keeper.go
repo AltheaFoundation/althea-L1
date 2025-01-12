@@ -5,6 +5,8 @@ import (
 
 	"github.com/tendermint/tendermint/libs/log"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -102,7 +104,7 @@ func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 func (k Keeper) GetParamsIfSet(ctx sdk.Context) (params types.Params, err error) {
 	for _, pair := range params.ParamSetPairs() {
 		if !k.paramSpace.Has(ctx, pair.Key) {
-			return types.Params{}, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "the param key %s has not been set", string(pair.Key))
+			return types.Params{}, errorsmod.Wrapf(sdkerrors.ErrNotFound, "the param key %s has not been set", string(pair.Key))
 		}
 		k.paramSpace.Get(ctx, pair.Key, pair.Value)
 	}
@@ -113,7 +115,7 @@ func (k Keeper) GetParamsIfSet(ctx sdk.Context) (params types.Params, err error)
 // SetParams will store the given params after validating them
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if err := params.ValidateBasic(); err != nil {
-		return sdkerrors.Wrap(err, "unable to store params with failing ValidateBasic()")
+		return errorsmod.Wrap(err, "unable to store params with failing ValidateBasic()")
 	}
 	k.paramSpace.SetParamSet(ctx, &params)
 	return nil

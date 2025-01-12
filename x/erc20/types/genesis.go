@@ -4,6 +4,7 @@ import "fmt"
 
 // NewGenesisState creates a new genesis state.
 func NewGenesisState(params Params, pairs []TokenPair) GenesisState {
+	//nolint: exhaustruct
 	return GenesisState{
 		Params:     params,
 		TokenPairs: pairs,
@@ -13,6 +14,7 @@ func NewGenesisState(params Params, pairs []TokenPair) GenesisState {
 // DefaultGenesisState sets default evm genesis state with empty accounts and
 // default params and chain config values.
 func DefaultGenesisState() *GenesisState {
+	//nolint: exhaustruct
 	return &GenesisState{
 		Params: DefaultParams(),
 	}

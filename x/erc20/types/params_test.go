@@ -33,6 +33,7 @@ func (suite *ParamsTestSuite) TestParamsValidate() {
 		},
 		{
 			"empty",
+			//nolint: exhaustruct
 			Params{},
 			false,
 		},

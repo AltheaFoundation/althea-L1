@@ -27,6 +27,8 @@ import (
 	dbm "github.com/tendermint/tm-db"
 	"google.golang.org/grpc"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -75,9 +77,9 @@ type Config struct {
 	AppConstructor    AppConstructor      // the ABCI application constructor
 	GenesisState      simapp.GenesisState // custom gensis state to provide
 	TimeoutCommit     time.Duration       // the consensus commitment timeout
-	AccountTokens     sdk.Int             // the amount of unique validator tokens (e.g. 1000node0)
-	StakingTokens     sdk.Int             // the amount of tokens each validator has available to stake
-	BondedTokens      sdk.Int             // the amount of tokens each validator stakes
+	AccountTokens     sdkmath.Int         // the amount of unique validator tokens (e.g. 1000node0)
+	StakingTokens     sdkmath.Int         // the amount of tokens each validator has available to stake
+	BondedTokens      sdkmath.Int         // the amount of tokens each validator stakes
 	NumValidators     int                 // the total number of validators to create and bond
 	ChainID           string              // the network chain-id
 	BondDenom         string              // the staking bond denomination
@@ -98,6 +100,7 @@ type Config struct {
 func DefaultConfig() Config {
 	encCfg := althea.MakeEncodingConfig()
 
+	//nolint: exhaustruct
 	return Config{
 		Codec:             encCfg.Codec,
 		TxConfig:          encCfg.TxConfig,
@@ -211,6 +214,7 @@ func NewCLILogger(cmd *cobra.Command) CLILogger {
 }
 
 // New creates a new Network for integration tests or in-process testnets run via the CLI
+// nolint: gocyclo
 func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 	// only one caller/test can create and use a network at a time
 	l.Log("acquiring test network lock")
@@ -324,7 +328,11 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		logger := log.NewNopLogger()
 		if cfg.EnableTMLogging {
 			logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-			logger, _ = tmflags.ParseLogLevel("info", logger, tmcfg.DefaultLogLevel)
+			var err error
+			logger, err = tmflags.ParseLogLevel("info", logger, tmcfg.DefaultLogLevel)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		ctx.Logger = logger
@@ -479,6 +487,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
+		//nolint: exhaustruct
 		clientCtx := client.Context{}.
 			WithKeyringDir(clientDir).
 			WithKeyring(kb).
@@ -490,6 +499,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			WithTxConfig(cfg.TxConfig).
 			WithAccountRetriever(cfg.AccountRetriever)
 
+		//nolint: exhaustruct
 		network.Validators[i] = &Validator{
 			AppConfig:  appCfg,
 			ClientCtx:  clientCtx,
@@ -614,7 +624,10 @@ func (n *Network) Cleanup() {
 
 	for _, v := range n.Validators {
 		if v.tmNode != nil && v.tmNode.IsRunning() {
-			_ = v.tmNode.Stop()
+			err := v.tmNode.Stop()
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		if v.api != nil {

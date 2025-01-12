@@ -67,7 +67,7 @@ func ParsePacketFromEvents(events sdk.Events) (channeltypes.Packet, error) {
 			for _, attr := range ev.Attributes {
 
 				switch string(attr.Key) {
-				case channeltypes.AttributeKeyData:
+				case channeltypes.AttributeKeyDataHex:
 					packet.Data = attr.Value
 
 				case channeltypes.AttributeKeySequence:
@@ -123,7 +123,7 @@ func ParseAckFromEvents(events sdk.Events) ([]byte, error) {
 	for _, ev := range events {
 		if ev.Type == channeltypes.EventTypeWriteAck {
 			for _, attr := range ev.Attributes {
-				if string(attr.Key) == channeltypes.AttributeKeyAck {
+				if string(attr.Key) == channeltypes.AttributeKeyAckHex {
 					return attr.Value, nil
 				}
 			}

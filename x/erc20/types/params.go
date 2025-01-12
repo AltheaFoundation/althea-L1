@@ -12,10 +12,12 @@ var (
 	ParamStoreKeyEnableEVMHook = []byte("EnableEVMHook")
 )
 
+// nolint: exhaustruct
 var _ paramtypes.ParamSet = &Params{}
 
 // ParamKeyTable returns the parameter key table.
 func ParamKeyTable() paramtypes.KeyTable {
+	//nolint: exhaustruct
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 

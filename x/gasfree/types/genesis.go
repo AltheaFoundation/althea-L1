@@ -3,8 +3,9 @@ package types
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
@@ -31,7 +32,7 @@ func (s GenesisState) ValidateBasic() error {
 		return ErrInvalidParams
 	}
 	if err := ValidateGasFreeMessageTypes(s.Params.GasFreeMessageTypes); err != nil {
-		return sdkerrors.Wrap(err, "Invalid GasFreeMessageTypes GenesisState")
+		return errorsmod.Wrap(err, "Invalid GasFreeMessageTypes GenesisState")
 	}
 	return nil
 }

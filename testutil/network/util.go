@@ -228,6 +228,7 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 		return err
 	}
 
+	//nolint: exhaustruct
 	genDoc := types.GenesisDoc{
 		ChainID:    cfg.ChainID,
 		AppState:   appGenStateJSON,

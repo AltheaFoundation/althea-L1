@@ -11,6 +11,8 @@ import (
 
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -39,11 +41,11 @@ func (k Keeper) DoLiquify(
 ) (common.Address, error) {
 	nftAddr, err := k.deployLiquidInfrastructureNFTContract(ctx, account)
 	if err != nil {
-		return common.Address{}, sdkerrors.Wrapf(types.ErrContractDeployment,
+		return common.Address{}, errorsmod.Wrapf(types.ErrContractDeployment,
 			"EVM::Liquify error deploying LiquidInfrastructureNFT: %s", err.Error())
 	}
 	if err := k.addLiquidInfrastructureEntry(ctx, account, nftAddr); err != nil {
-		return common.Address{}, sdkerrors.Wrapf(err, "unable to map bech32 -> NFT address")
+		return common.Address{}, errorsmod.Wrapf(err, "unable to map bech32 -> NFT address")
 	}
 
 	ctx.EventManager().EmitEvent(types.NewEventLiquify(account.String(), nftAddr))
@@ -57,15 +59,15 @@ func (k Keeper) DoLiquify(
 func (k Keeper) deployLiquidInfrastructureNFTContract(ctx sdk.Context, account sdk.AccAddress) (common.Address, error) {
 	contract, err := k.DeployContract(ctx, account, types.LiquidInfrastructureNFT, account.String())
 	if err != nil {
-		return common.Address{}, sdkerrors.Wrap(err, "liquid infrastructure account contract deployment failed")
+		return common.Address{}, errorsmod.Wrap(err, "liquid infrastructure account contract deployment failed")
 	}
 
 	version, err := k.queryLiquidInfrastructureContractVersion(ctx, contract)
 	if err != nil {
-		return common.Address{}, sdkerrors.Wrap(err, "could not query NFT version")
+		return common.Address{}, errorsmod.Wrap(err, "could not query NFT version")
 	}
 	if version.Cmp(CurrentNFTVersion) != 0 {
-		return common.Address{}, sdkerrors.Wrapf(err, "expected contract with version %v, got %v", CurrentNFTVersion, version)
+		return common.Address{}, errorsmod.Wrapf(err, "expected contract with version %v, got %v", CurrentNFTVersion, version)
 	}
 
 	return contract, nil
@@ -79,7 +81,7 @@ func (k Keeper) addLiquidInfrastructureEntry(ctx sdk.Context, accAddress sdk.Acc
 	key := types.GetLiquidAccountKey(accAddress)
 
 	if store.Has(key) {
-		return sdkerrors.Wrapf(types.ErrContractDeployment, "account %v already liquified", accAddress.String())
+		return errorsmod.Wrapf(types.ErrContractDeployment, "account %v already liquified", accAddress.String())
 	}
 
 	store.Set(key, nftAddress.Bytes())
@@ -93,7 +95,7 @@ func (k Keeper) queryLiquidInfrastructureOwner(ctx sdk.Context, nftAddress commo
 	var args = ToMethodArgs(&AccountId)
 	res, err := k.QueryEVM(ctx, "ownerOf", types.LiquidInfrastructureNFT, types.ModuleEVMAddress, &nftAddress, args...)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to call ownerOf with arg0=1")
+		return nil, errorsmod.Wrap(err, "unable to call ownerOf with arg0=1")
 	}
 	owner := common.BytesToAddress(res.Ret)
 	return &owner, nil
@@ -104,7 +106,7 @@ func (k Keeper) queryLiquidInfrastructureContractVersion(ctx sdk.Context, nftAdd
 	// ABI: uint256 public constant Version
 	res, err := k.QueryEVM(ctx, "Version", types.LiquidInfrastructureNFT, types.ModuleEVMAddress, &nftAddress)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to call Versionw with no args")
+		return nil, errorsmod.Wrap(err, "unable to call Versionw with no args")
 	}
 	version := big.NewInt(0).SetBytes(res.Ret)
 	return version, nil
@@ -116,13 +118,13 @@ func (k Keeper) queryLiquidInfrastructureThresholds(ctx sdk.Context, nftAddress 
 	// ABI: getThresholds() public virtual view returns (address[] memory, uint256[] memory)
 	res, err := k.QueryEVM(ctx, "getThresholds", types.LiquidInfrastructureNFT, types.ModuleEVMAddress, &nftAddress)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to call getThresholds with no arguments")
+		return nil, errorsmod.Wrap(err, "unable to call getThresholds with no arguments")
 	}
 
 	// Use the ABI to unpack values. Expecting ([addr, ...], [uint256, ...])
 	values, err := types.LiquidInfrastructureNFT.ABI.Unpack("getThresholds", res.Ret)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "Unable to unpack the getThresholds() response")
+		return nil, errorsmod.Wrap(err, "Unable to unpack the getThresholds() response")
 	}
 	if len(values) != 2 {
 		return nil, fmt.Errorf("expected to get a 2 tuple response, instead got %v values", len(values))
@@ -364,19 +366,19 @@ func (k Keeper) RedirectBalanceToToken(
 	logger.Debug("Enter RedirectBalanceToToken", "account", account.String(), "nft", nft.Hex(), "currBalance", currBalance.String(), "thresholdAmount", thresholdAmount.String())
 	excessBalance := currBalance.Amount.Sub(sdk.NewIntFromBigInt(&thresholdAmount))
 	if excessBalance.IsNegative() {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "attempted to funnel insufficient balance")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidCoins, "attempted to funnel insufficient balance")
 	}
 	funnelAmount := sdk.NewCoin(currBalance.Denom, excessBalance)
 	context := sdk.WrapSDKContext(ctx)
 	msgConvertCoin := erc20types.NewMsgConvertCoin(funnelAmount, nft, account)
 	logger.Debug("About to redirect balance via convert coin", "msg", msgConvertCoin.String())
 	if err := msgConvertCoin.ValidateBasic(); err != nil {
-		return nil, sdkerrors.Wrap(err, "generated invalid convert coin msg")
+		return nil, errorsmod.Wrap(err, "generated invalid convert coin msg")
 	}
 	logger.Debug("Calling convert coin")
 	_, err := k.erc20Keeper.ConvertCoin(context, msgConvertCoin)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "unable to funnel excess balance via x/erc20 convert coin")
+		return nil, errorsmod.Wrap(err, "unable to funnel excess balance via x/erc20 convert coin")
 	}
 	logger.Debug("Redirected balanace via convert coin")
 	return &funnelAmount, nil
@@ -419,7 +421,7 @@ func (k Keeper) DeployContract(
 	// method name is nil in this case, we are calling the constructor
 	ctorArgs, err := contract.ABI.Pack("", args...)
 	if err != nil {
-		return common.Address{}, sdkerrors.Wrapf(types.ErrContractDeployment,
+		return common.Address{}, errorsmod.Wrapf(types.ErrContractDeployment,
 			"EVM::DeployContract error packing data: %s", err.Error())
 	}
 
@@ -436,7 +438,7 @@ func (k Keeper) DeployContract(
 	nonce, err := k.accountKeeper.GetSequence(ctx, deployer)
 	if err != nil {
 		return common.Address{},
-			sdkerrors.Wrapf(types.ErrContractDeployment,
+			errorsmod.Wrapf(types.ErrContractDeployment,
 				"EVM::DeployContract error retrieving nonce: %s", err.Error())
 	}
 
@@ -444,7 +446,7 @@ func (k Keeper) DeployContract(
 	_, err = k.CallEVM(ctx, deployerEVM, nil, amount, data, true)
 	if err != nil {
 		return common.Address{},
-			sdkerrors.Wrapf(types.ErrContractDeployment,
+			errorsmod.Wrapf(types.ErrContractDeployment,
 				"EVM::DeployContract error deploying contract: %s", err.Error())
 	}
 
@@ -468,13 +470,13 @@ func (k Keeper) CallMethod(
 	// pack method args
 	data, err := contract.ABI.Pack(method, args...)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(types.ErrContractCall, "EVM::CallMethod there was an issue packing the arguments into the method signature: %s", err.Error())
+		return nil, errorsmod.Wrapf(types.ErrContractCall, "EVM::CallMethod there was an issue packing the arguments into the method signature: %s", err.Error())
 	}
 
 	// call method
 	resp, err := k.CallEVM(ctx, from, contractAddr, amount, data, true)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(types.ErrContractCall, "EVM::CallMethod error applying message: %s", err.Error())
+		return nil, errorsmod.Wrapf(types.ErrContractCall, "EVM::CallMethod error applying message: %s", err.Error())
 	}
 
 	return resp, nil
@@ -498,7 +500,7 @@ func (k Keeper) CallEVM(
 	cosmosLimit := ctx.GasMeter().Limit()
 	gasUsed := ctx.GasMeter().GasConsumed()
 	if cosmosLimit <= gasUsed {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrOutOfGas, "insufficient gas")
+		return nil, errorsmod.Wrap(sdkerrors.ErrOutOfGas, "insufficient gas")
 	}
 	gasLimit := cosmosLimit - gasUsed
 
@@ -529,7 +531,7 @@ func (k Keeper) CallEVM(
 	ctx.GasMeter().ConsumeGas(res.GasUsed, "EVM call")
 
 	if res.Failed() {
-		return nil, sdkerrors.Wrap(evmtypes.ErrVMExecution, res.VmError)
+		return nil, errorsmod.Wrap(evmtypes.ErrVMExecution, res.VmError)
 	}
 	return res, nil
 }
@@ -550,7 +552,7 @@ func (k Keeper) QueryEVM(
 	// pack method args
 	data, err := contract.ABI.Pack(method, args...)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(types.ErrContractCall, "EVM::CallMethod there was an issue packing the arguments into the method signature: %s", err.Error())
+		return nil, errorsmod.Wrapf(types.ErrContractCall, "EVM::CallMethod there was an issue packing the arguments into the method signature: %s", err.Error())
 	}
 
 	commit := false // Do not modify state, just simulate and return results
@@ -576,7 +578,7 @@ func (k Keeper) QueryEVM(
 	}
 
 	if res.Failed() {
-		return nil, sdkerrors.Wrap(evmtypes.ErrVMExecution, res.VmError)
+		return nil, errorsmod.Wrap(evmtypes.ErrVMExecution, res.VmError)
 	}
 	return res, nil
 }

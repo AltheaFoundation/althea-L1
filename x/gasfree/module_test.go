@@ -85,12 +85,14 @@ func (suite *GasfreeTestSuite) DoSetupTest(t require.TestingT) {
 		return gs
 	})
 
+	//nolint: exhaustruct
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
 		Height:          1,
 		ChainID:         "althea_7357-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: althea.ValidatorPubKey.Address().Bytes(),
 
+		//nolint: exhaustruct
 		Version: tmversion.Consensus{
 			Block: version.BlockProtocol,
 		},

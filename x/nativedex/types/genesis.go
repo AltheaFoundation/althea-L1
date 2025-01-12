@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
+
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -28,7 +29,7 @@ var (
 // calling their validation functions
 func (s GenesisState) ValidateBasic() error {
 	if err := s.Params.ValidateBasic(); err != nil {
-		return sdkerrors.Wrap(err, "params")
+		return errorsmod.Wrap(err, "params")
 	}
 	return nil
 }
@@ -51,10 +52,10 @@ func DefaultParams() *Params {
 // ValidateBasic checks that the parameters have valid values.
 func (p Params) ValidateBasic() error {
 	if err := validateVerifiedNativeDexAddress(p.VerifiedNativeDexAddress); err != nil {
-		return sdkerrors.Wrap(err, "VerifiedNativeDexAddress")
+		return errorsmod.Wrap(err, "VerifiedNativeDexAddress")
 	}
 	if err := validateVerifiedCrocPolicyAddress(p.VerifiedCrocPolicyAddress); err != nil {
-		return sdkerrors.Wrap(err, "VerifiedCrocPolicyAddress")
+		return errorsmod.Wrap(err, "VerifiedCrocPolicyAddress")
 	}
 	return nil
 }
@@ -87,7 +88,7 @@ func validateVerifiedNativeDexAddress(i interface{}) error {
 	}
 
 	if !common.IsHexAddress(v) {
-		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid address")
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid address")
 	}
 
 	return nil
@@ -100,7 +101,7 @@ func validateVerifiedCrocPolicyAddress(i interface{}) error {
 	}
 
 	if !common.IsHexAddress(v) {
-		return sdkerrors.Wrap(ErrInvalidEvmAddress, "invalid address")
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid address")
 	}
 
 	return nil

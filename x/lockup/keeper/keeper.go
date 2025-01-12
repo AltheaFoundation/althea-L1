@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -37,7 +39,7 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, paramSpace p
 func (k Keeper) GetParamsIfSet(ctx sdk.Context) (params types.Params, err error) {
 	for _, pair := range params.ParamSetPairs() {
 		if !k.paramSpace.Has(ctx, pair.Key) {
-			return types.Params{}, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "the param key %s has not been set", string(pair.Key))
+			return types.Params{}, errorsmod.Wrapf(sdkerrors.ErrNotFound, "the param key %s has not been set", string(pair.Key))
 		}
 		k.paramSpace.Get(ctx, pair.Key, pair.Value)
 	}

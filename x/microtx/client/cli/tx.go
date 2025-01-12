@@ -3,11 +3,12 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
@@ -47,24 +48,24 @@ func CmdMicrotx() *cobra.Command {
 
 			sender, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
-				return sdkerrors.Wrapf(err, "provided sender address is invalid: %v", args[0])
+				return errorsmod.Wrapf(err, "provided sender address is invalid: %v", args[0])
 			}
 
 			receiver, err := sdk.AccAddressFromBech32(args[1])
 			if err != nil {
-				return sdkerrors.Wrapf(err, "provided receiver address is invalid: %v", args[1])
+				return errorsmod.Wrapf(err, "provided receiver address is invalid: %v", args[1])
 			}
 
 			amount := args[2]
 			coin, err := sdk.ParseCoinNormalized(amount)
 			if err != nil {
-				return sdkerrors.Wrapf(err, "invalid amount provided: %v", amount)
+				return errorsmod.Wrapf(err, "invalid amount provided: %v", amount)
 			}
 
 			// Make the message
 			msg := types.NewMsgMicrotx(sender.String(), receiver.String(), coin)
 			if err := msg.ValidateBasic(); err != nil {
-				return sdkerrors.Wrap(err, "invalid argument provided")
+				return errorsmod.Wrap(err, "invalid argument provided")
 			}
 
 			// Send it
@@ -89,14 +90,14 @@ func CmdLiquify() *cobra.Command {
 			}
 
 			if _, err := cmd.Flags().GetString(flags.FlagFrom); err != nil {
-				return sdkerrors.Wrap(err, "--from value missing or incorrect")
+				return errorsmod.Wrap(err, "--from value missing or incorrect")
 			}
 			from := cliCtx.GetFromAddress().String()
 
 			// Make the message
 			msg := types.NewMsgLiquify(from)
 			if err := msg.ValidateBasic(); err != nil {
-				return sdkerrors.Wrap(err, "invalid --from value provided")
+				return errorsmod.Wrap(err, "invalid --from value provided")
 			}
 
 			// Send it

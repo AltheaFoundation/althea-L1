@@ -1,8 +1,9 @@
 package gasfree
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 )
@@ -32,7 +33,7 @@ func (sbd SelectiveBypassDecorator) AnteHandle(
 ) (newCtx sdk.Context, err error) {
 	gasFree, err := sbd.gasfreeKeeper.IsGasFreeTx(ctx, sbd.gasfreeKeeper, tx)
 	if err != nil {
-		return ctx, sdkerrors.Wrap(err, "failed to check AnteDecorator can be bypassed")
+		return ctx, errorsmod.Wrap(err, "failed to check AnteDecorator can be bypassed")
 	}
 
 	if !gasFree {
@@ -48,7 +49,7 @@ var data icatypes.InterchainAccountPacketData
 
 if err := icatypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 	// UnmarshalJSON errors are indeterminate and therefore are not wrapped and included in failed acks
-	return nil, sdkerrors.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
+	return nil, errorsmod.Wrapf(icatypes.ErrUnknownDataType, "cannot unmarshal ICS-27 interchain account packet data")
 }
 
 switch data.Type {

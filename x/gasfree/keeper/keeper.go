@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -38,7 +40,7 @@ func NewKeeper(cdc codec.Codec, storeKey storetypes.StoreKey, paramSpace paramst
 func (k Keeper) GetParamsIfSet(ctx sdk.Context) (params types.Params, err error) {
 	for _, pair := range params.ParamSetPairs() {
 		if !k.paramSpace.Has(ctx, pair.Key) {
-			return types.Params{}, sdkerrors.Wrapf(sdkerrors.ErrNotFound, "the param key %s has not been set", string(pair.Key))
+			return types.Params{}, errorsmod.Wrapf(sdkerrors.ErrNotFound, "the param key %s has not been set", string(pair.Key))
 		}
 		k.paramSpace.Get(ctx, pair.Key, pair.Value)
 	}
@@ -92,7 +94,7 @@ func (k Keeper) IsGasFreeTx(ctx sdk.Context, keeper Keeper, tx sdk.Tx) (bool, er
 				err := k.Cdc.UnpackAny(m, &inner)
 				if err != nil {
 					return false,
-						sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "unable to unpack authz msgexec message: %v", err)
+						errorsmod.Wrapf(sdkerrors.ErrInvalidType, "unable to unpack authz msgexec message: %v", err)
 				}
 				// Check if the inner Msg is acceptable or not, returning an error kicks this whole Tx out of the mempool
 				if !k.IsGasFreeMsg(gasFreeMessageSet, inner) {

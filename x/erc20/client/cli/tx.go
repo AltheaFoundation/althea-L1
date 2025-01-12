@@ -22,6 +22,7 @@ import (
 
 // NewTxCmd returns a root CLI command handler for erc20 transaction commands
 func NewTxCmd() *cobra.Command {
+	//nolint: exhaustruct
 	txCmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "erc20 subcommands",
@@ -39,6 +40,7 @@ func NewTxCmd() *cobra.Command {
 
 // NewConvertCoinCmd returns a CLI command handler for converting a Cosmos coin
 func NewConvertCoinCmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "convert-coin [coin] [receiver_hex]",
 		Short: "Convert a Cosmos coin to ERC20. When the receiver [optional] is omitted, the ERC20 tokens are transferred to the sender.",
@@ -86,6 +88,7 @@ func NewConvertCoinCmd() *cobra.Command {
 
 // NewConvertERC20Cmd returns a CLI command handler for converting an ERC20
 func NewConvertERC20Cmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "convert-erc20 [contract-address] [amount] [receiver]",
 		Short: "Convert an ERC20 token to Cosmos coin.  When the receiver [optional] is omitted, the Cosmos coins are transferred to the sender.",
@@ -137,6 +140,7 @@ func NewConvertERC20Cmd() *cobra.Command {
 
 // NewRegisterCoinProposalCmd implements the command to submit a community-pool-spend proposal
 func NewRegisterCoinProposalCmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "register-coin [metadata]",
 		Args:  cobra.ExactArgs(1),
@@ -172,12 +176,13 @@ Where metadata.json contains (example):
 			if err != nil {
 				return err
 			}
-
+			// We have yet to replace the use of legacy proposals, disable the linting errors for now.
+			//nolint: staticcheck
 			title, err := cmd.Flags().GetString(cli.FlagTitle)
 			if err != nil {
 				return err
 			}
-
+			//nolint: staticcheck
 			description, err := cmd.Flags().GetString(cli.FlagDescription)
 			if err != nil {
 				return err
@@ -215,12 +220,17 @@ Where metadata.json contains (example):
 		},
 	}
 
+	// We have yet to replace the use of legacy proposals, disable the linting errors for now.
+	//nolint: staticcheck
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
+	//nolint: staticcheck
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(cli.FlagDeposit, "1acanto", "deposit of proposal")
+	//nolint: staticcheck
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
+	//nolint: staticcheck
 	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
 		panic(err)
 	}
@@ -232,6 +242,7 @@ Where metadata.json contains (example):
 
 // NewRegisterERC20ProposalCmd implements the command to submit a community-pool-spend proposal
 func NewRegisterERC20ProposalCmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:     "register-erc20 [erc20-address]",
 		Args:    cobra.ExactArgs(1),
@@ -244,11 +255,13 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 				return err
 			}
 
+			//nolint: staticcheck
 			title, err := cmd.Flags().GetString(cli.FlagTitle)
 			if err != nil {
 				return err
 			}
 
+			//nolint: staticcheck
 			description, err := cmd.Flags().GetString(cli.FlagDescription)
 			if err != nil {
 				return err
@@ -281,12 +294,16 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 		},
 	}
 
+	//nolint: staticcheck
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
+	//nolint: staticcheck
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(cli.FlagDeposit, "1acanto", "deposit of proposal")
+	//nolint: staticcheck
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
+	//nolint: staticcheck
 	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
 		panic(err)
 	}
@@ -298,6 +315,7 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 
 // NewToggleTokenConversionProposalCmd implements the command to submit a community-pool-spend proposal
 func NewToggleTokenConversionProposalCmd() *cobra.Command {
+	//nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:     "toggle-token-conversion [token]",
 		Args:    cobra.ExactArgs(1),
@@ -310,11 +328,13 @@ func NewToggleTokenConversionProposalCmd() *cobra.Command {
 				return err
 			}
 
+			//nolint: staticcheck
 			title, err := cmd.Flags().GetString(cli.FlagTitle)
 			if err != nil {
 				return err
 			}
 
+			//nolint: staticcheck
 			description, err := cmd.Flags().GetString(cli.FlagDescription)
 			if err != nil {
 				return err
@@ -347,12 +367,16 @@ func NewToggleTokenConversionProposalCmd() *cobra.Command {
 		},
 	}
 
+	//nolint: staticcheck
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
+	//nolint: staticcheck
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(cli.FlagDeposit, "1acanto", "deposit of proposal")
+	//nolint: staticcheck
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
+	//nolint: staticcheck
 	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
 		panic(err)
 	}

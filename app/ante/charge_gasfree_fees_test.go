@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
@@ -91,7 +93,7 @@ func runGasfreeTest(suite *AnteTestSuite, expPass bool, ctx sdk.Context, tx sdk.
 	shouldChangeBalanceAfter := suite.app.BankKeeper.GetBalance(cached, addr, shouldChangeDenom)
 	shouldNotChangeBalanceAfter := suite.app.BankKeeper.GetBalance(cached, addr, shouldNotChangeDenom)
 
-	var shouldChangeDiff, shouldNotChangeDiff sdk.Int
+	var shouldChangeDiff, shouldNotChangeDiff sdkmath.Int
 	if shouldChangeBalance.Amount.GT(shouldChangeBalanceAfter.Amount) {
 		shouldChangeDiff = shouldChangeBalance.Amount.Sub(shouldChangeBalanceAfter.Amount)
 	} else {
@@ -128,7 +130,7 @@ func runNoChangeGasfreeTest(suite *AnteTestSuite, expPass bool, ctx sdk.Context,
 
 	shouldNotChangeBalanceAfter := suite.app.BankKeeper.GetBalance(cached, addr, shouldNotChangeDenom)
 
-	var shouldNotChangeDiff sdk.Int
+	var shouldNotChangeDiff sdkmath.Int
 
 	if shouldNotChangeBalance.Amount.GT(shouldNotChangeBalanceAfter.Amount) {
 		shouldNotChangeDiff = shouldNotChangeBalance.Amount.Sub(shouldNotChangeBalanceAfter.Amount)
@@ -149,6 +151,7 @@ func (suite *AnteTestSuite) TestChargeGasfreeFeesDecorator() {
 
 	testDenom := "test"
 	suite.Require().NoError(suite.app.BankKeeper.MintCoins(suite.ctx, evmtypes.ModuleName, sdk.NewCoins(sdk.NewCoin(testDenom, sdk.NewInt(10000000000)))))
+	//nolint: exhaustruct
 	metadata := banktypes.Metadata{
 		Base:        testDenom,
 		Display:     testDenom,
