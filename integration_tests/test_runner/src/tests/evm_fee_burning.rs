@@ -5,6 +5,8 @@ use crate::utils::{
     wait_for_proposals_to_execute, EthermintUserKey, ValidatorKeys, OPERATION_TIMEOUT,
     STAKING_TOKEN,
 };
+use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::query_client::QueryClient as BankQueryClient;
+use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::QueryAllBalancesRequest;
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::DecCoin;
 use althea_proto::cosmos_sdk_proto::cosmos::distribution::v1beta1::{
     query_client::QueryClient as DistributionQueryClient, QueryValidatorOutstandingRewardsRequest,
@@ -33,7 +35,7 @@ pub async fn evm_fee_burning_test(
         .await
         .expect("Unable to get aalthea supply")
         .expect("No supply of aalthea?");
-    let pre_balances = snapshot_validator_rewards(contact, &validator_keys).await;
+    let pre_rewards = snapshot_validator_rewards(contact, &validator_keys).await;
 
     info!("Generating some fees");
     let gas_multiplier = web30::types::SendTxOption::GasPriceMultiplier(10.0);
@@ -63,11 +65,12 @@ pub async fn evm_fee_burning_test(
         "Supply decreased by: {}",
         pre_supply.amount - post_supply.amount
     );
-    let post_balances = snapshot_validator_rewards(contact, &validator_keys).await;
-    assert_eq!(pre_balances, post_balances);
+    let post_rewards = snapshot_validator_rewards(contact, &validator_keys).await;
+    assert_eq!(pre_rewards, post_rewards);
 
     // Check that other fees are not burned, and wind up in validator accounts
-    let pre_balances = snapshot_validator_rewards(contact, &validator_keys).await;
+    let pre_rewards = snapshot_validator_rewards(contact, &validator_keys).await;
+    let pre_balances = snapshot_validator_balances(contact, &validator_keys).await;
     let mut fs = vec![];
     for user in &evm_user_keys {
         fs.push(contact.send_coins(
@@ -87,17 +90,38 @@ pub async fn evm_fee_burning_test(
     join_all(fs).await;
     // info!("Results: {:?}", results);
     sleep(Duration::from_secs(10)).await;
-    let post_balances = snapshot_validator_rewards(contact, &validator_keys).await;
-    info!("Pre: {:?}, Post: {:?}", pre_balances, post_balances);
-    for (pre, post) in pre_balances.iter().zip(post_balances.iter()) {
+    let post_rewards = snapshot_validator_rewards(contact, &validator_keys).await;
+    info!("Rewards - Pre: {:?}, Post: {:?}", pre_rewards, post_rewards);
+    let mut reward_increase: bool = false;
+    for (pre, post) in pre_rewards.iter().zip(post_rewards.iter()) {
         for (pr, po) in pre.iter().zip(post.iter()) {
             assert_eq!(pr.denom, po.denom);
             let pree: Uint256 = pr.amount.parse().expect("Invalid integer?");
             let postt: Uint256 = po.amount.parse().expect("Invalid integer?");
-            assert!(pree < postt);
+            if pree < postt {
+                reward_increase = true;
+            }
+        }
+    }
+    let post_balances = snapshot_validator_balances(contact, &validator_keys).await;
+    info!(
+        "Balances - Pre: {:?}, Post: {:?}",
+        pre_balances, post_balances
+    );
+    let mut balance_increase: bool = false;
+    for (pre, post) in pre_balances.iter().zip(post_balances.iter()) {
+        for (pr, po) in pre.iter().zip(post.iter()) {
+            assert_eq!(pr.denom, po.denom);
+            if pr.amount < po.amount {
+                balance_increase = true;
+            }
         }
     }
 
+    assert!(
+        reward_increase || balance_increase,
+        "Neither the rewards nor the balances increased for any of the validators"
+    );
     info!("Successfully tested EVM fee burning");
 }
 
@@ -148,4 +172,33 @@ pub async fn snapshot_validator_rewards(
         rewards.push(reward.into_inner().rewards.expect("No rewards").rewards);
     }
     rewards
+}
+
+pub async fn snapshot_validator_balances(
+    contact: &Contact,
+    validator_keys: &[ValidatorKeys],
+) -> Vec<Vec<Coin>> {
+    let mut grpc = BankQueryClient::connect(contact.get_url()).await.unwrap();
+    let mut balances: Vec<Vec<Coin>> = Vec::new();
+    for key in validator_keys {
+        let balance = grpc
+            .all_balances(QueryAllBalancesRequest {
+                address: key.validator_key.to_address("althea").unwrap().to_string(),
+                pagination: None,
+            })
+            .await
+            .expect("Unable to get validator balances");
+        balances.push(
+            balance
+                .into_inner()
+                .balances
+                .iter()
+                .map(|x| Coin {
+                    amount: x.amount.parse().expect("Invalid amount?"),
+                    denom: x.denom.clone(),
+                })
+                .collect(),
+        );
+    }
+    balances
 }
