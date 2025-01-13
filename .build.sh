@@ -44,7 +44,7 @@ for platform in ${TARGET_PLATFORMS} ; do
     fi
 
     make clean
-    make contracts
+    make
 
     for f in $(ls $JS_CONTRACTS_ABI | grep -v Test); do
         source="${f%.sol}.json"

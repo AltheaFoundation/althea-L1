@@ -32,9 +32,6 @@ ls -lah artifacts/contracts/
 pwd
 popd
 
-# Copy the now complied contracts into the correct directory
-bash scripts/compile-contracts-for-go.sh
-
 # Compile the DEX contracts
 git clone https://github.com/AltheaFoundation/althea-dex.git solidity-dex/
 pushd solidity-dex/
