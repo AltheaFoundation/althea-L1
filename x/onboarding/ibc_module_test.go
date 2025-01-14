@@ -24,7 +24,8 @@ import (
 )
 
 var (
-	ibcBase     = "ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878"
+	ibcBase = "ibc/C053D637CCA2A2BA030E2C5EE1B28A16F71CCB0E45E8BE52766DC1B241B77878"
+	//nolint: exhaustruct
 	metadataIbc = banktypes.Metadata{
 		Description: "IBC voucher (channel 0)",
 		Base:        ibcBase,

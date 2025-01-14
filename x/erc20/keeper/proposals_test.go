@@ -169,6 +169,7 @@ func (suite *KeeperTestSuite) TestRegisterCoin() {
 			"metadata different that stored",
 			func() {
 				metadata.Base = cosmosTokenBase
+				//nolint: exhaustruct
 				validMetadata := banktypes.Metadata{
 					Description: "description",
 					Base:        cosmosTokenBase,
@@ -246,6 +247,7 @@ func (suite *KeeperTestSuite) TestRegisterCoin() {
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, minttypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(metadata.Base, 1)})
 				suite.Require().NoError(err)
 
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -344,6 +346,7 @@ func (suite *KeeperTestSuite) TestRegisterERC20() {
 		{
 			"force fail evm",
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)

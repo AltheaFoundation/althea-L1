@@ -58,6 +58,7 @@ func TestEqualMetadata(t *testing.T) {
 	}{
 		{
 			"equal metadata",
+			//nolint: exhaustruct
 			banktypes.Metadata{
 				Base:        "acanto",
 				Display:     "canto",
@@ -76,6 +77,7 @@ func TestEqualMetadata(t *testing.T) {
 					},
 				},
 			},
+			//nolint: exhaustruct
 			banktypes.Metadata{
 				Base:        "acanto",
 				Display:     "canto",
@@ -110,6 +112,7 @@ func TestEqualMetadata(t *testing.T) {
 		},
 		{
 			"different denom units length",
+			//nolint: exhaustruct
 			banktypes.Metadata{
 				Base:        "acanto",
 				Display:     "canto",
@@ -128,6 +131,7 @@ func TestEqualMetadata(t *testing.T) {
 					},
 				},
 			},
+			//nolint: exhaustruct
 			banktypes.Metadata{
 				Base:        "acanto",
 				Display:     "canto",
@@ -146,6 +150,7 @@ func TestEqualMetadata(t *testing.T) {
 		},
 		{
 			"different denom units",
+			//nolint: exhaustruct
 			banktypes.Metadata{
 				Base:        "acanto",
 				Display:     "canto",
@@ -169,6 +174,7 @@ func TestEqualMetadata(t *testing.T) {
 					},
 				},
 			},
+			//nolint: exhaustruct
 			banktypes.Metadata{
 				Base:        "acanto",
 				Display:     "canto",

@@ -139,6 +139,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 		{
 			"fail - force balance error", 100, 10, func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -239,6 +240,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 		{
 			"fail - force evm fail", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -249,6 +251,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
@@ -258,6 +261,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 		{
 			"fail - force fail second balance", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -269,12 +273,16 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				// first balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				// convert coin
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil).Once()
 				// second balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, fmt.Errorf("third")).Once()
 				// Extra call on test
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			},
@@ -283,6 +291,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 		{
 			"fail - force fail second balance", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -294,12 +303,16 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				// first balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				// convert coin
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil).Once()
 				// second balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				// Extra call on test
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			},
@@ -532,6 +545,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -542,6 +556,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
@@ -556,6 +571,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -567,6 +583,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 				balance := make([]uint8, 32)
 				balance[31] = uint8(1)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Twice()
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced balance error"))
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
@@ -581,6 +598,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -591,7 +609,9 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			},
@@ -606,6 +626,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -616,7 +637,9 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			},
@@ -825,6 +848,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -835,6 +859,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
@@ -848,6 +873,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -858,7 +884,9 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			},
@@ -871,6 +899,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -882,6 +911,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 				balance := make([]uint8, 32)
 				balance[31] = uint8(1)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Twice()
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("fail second balance"))
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
@@ -895,6 +925,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -905,6 +936,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			},
@@ -1103,6 +1135,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 		{
 			"fail - force evm fail", 100, 10, func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -1113,6 +1146,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
@@ -1121,6 +1155,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 		{
 			"fail - force evm balance error", 100, 10, func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -1132,12 +1167,16 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				// first balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				// convert coin
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil).Once()
 				// second balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, fmt.Errorf("third")).Once()
 				// Extra call on test
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			}, false, false,
@@ -1145,6 +1184,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 		{
 			"fail - force balance error", 100, 10, func(common.Address) {},
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -1155,6 +1195,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Times(4)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			}, false, false,
@@ -1244,6 +1285,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 		{
 			"fail - force evm fail", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -1254,6 +1296,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 				existingAcc := &statedb.Account{Nonce: uint64(1), Balance: common.Big1}
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
@@ -1263,6 +1306,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 		{
 			"fail - force fail second balance", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -1274,12 +1318,16 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				// first balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				// convert coin
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil).Once()
 				// second balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, fmt.Errorf("third")).Once()
 				// Extra call on test
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			},
@@ -1288,6 +1336,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 		{
 			"fail - force fail second balance", 100, 10, 5,
 			func() {
+				//nolint: exhaustruct
 				mockEVMKeeper := &MockEVMKeeper{}
 				sp, found := suite.app.ParamsKeeper.GetSubspace(types.ModuleName)
 				suite.Require().True(found)
@@ -1299,12 +1348,16 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 				balance := make([]uint8, 32)
 				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				// first balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				// convert coin
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil).Once()
 				// second balance of
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 				// Extra call on test
+				//nolint: exhaustruct
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{}, nil)
 				mockEVMKeeper.On("GetAccountWithoutBalance", mock.Anything, mock.Anything).Return(existingAcc, nil)
 			},
@@ -1356,6 +1409,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 			sender := sdk.AccAddress(suite.address.Bytes())
 			var err error
 			err = suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			suite.Require().NoError(err)
 			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
 			suite.Require().NoError(err)
 			msg := types.NewMsgConvertCoin(

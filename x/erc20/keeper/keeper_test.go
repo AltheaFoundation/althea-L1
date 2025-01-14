@@ -278,6 +278,7 @@ func (suite *KeeperTestSuite) DeployContractMaliciousDelayed(name string, symbol
 	return crypto.CreateAddress(suite.address, nonce)
 }
 
+// nolint: dupl
 func (suite *KeeperTestSuite) DeployContractDirectBalanceManipulation(name string, symbol string) common.Address {
 	ctx := sdk.WrapSDKContext(suite.ctx)
 	chainID := suite.app.EvmKeeper.ChainID()

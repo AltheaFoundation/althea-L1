@@ -33,11 +33,13 @@ func GenericProposalCmdSetup(cmd *cobra.Command) (setup GenericProposalSetup, er
 		return
 	}
 
+	// nolint: staticcheck
 	title, err := cmd.Flags().GetString(cli.FlagTitle)
 	if err != nil {
 		return
 	}
 
+	// nolint: staticcheck
 	description, err := cmd.Flags().GetString(cli.FlagDescription)
 	if err != nil {
 		return
@@ -80,12 +82,16 @@ func GenericProposalCmdBroadcast(cmd *cobra.Command, clientCtx client.Context, c
 }
 
 func AddGenericProposalCommandFlags(cmd *cobra.Command) {
+	// nolint: staticcheck
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
+	// nolint: staticcheck
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(cli.FlagDeposit, "1aalthea", "deposit of proposal")
+	// nolint: staticcheck
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(errorsmod.Wrap(err, "No title provided"))
 	}
+	// nolint: staticcheck
 	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
 		panic(errorsmod.Wrap(err, "No description provided"))
 	}

@@ -47,6 +47,7 @@ var (
 	}
 	uusdtIbcdenom = uusdtDenomtrace.IBCDenom()
 
+	//nolint: exhaustruct
 	metadataIbcUSDC = banktypes.Metadata{
 		Description: "USDC IBC voucher (channel 0)",
 		Base:        uusdcIbcdenom,
@@ -62,6 +63,7 @@ var (
 		Display: uusdcIbcdenom,
 	}
 
+	//nolint: exhaustruct
 	metadataIbcUSDT = banktypes.Metadata{
 		Description: "USDT IBC voucher (channel 0)",
 		Base:        uusdtIbcdenom,
