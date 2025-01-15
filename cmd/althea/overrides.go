@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -56,6 +57,12 @@ func CustomGroupTxCommand() *cobra.Command {
 		if strings.Contains(command.Use, "submit-proposal") {
 			// Override the submit-proposal command
 			custom.AddCommand(CustomMsgSubmitProposalCmd())
+			// Skip the original command we overrode
+			continue
+		}
+		if strings.Contains(command.Use, "vote") && strings.Contains(command.Use, "voter") {
+			// Override the submit-proposal command
+			custom.AddCommand(CustomMsgSubmitVoteCmd())
 			// Skip the original command we overrode
 			continue
 		}
@@ -145,6 +152,81 @@ Parameters:
 	}
 
 	cmd.Flags().String(groupcli.FlagExec, "", "Set to 1 to try to execute proposal immediately after creation (proposers signatures are considered as Yes votes)")
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// CustomMsgVoteCmd is a direct copy of the original MsgSubmitVoteCmd
+// however it does NOT make the assumption that the user will never provide the --from flag
+func CustomMsgSubmitVoteCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "vote [proposal-id] [voter] [vote-option] [metadata]",
+		Short: "Vote on a proposal",
+		Long: `Vote on a proposal.
+
+Parameters:
+			proposal-id: unique ID of the proposal
+			voter: voter account addresses.
+			vote-option: choice of the voter(s)
+				VOTE_OPTION_UNSPECIFIED: no-op
+				VOTE_OPTION_NO: no
+				VOTE_OPTION_YES: yes
+				VOTE_OPTION_ABSTAIN: abstain
+				VOTE_OPTION_NO_WITH_VETO: no-with-veto
+			Metadata: metadata for the vote
+`,
+		Args: cobra.ExactArgs(4),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// ------------------- CHANGED CONTENTS START -------------------------
+			// Since the --from flag is not required on this CLI command, we
+			// *check to see if it was used, and if not we* just use the 1st proposer in the JSON file.
+			from, err := cmd.Flags().GetString(flags.FlagFrom)
+			if err != nil {
+				panic("Unable to get from?")
+			}
+			if len(from) == 0 {
+				cmd.Flags().Set(flags.FlagFrom, args[1])
+			}
+			// ------------------- CHANGED CONTENTS END   -------------------------
+
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposalID, err := strconv.ParseUint(args[0], 10, 64)
+			if err != nil {
+				return err
+			}
+
+			voteOption, err := group.VoteOptionFromString(args[2])
+			if err != nil {
+				return err
+			}
+
+			execStr, _ := cmd.Flags().GetString(groupcli.FlagExec)
+
+			msg := &group.MsgVote{
+				ProposalId: proposalID,
+				Voter:      args[1],
+				Option:     voteOption,
+				Metadata:   args[3],
+				Exec:       execFromString(execStr),
+			}
+			if err != nil {
+				return err
+			}
+
+			if err = msg.ValidateBasic(); err != nil {
+				return fmt.Errorf("message validation failed: %w", err)
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	cmd.Flags().String(groupcli.FlagExec, "", "Set to 1 to try to execute proposal immediately after voting")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
