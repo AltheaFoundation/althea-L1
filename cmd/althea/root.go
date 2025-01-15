@@ -378,7 +378,9 @@ func txCommand() *cobra.Command {
 		authcmd.GetAuxToFeeCommand(),
 	)
 
-	althea.ModuleBasics.AddTxCommands(cmd)
+	// Add overriden Tx commands from ModuleBasics
+	AddOverrideTxCommands(cmd, althea.ModuleBasics)
+
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
