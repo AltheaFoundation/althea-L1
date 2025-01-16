@@ -1,7 +1,6 @@
 use crate::utils::*;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::query_client::QueryClient as BankQueryClient;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceRequest;
-use althea_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
 use althea_proto::cosmos_sdk_proto::ibc::applications::transfer::v1::query_client::QueryClient as IbcTransferQueryClient;
 use althea_proto::cosmos_sdk_proto::ibc::applications::transfer::v1::{
     DenomTrace, MsgTransfer, QueryDenomHashRequest, QueryDenomTraceRequest,
@@ -12,6 +11,7 @@ use althea_proto::cosmos_sdk_proto::ibc::core::channel::v1::{
     QueryChannelClientStateRequest, QueryChannelsRequest,
 };
 use althea_proto::cosmos_sdk_proto::ibc::lightclients::tendermint::v1::ClientState;
+use deep_space::client::send::TransactionResponse;
 use deep_space::client::type_urls::MSG_TRANSFER_TYPE_URL;
 use deep_space::error::CosmosGrpcError;
 use deep_space::utils::decode_any;
@@ -105,7 +105,7 @@ pub async fn send_ibc_transfer(
     fee_coin: Option<Coin>,   // The fee to pay for submitting the transfer msg
     channel_id: String,       // The Src chain's ibc channel connecting to Dst
     packet_timeout: Duration, // Used to create ibc-transfer timeout-timestamp
-) -> Result<TxResponse, CosmosGrpcError> {
+) -> Result<TransactionResponse, CosmosGrpcError> {
     let sender_address = sender
         .to_address(&contact.get_prefix())
         .unwrap()

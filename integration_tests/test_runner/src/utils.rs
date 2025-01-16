@@ -360,7 +360,7 @@ pub async fn create_parameter_change_proposal(
         )
         .await
         .unwrap();
-    trace!("Gov proposal executed with {:?}", res.raw_log);
+    trace!("Gov proposal executed with {:?}", res.raw_log());
 }
 
 // Prints out current stake to the console
@@ -427,7 +427,7 @@ pub async fn execute_register_erc20_proposal(
         )
         .await
         .unwrap();
-    info!("Gov proposal executed with {:?}", res.raw_log);
+    info!("Gov proposal executed with {:?}", res.raw_log());
 
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
@@ -468,7 +468,7 @@ pub async fn execute_register_coin_proposal(
         )
         .await
         .unwrap();
-    info!("Gov proposal executed with {:?}", res.raw_log);
+    info!("Gov proposal executed with {:?}", res.raw_log());
 
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
@@ -518,7 +518,7 @@ pub async fn execute_upgrade_proposal(
         )
         .await
         .unwrap();
-    info!("Gov proposal executed with {:?}", res.raw_log);
+    info!("Gov proposal executed with {:?}", res.raw_log());
 
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
@@ -595,7 +595,7 @@ pub async fn vote_yes_with_retry(
     let res = res.unwrap();
     info!(
         "Voting yes on governance proposal costing {} gas",
-        res.gas_used
+        res.gas_used()
     );
 }
 

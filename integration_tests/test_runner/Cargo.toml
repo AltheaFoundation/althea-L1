@@ -17,8 +17,9 @@ path = "src/bin/main.rs"
 [dependencies]
 
 althea_proto = {workspace = true}
-prost = "0.12"
-prost-types = "0.12"
+prost = {workspace=true}
+prost-types = {workspace=true}
+tonic = {workspace = true}
 bytes = "1"
 deep_space = {workspace = true}
 serde_derive = "1.0"
@@ -37,7 +38,6 @@ log = {workspace = true}
 env_logger = {workspace = true}
 tokio = "1.4.0"
 rand = "0.8"
-tonic = "0.10"
 futures = "0.3"
 serde_json = "1.0"
 sha256 = "1"

@@ -24,6 +24,7 @@ use clarity::Uint256;
 use clarity::{Address as EthAddress, Transaction};
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
+use num::Bounded;
 use num_traits::ToPrimitive;
 use web30::client::Web3;
 
@@ -822,8 +823,9 @@ async fn send_evm_tx(
     expect_success: bool,
 ) {
     let tx = web3
-        .approve_erc20_transfers(
+        .erc20_approve(
             erc20_addresses[0],
+            Uint256::max_value(),
             user.eth_privkey,
             erc20_addresses[1],
             Some(Duration::from_secs(15)),

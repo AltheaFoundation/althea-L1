@@ -8,7 +8,6 @@ use althea_proto::canto::erc20::v1::{
 };
 use althea_proto::canto::erc20::v1::{MsgConvertErc20, QueryTokenPairRequest, TokenPair};
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{DenomUnit, Metadata};
-use althea_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
     ParamChange, ParameterChangeProposal,
 };
@@ -17,6 +16,7 @@ use althea_proto::cosmos_sdk_proto::ibc::core::channel::v1::query_client::QueryC
 use althea_proto::cosmos_sdk_proto::ibc::core::channel::v1::IdentifiedChannel;
 use clarity::{Address as EthAddress, Uint256};
 use deep_space::address::cosmos_address_to_eth_address;
+use deep_space::client::send::TransactionResponse;
 use deep_space::error::CosmosGrpcError;
 use deep_space::utils::encode_any;
 use deep_space::{Address, Coin, Contact, CosmosPrivateKey, EthermintPrivateKey, Msg, PrivateKey};
@@ -643,7 +643,7 @@ pub async fn convert_erc20(
     receiver: Option<Address>,
     erc20: EthAddress,
     amount: Uint256,
-) -> Result<TxResponse, CosmosGrpcError> {
+) -> Result<TransactionResponse, CosmosGrpcError> {
     let sender_eth_addr =
         cosmos_address_to_eth_address(sender.to_address(ADDRESS_PREFIX.as_str()).unwrap())
             .expect("Unable to convert cosmos to eth address");
@@ -786,7 +786,7 @@ pub async fn create_token_proposal(
     fee: Coin,
     key: impl PrivateKey,
     wait_timeout: Option<Duration>,
-) -> Result<TxResponse, CosmosGrpcError> {
+) -> Result<TransactionResponse, CosmosGrpcError> {
     let proposal_any: Any = if is_erc20 {
         let proposal = RegisterErc20Proposal {
             title: format!("Create Cosmos Coin for {denom}"),
@@ -809,6 +809,7 @@ pub async fn create_token_proposal(
             display: denom.clone(),
             name: denom.clone(),
             symbol: denom.clone(),
+            ..Default::default()
         };
         let proposal = RegisterCoinProposal {
             title: format!("Create Cosmos Coin for {denom}"),

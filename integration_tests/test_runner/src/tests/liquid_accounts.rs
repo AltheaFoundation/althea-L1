@@ -19,8 +19,8 @@ use althea_proto::canto::erc20::v1::query_client::QueryClient as Erc20QueryClien
 use althea_proto::canto::erc20::v1::QueryTokenPairRequest;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::query_client::QueryClient as BankQueryClient;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::QueryDenomMetadataRequest;
-use althea_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
 use clarity::{Address as EthAddress, Uint256};
+use deep_space::client::send::TransactionResponse;
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address as CosmosAddress, Coin, Contact, Fee, Msg, PrivateKey};
 use tonic::transport::Channel;
@@ -75,7 +75,9 @@ pub async fn liquid_accounts_test(
     .expect("Unable to liquify account");
     info!(
         "Got liquify account response:\n{}\nTx Hash: {}\nGas used: {}",
-        liquify_res.raw_log, liquify_res.txhash, liquify_res.gas_used
+        liquify_res.raw_log(),
+        liquify_res.txhash(),
+        liquify_res.gas_used()
     );
 
     let (liquid_account, _eth_owner) =
@@ -216,7 +218,7 @@ pub async fn liquify_account(
     to_liquify_key: impl PrivateKey,
     to_liquify: CosmosAddress,
     fee: Option<Coin>,
-) -> Result<TxResponse, CosmosGrpcError> {
+) -> Result<TransactionResponse, CosmosGrpcError> {
     let fee = fee.unwrap_or_else(|| Coin {
         amount: MIN_GLOBAL_FEE_AMOUNT.into(),
         denom: STAKING_TOKEN.to_string(),
@@ -348,7 +350,7 @@ pub async fn execute_microtxs(
         .await;
     info!(
         "send_microtx unregistered coin response: {:?}",
-        res.map(|r| r.raw_log)
+        res.map(|r| r.raw_log())
     );
 
     expect_cosmos_evm_balances(
@@ -379,7 +381,7 @@ pub async fn execute_microtxs(
         .await;
     info!(
         "send_microtx zero coin response: {:?}",
-        res.map(|r| r.raw_log)
+        res.map(|r| r.raw_log())
     );
     expect_cosmos_evm_balances(
         contact,
@@ -409,7 +411,7 @@ pub async fn execute_microtxs(
         .await;
     info!(
         "send_microtx min coin response: {:?}",
-        res.map(|r| r.raw_log)
+        res.map(|r| r.raw_log())
     );
     expect_cosmos_evm_balances(
         contact,
@@ -439,7 +441,7 @@ pub async fn execute_microtxs(
         .await;
     info!(
         "send_microtx under threshold coin response: {:?}",
-        res.map(|r| r.raw_log)
+        res.map(|r| r.raw_log())
     );
     expect_cosmos_evm_balances(
         contact,
@@ -469,7 +471,7 @@ pub async fn execute_microtxs(
         .await;
     info!(
         "send_microtx eq threshold coin response: {:?}",
-        res.map(|r| r.raw_log)
+        res.map(|r| r.raw_log())
     );
     expect_cosmos_evm_balances(
         contact,

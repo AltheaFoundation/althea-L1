@@ -5,20 +5,18 @@ use althea_proto::althea_test::gaia::icaauth::v1::{MsgRegisterAccount, MsgSubmit
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
     ParamChange, ParameterChangeProposal,
 };
-use althea_proto::cosmos_sdk_proto::ibc::core::channel::v1::query_client::QueryClient as IbcChannelQueryClient;
-use althea_proto::cosmos_sdk_proto::{
-    cosmos::base::abci::v1beta1::TxResponse,
-    ibc::applications::interchain_accounts::{
-        controller::v1::{
-            query_client::QueryClient as ICAControllerQueryClient, QueryInterchainAccountRequest,
-            QueryParamsRequest as ControllerQueryParamsRequest,
-        },
-        host::v1::{
-            query_client::QueryClient as ICAHostQueryClient,
-            QueryParamsRequest as HostQueryParamsRequest,
-        },
+use althea_proto::cosmos_sdk_proto::ibc::applications::interchain_accounts::{
+    controller::v1::{
+        query_client::QueryClient as ICAControllerQueryClient, QueryInterchainAccountRequest,
+        QueryParamsRequest as ControllerQueryParamsRequest,
+    },
+    host::v1::{
+        query_client::QueryClient as ICAHostQueryClient,
+        QueryParamsRequest as HostQueryParamsRequest,
     },
 };
+use althea_proto::cosmos_sdk_proto::ibc::core::channel::v1::query_client::QueryClient as IbcChannelQueryClient;
+use deep_space::client::send::TransactionResponse;
 use deep_space::client::type_urls::MSG_MICROTX_TYPE_URL;
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address, Coin, Contact, CosmosPrivateKey, Msg, PrivateKey};
@@ -154,7 +152,7 @@ pub async fn register_interchain_account(
     owner: String,
     connection_id: String,
     fee: Coin,
-) -> Result<TxResponse, CosmosGrpcError> {
+) -> Result<TransactionResponse, CosmosGrpcError> {
     let register = MsgRegisterAccount {
         owner,
         connection_id,
@@ -232,7 +230,7 @@ pub async fn get_or_register_ica(
             fee.clone(),
         )
         .await?;
-        info!("Registered Interchain Account: {}", register_res.raw_log);
+        info!("Registered Interchain Account: {}", register_res.raw_log());
 
         ica_addr = get_interchain_account_address(
             ctrl_qc.clone(),
@@ -431,7 +429,7 @@ pub async fn send_microtx_via_ica(
     ctrl_to_host_conn_id: String,
     microtx_receiver: Address,
     amount: Coin,
-) -> Result<TxResponse, CosmosGrpcError> {
+) -> Result<TransactionResponse, CosmosGrpcError> {
     let msg_microtx = MsgMicrotx {
         sender: ica_address.to_string(),
         receiver: microtx_receiver.to_string(),

@@ -32,7 +32,7 @@ use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
 };
 use clarity::{Address as EthAddress, PrivateKey, Uint256};
 use deep_space::{Coin, Contact};
-use num::Zero;
+use num::{Bounded, Zero};
 use num256::Int256;
 use num_traits::ToPrimitive;
 use rand::Rng;
@@ -102,13 +102,15 @@ pub async fn populate_pool_basic(
     quote: EthAddress,
 ) {
     if base != EthAddress::default()
-        && !web3
-            .check_erc20_approved(base, evm_user.eth_address, dex_contracts.dex)
+        && web3
+            .get_erc20_allowance(base, evm_user.eth_address, dex_contracts.dex)
             .await
             .expect("Unable to check erc20 approval")
+            < Uint256::max_value() / 2u8.into()
     {
-        web3.approve_erc20_transfers(
+        web3.erc20_approve(
             base,
+            Uint256::max_value(), // Bad practice but it's a test env so we don't care
             evm_user.eth_privkey,
             dex_contracts.dex,
             Some(OPERATION_TIMEOUT),
@@ -117,13 +119,15 @@ pub async fn populate_pool_basic(
         .await
         .expect("Unable to approve erc20");
     }
-    if !web3
-        .check_erc20_approved(quote, evm_user.eth_address, dex_contracts.dex)
+    if web3
+        .get_erc20_allowance(quote, evm_user.eth_address, dex_contracts.dex)
         .await
         .expect("Unable to check erc20 approval")
+        < Uint256::max_value() / 2u8.into()
     {
-        web3.approve_erc20_transfers(
+        web3.erc20_approve(
             quote,
+            Uint256::max_value(), // Bad practice but it's a test env so we don't care
             evm_user.eth_privkey,
             dex_contracts.dex,
             Some(OPERATION_TIMEOUT),
@@ -180,10 +184,12 @@ pub async fn populate_pool_basic(
             .get_erc20_balance(quote, evm_user.eth_address)
             .await
             .unwrap();
+        #[allow(deprecated)]
         let ba = web3
             .check_erc20_approved(base, evm_user.eth_address, dex_contracts.dex)
             .await
             .unwrap();
+        #[allow(deprecated)]
         let qa = web3
             .check_erc20_approved(quote, evm_user.eth_address, dex_contracts.dex)
             .await
@@ -983,8 +989,9 @@ pub async fn create_or_prepare_pool(
     pool_idx: Uint256,
 ) {
     if base != EthAddress::default() {
-        web3.approve_erc20_transfers(
+        web3.erc20_approve(
             base,
+            Uint256::max_value(), // bad practice but it's a test env so we don't care
             evm_user.eth_privkey,
             dex,
             Some(OPERATION_TIMEOUT),
@@ -993,8 +1000,9 @@ pub async fn create_or_prepare_pool(
         .await
         .expect("Could not approve base token");
     }
-    web3.approve_erc20_transfers(
+    web3.erc20_approve(
         quote,
+        Uint256::max_value(), // bad practice but it's a test env so we don't care
         evm_user.eth_privkey,
         dex,
         Some(OPERATION_TIMEOUT),
@@ -1059,12 +1067,20 @@ pub async fn init_pool(
         ],
     };
     if pool_base != EthAddress::default() {
-        web3.approve_erc20_transfers(pool_base, evm_privkey, dex, Some(OPERATION_TIMEOUT), vec![])
-            .await
-            .expect("Could not approve base token");
+        web3.erc20_approve(
+            pool_base,
+            Uint256::max_value(),
+            evm_privkey,
+            dex,
+            Some(OPERATION_TIMEOUT),
+            vec![],
+        )
+        .await
+        .expect("Could not approve base token");
     }
-    web3.approve_erc20_transfers(
+    web3.erc20_approve(
         pool_quote,
+        Uint256::max_value(),
         evm_privkey,
         dex,
         Some(OPERATION_TIMEOUT),

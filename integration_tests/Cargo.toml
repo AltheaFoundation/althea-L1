@@ -3,11 +3,14 @@ members = ["test_runner", "alt"]
 default-members = ["test_runner"]
 
 [workspace.dependencies]
-althea_proto = "0.7"
+althea_proto = "0.9"
+prost = "0.13"
+prost-types = "0.13"
+tonic = "0"
 deep_space = {version = "2", features = ["althea", "ethermint"]}
 clarity = "1"
 web30 = "1"
-num256 = "0.5"
+num256 = "0.6"
 actix = "0.13"
 actix-rt = "2.2"
 log = "0.4"

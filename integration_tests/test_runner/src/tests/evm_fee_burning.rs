@@ -13,6 +13,7 @@ use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParamChange;
 use clarity::Address as EthAddress;
 use deep_space::{Coin, Contact, PrivateKey};
 use futures::future::join_all;
+use num::Bounded;
 use num256::Uint256;
 use tokio::time::sleep;
 use web30::client::Web3;
@@ -40,8 +41,9 @@ pub async fn evm_fee_burning_test(
     for _ in 0..35 {
         let mut fs = vec![];
         for user in &evm_user_keys {
-            fs.push(web3.approve_erc20_transfers(
+            fs.push(web3.erc20_approve(
                 erc20_contracts[0],
+                Uint256::max_value(),
                 user.eth_privkey,
                 erc20_contracts[1],
                 Some(Duration::from_secs(15)),
