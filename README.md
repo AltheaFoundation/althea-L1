@@ -4,15 +4,6 @@
 
 Althea introduced our [pay-per-forward protocol](https://www.youtube.com/watch?v=G4EKbgShyLw) in 2018, a trustless way of coordinating payments for bandwidth and network routing that is radical in its simplicity and efficiency. This is just one of the many usecases possible.
 
-
----
-
-## Testnet 2
-
-The next major event in the launch of the Althea blockchain is Testnet #2, which is online now! You can find the testnet 2 documentation [here](docs/althea/testnet-2.md)
-
----
-
 ## Join the Althea community!
 
 Join us on [Discord](https://discord.com/invite/vw8twzR) or [Matrix](https://riot.im/app/#/room/#althea:matrix.org)
@@ -20,6 +11,13 @@ Join us on [Discord](https://discord.com/invite/vw8twzR) or [Matrix](https://rio
 ---
 
 # Developer instructions
+
+To contribute to Althea-L1, refer to these guides.
+
+[Development environment setup](/docs/environment-setup.md)
+
+[Adding integration tests](/docs/modifying-integration-tests.md)
+
 
 ## Build and test
 
