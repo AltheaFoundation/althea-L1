@@ -14,13 +14,14 @@ use clarity::Uint256;
 use deep_space::private_key::CosmosPrivateKey;
 use deep_space::private_key::PrivateKey;
 use deep_space::Contact;
+use num::Zero;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::os::fd::{FromRawFd, IntoRawFd};
 use std::path::Path;
 use std::process::{Command, ExitStatus, Stdio};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use web30::client::Web3;
 use web30::jsonrpc::error::Web3Error;
 
@@ -251,21 +252,36 @@ pub async fn send_erc20s_to_evm_users(
 
     // The users have been funded, skip sending erc20s
     info!("Checking for existing balances, might skip funding");
-    if !web3
-        .get_erc20_balance(
-            *erc20_contracts.first().unwrap(),
-            *destinations.first().unwrap(),
-        )
-        .await
-        .unwrap()
-        .is_zero()
-    {
-        return Ok(());
+
+    // There's a potential for the jsonrpc endpoint to be slow to start (especially in CI on the upgrade test)
+    // so we give the endpoint a bit to spin up before concluding that
+    let start = Instant::now();
+    let mut current_balance = Uint256::zero();
+    while start - Instant::now() < OPERATION_TIMEOUT {
+        match web3
+            .get_erc20_balance(
+                *erc20_contracts.first().unwrap(),
+                *destinations.first().unwrap(),
+            )
+            .await
+        {
+            Ok(balance) => {
+                current_balance = balance;
+                break;
+            }
+            Err(_) => {
+                continue;
+            }
+        }
     }
 
-    info!("Actually funding EVM users with the ERC20s");
-    for erc20 in erc20_contracts {
-        send_erc20_bulk(amount, erc20, &destinations, web3).await;
+    if current_balance.is_zero() {
+        info!("Actually funding EVM users with the ERC20s");
+        for erc20 in erc20_contracts {
+            send_erc20_bulk(amount, erc20, &destinations, web3).await;
+        }
+    } else {
+        info!("Skipping funding, balances already exist");
     }
     Ok(())
 }
