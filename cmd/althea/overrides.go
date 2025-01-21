@@ -200,10 +200,12 @@ Parameters:
 				return err
 			}
 
-			voteOption, err := group.VoteOptionFromString(args[2])
+			voteOption, err := VoteOptionFromString(args[2])
 			if err != nil {
 				return err
 			}
+			fmt.Println("Vote arg", args[2])
+			fmt.Println("Vote Option parsed", voteOption)
 
 			execStr, _ := cmd.Flags().GetString(groupcli.FlagExec)
 
@@ -230,6 +232,29 @@ Parameters:
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
+}
+
+// Support the use of simple strings like "yes" and "no-with-veto" as vote options
+var VoteOption_simple = map[string]int32{
+	"yes":          1,
+	"abstain":      2,
+	"no":           3,
+	"no-with-veto": 4,
+}
+
+// Tries to parse the vote option as normal, but falls back to the simple strings on failure
+func VoteOptionFromString(option string) (group.VoteOption, error) {
+	vo, err := group.VoteOptionFromString(option)
+	// If the default parser fails, try to parse using the VoteOption_simple map
+	if err != nil {
+		vo, ok := VoteOption_simple[option]
+		// If there is no such entry, return UNSPECIFIED + error
+		if !ok {
+			return group.VOTE_OPTION_UNSPECIFIED, fmt.Errorf("'%s' is not a valid vote option", option)
+		}
+		return group.VoteOption(vo), nil
+	}
+	return group.VoteOption(vo), nil
 }
 
 // The following were non-public functions in the original file, so I am forced to duplicate them here
@@ -276,10 +301,13 @@ func parseMsgs(cdc codec.Codec, p Proposal) ([]sdk.Msg, error) {
 	return msgs, nil
 }
 
+// The CLI help text says you can specify 1, but that was not the case - "try" was expected. Now both "1" and "try" are accepted.
 func execFromString(execStr string) group.Exec {
 	exec := group.Exec_EXEC_UNSPECIFIED
 	switch execStr { //nolint:gocritic
 	case groupcli.ExecTry:
+		exec = group.Exec_EXEC_TRY
+	case "1":
 		exec = group.Exec_EXEC_TRY
 	}
 	return exec
