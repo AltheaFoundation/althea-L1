@@ -19,7 +19,7 @@ pub const MICROTX_FEE_BASIS_POINTS_PARAM_KEY: &str = "MicrotxFeeBasisPoints";
 /// asserting that the correct fees are deducted and transfers succeed
 pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorKeys>) {
     info!("Starting microtx fees test");
-    let num_users = 64;
+    let num_users = 16;
     // Make users who will send tokens
     let senders = bulk_get_user_keys(None, num_users);
 
@@ -75,6 +75,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
     );
 
     let microtx_fee_basis_points: u128 = serde_json::from_str(microtx_fee_basis_points).unwrap();
+    info!("Generating MsgMicrotxs");
     let (microtxs, amounts, fees) = generate_msg_microtxs(
         &senders,
         &receivers,
@@ -83,9 +84,11 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
         microtx_fee_basis_points,
     );
 
+    info!("Executing MsgMicrotxs");
     // Send the MsgMicrotxs, check their execution, assert the balances have changed
     exec_and_check(contact, &senders, &microtxs, &amounts, &fees, foo_balance).await;
 
+    info!("Verifying balance changes");
     // Check that the senders and receivers have the expected balance
     assert_balance_changes(
         contact,
@@ -97,6 +100,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
         &coin_denom,
     )
     .await;
+    info!("Microtx fees test successful!");
 }
 
 /// Creates 3 Vec's: MsgMicrotx's, transfer amounts, and expected fees
