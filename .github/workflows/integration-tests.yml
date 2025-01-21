@@ -210,5 +210,5 @@ jobs:
         with:
           workspaces: integration_tests/
           cache-on-failure: true
-      - name: Tests the Tethys upgrade
-        run: tests/run-upgrade-test.sh v1.4.0
+      - name: Tests the EXAMPLE upgrade
+        run: tests/run-upgrade-test.sh v1.5.1

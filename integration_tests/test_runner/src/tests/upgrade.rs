@@ -15,7 +15,8 @@ use super::erc20_conversion::erc20_conversion_test;
 use super::microtx_fees::microtx_fees_test;
 use super::native_token::native_token_test;
 
-pub const UPGRADE_NAME: &str = "tethys";
+pub const UPGRADE_NAME: &str = "example";
+const UPGRADE_BLOCK_DELTA: u64 = 20;
 
 /// Perform a series of integration tests to seed the system with data, then submit and pass a chain
 /// upgrade proposal
@@ -102,7 +103,7 @@ pub async fn run_upgrade(
     } else {
         panic!("Chain is not moving!");
     };
-    let upgrade_height = (curr_height + 40) as i64;
+    let upgrade_height = (curr_height + UPGRADE_BLOCK_DELTA) as i64;
     let upgrade_prop_params = UpgradeProposalParams {
         upgrade_height,
         plan_name,
@@ -161,49 +162,11 @@ pub async fn run_all_recoverable_tests(
 #[allow(clippy::too_many_arguments)]
 pub async fn run_upgrade_specific_tests(
     _web30: &Web3,
-    althea_contact: &Contact,
+    _althea_contact: &Contact,
     _ibc_contact: &Contact,
     _keys: Vec<ValidatorKeys>,
     _ibc_keys: Vec<CosmosPrivateKey>,
     _erc20_addresses: Vec<EthAddress>,
-    post_upgrade: bool,
+    _post_upgrade: bool,
 ) {
-    let mut distr_grpc = DistributionQueryClient::connect(althea_contact.get_url())
-        .await
-        .expect("Unable to connect distribution query client");
-
-    let params = distr_grpc
-        .params(QueryParamsRequest {})
-        .await
-        .expect("Unable to get params")
-        .into_inner()
-        .params
-        .expect("No params returned");
-
-    info!("Got Params: {:?}", params);
-
-    // The params values are returned as difficult to handle strings:
-    // 50% would be "500000000000000000", which we divide by 10^18 to account for precision to get 0.5
-    let precision = 10f64.powi(18);
-    let base_pr: f64 = params.base_proposer_reward.parse::<f64>().unwrap() / precision;
-    let bonus_pr: f64 = params.bonus_proposer_reward.parse::<f64>().unwrap() / precision;
-    let epsilon = f64::EPSILON;
-    match post_upgrade {
-        false => {
-            // The base reward should not yet be ~0.5 and the bonus reward should not yet be ~0.04
-            info!(
-                "Expecting base reward {} != 0.5 or bonus reward {} != 0.04",
-                base_pr, bonus_pr
-            );
-            assert!(((base_pr - 0.5).abs() > epsilon) || ((bonus_pr - 0.04).abs() > epsilon));
-        }
-        true => {
-            // The base reward should now be ~0.5 and the bonus reward should now be ~0.04
-            info!(
-                "Expecting base reward {} ~= 0.5 and bonus reward {} ~= 0.04",
-                base_pr, bonus_pr
-            );
-            assert!(((base_pr - 0.5).abs() <= epsilon) && ((bonus_pr - 0.04).abs() <= epsilon));
-        }
-    }
 }

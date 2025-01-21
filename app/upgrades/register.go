@@ -6,6 +6,7 @@ import (
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 
+	"github.com/AltheaFoundation/althea-L1/app/upgrades/example"
 	"github.com/AltheaFoundation/althea-L1/app/upgrades/tethys"
 )
 
@@ -24,5 +25,10 @@ func RegisterUpgradeHandlers(
 	upgradeKeeper.SetUpgradeHandler(
 		tethys.PlanName,
 		tethys.GetTethysUpgradeHandler(mm, configurator, crisisKeeper, distrKeeper),
+	)
+	// EXAMPLE upgrade
+	upgradeKeeper.SetUpgradeHandler(
+		example.PlanName,
+		example.GetExampleUpgradeHandler(mm, configurator, crisisKeeper, distrKeeper),
 	)
 }
