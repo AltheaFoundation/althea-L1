@@ -16,11 +16,11 @@
 pragma solidity >=0.4.22;
 
 /// This contract is a copy of the WETH9 contract found at https://github.com/gnosis/canonical-weth/blob/master/contracts/WETH9.sol
-/// with the only notable changes being a solidity compiler version relaxation and minimal syntactic changes to ensure
+/// with the only notable changes being: name, symbol, solidity compiler version relaxation and minimal syntactic changes to ensure
 /// the contract compiles and produces no warnings.
 contract WETH9 {
-    string public name     = "Wrapped Ether";
-    string public symbol   = "WETH";
+    string public name     = "Wrapped Althea";
+    string public symbol   = "WALTHEA";
     uint8  public decimals = 18;
 
     event  Approval(address indexed src, address indexed guy, uint wad);
