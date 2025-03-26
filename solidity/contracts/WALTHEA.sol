@@ -27,8 +27,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract WETH9 is ERC20Permit {
     constructor() ERC20("Wrapped Althea", "WALTHEA") ERC20Permit("WALTHEA") {}
 
-    event  Deposit(address indexed dst, uint wad);
-    event  Withdrawal(address indexed src, uint wad);
+    event Deposit(address indexed dst, uint indexed amount);
+    event Withdrawal(address indexed src, uint indexed amount);
 
     fallback() external payable {
         deposit();
