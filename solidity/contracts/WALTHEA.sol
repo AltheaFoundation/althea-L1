@@ -26,7 +26,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 ///    solidity compiler version updated to 0.8.28,
 ///    reimplementation of core ERC20 functions via openzeppelin's contracts
 ///    addition of the permit() function via openzeppelin's ERC20Permit contract
-contract WETH9 is ERC20Permit {
+contract WALTHEA is ERC20Permit {
     constructor() ERC20("Wrapped Althea", "WALTHEA") ERC20Permit("WALTHEA") {}
 
     event Deposit(address indexed dst, uint indexed amount);
