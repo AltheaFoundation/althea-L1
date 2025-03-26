@@ -3,6 +3,7 @@ import "hardhat-gas-reporter";
 import "hardhat-typechain";
 import { task } from "hardhat/config";
 
+
 task("accounts", "Prints the list of accounts", async (args, hre) => {
   const accounts = await hre.ethers.getSigners();
 
