@@ -13,72 +13,42 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity >=0.4.22;
+pragma solidity 0.8.28;
 
-/// This contract is a copy of the WETH9 contract found at https://github.com/gnosis/canonical-weth/blob/master/contracts/WETH9.sol
-/// with the only notable changes being: name, symbol, solidity compiler version relaxation and minimal syntactic changes to ensure
-/// the contract compiles and produces no warnings.
-contract WETH9 {
-    string public name     = "Wrapped Althea";
-    string public symbol   = "WALTHEA";
-    uint8  public decimals = 18;
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-    event  Approval(address indexed src, address indexed guy, uint wad);
-    event  Transfer(address indexed src, address indexed dst, uint wad);
+/// This contract is based on the WETH9 contract found at https://github.com/gnosis/canonical-weth/blob/master/contracts/WETH9.sol
+/// with the following changes:
+///    name and symbol,
+///    solidity compiler version updated to 0.8.28,
+///    reimplementation of core ERC20 functions via openzeppelin's contracts
+///    addition of the permit() function via openzeppelin's ERC20Permit contract
+contract WETH9 is ERC20Permit {
+    constructor() ERC20("Wrapped Althea", "WALTHEA") ERC20Permit("WALTHEA") {}
+
     event  Deposit(address indexed dst, uint wad);
     event  Withdrawal(address indexed src, uint wad);
-
-    mapping (address => uint)                       public  balanceOf;
-    mapping (address => mapping (address => uint))  public  allowance;
 
     fallback() external payable {
         deposit();
     }
+
     receive() external payable {
         deposit();
     }
+
     function deposit() public payable {
-        balanceOf[msg.sender] += msg.value;
+        address sender = _msgSender();
+        _mint(sender, msg.value);
         emit Deposit(msg.sender, msg.value);
     }
-    function withdraw(uint wad) public {
-        require(balanceOf[msg.sender] >= wad);
-        balanceOf[msg.sender] -= wad;
-        payable(msg.sender).transfer(wad);
-        emit Withdrawal(msg.sender, wad);
-    }
 
-    function totalSupply() public view returns (uint) {
-        return address(this).balance;
-    }
-
-    function approve(address guy, uint wad) public returns (bool) {
-        allowance[msg.sender][guy] = wad;
-        emit Approval(msg.sender, guy, wad);
-        return true;
-    }
-
-    function transfer(address dst, uint wad) public returns (bool) {
-        return transferFrom(msg.sender, dst, wad);
-    }
-
-    function transferFrom(address src, address dst, uint wad)
-        public
-        returns (bool)
-    {
-        require(balanceOf[src] >= wad);
-
-        if (src != msg.sender && allowance[src][msg.sender] != type(uint).max) {
-            require(allowance[src][msg.sender] >= wad);
-            allowance[src][msg.sender] -= wad;
-        }
-
-        balanceOf[src] -= wad;
-        balanceOf[dst] += wad;
-
-        emit Transfer(src, dst, wad);
-
-        return true;
+    function withdraw(uint amount) public {
+        address sender = _msgSender();
+        _burn(sender, amount);
+        payable(sender).transfer(amount);
+        emit Withdrawal(msg.sender, amount);
     }
 }
 
