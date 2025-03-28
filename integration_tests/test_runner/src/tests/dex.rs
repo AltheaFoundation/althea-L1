@@ -258,6 +258,38 @@ pub async fn advanced_dex_test(
         walthea,
     )
     .await;
+
+    mint_ambient_and_ranged_positions(
+        web3,
+        dex_contracts.clone(),
+        evm_user.clone(),
+        base,
+        quote,
+        *POOL_IDX,
+    )
+    .await;
+
+    mint_ambient_and_ranged_positions(
+        web3,
+        dex_contracts,
+        evm_user.clone(),
+        EthAddress::default(),
+        quote,
+        *POOL_IDX,
+    )
+    .await;
+
+    info!("Successfully tested DEX");
+}
+
+pub async fn mint_ambient_and_ranged_positions(
+    web3: &Web3,
+    dex_contracts: DexAddresses,
+    evm_user: EthermintUserKey,
+    base: EthAddress,
+    quote: EthAddress,
+    pool_idx: Uint256,
+) {
     let ambient_qty = one_eth() * 100000u32.into();
 
     dex_mint_ambient_in_amount(
@@ -268,7 +300,7 @@ pub async fn advanced_dex_test(
         evm_user.eth_address,
         base,
         quote,
-        *POOL_IDX,
+        pool_idx,
         ambient_qty,
         false,
     )
@@ -293,7 +325,7 @@ pub async fn advanced_dex_test(
             evm_user.eth_privkey,
             base,
             quote,
-            *POOL_IDX,
+            pool_idx,
             bid_tick,
             ask_tick,
             liq,
@@ -301,7 +333,6 @@ pub async fn advanced_dex_test(
         )
         .await;
     }
-    info!("Successfully tested DEX");
 }
 
 pub async fn dex_swap_many(
@@ -784,12 +815,17 @@ async fn swap_many(
             qty.to_string() + if is_buy { "base" } else { "quote" },
             if is_buy { "quote" } else { "base" }.to_string()
         );
+        let native_in = if pool_base == EthAddress::default() {
+            Some(qty)
+        } else {
+            None
+        };
         dex_swap(
             web3,
             dex_contracts.dex,
             evm_user.eth_privkey,
             swap_args,
-            None,
+            native_in,
             Some(OPERATION_TIMEOUT),
         )
         .await
@@ -909,6 +945,14 @@ async fn safe_mode_operations(
         set_liq_res.expect("Non sudo command should succeed outside of safe mode");
     }
 }
+
+/// Performs critical DEX setup operations, including:
+/// - Transferring authority to the CrocPolicy contract if not done yet
+/// - Disabling safe mode if enabled
+/// - Wrapping native token if needed
+/// - Creating or preparing a pool with base and quote tokens
+/// - Creating or preparing a pool with native token and quote tokens
+/// - Creating or preparing a pool with wrapped althea and base tokens
 #[allow(clippy::too_many_arguments)]
 pub async fn basic_dex_setup(
     contact: &Contact,
@@ -977,6 +1021,18 @@ pub async fn basic_dex_setup(
     create_or_prepare_pool(web3, dex, query, evm_user, a, b, *POOL_IDX).await;
     // Create or prepare the pool with Base and Quote tokens
     create_or_prepare_pool(web3, dex, query, evm_user, pool_base, pool_quote, *POOL_IDX).await;
+
+    // Create or prepare a pool with native token and quote tokens
+    create_or_prepare_pool(
+        web3,
+        dex,
+        query,
+        evm_user,
+        EthAddress::default(),
+        pool_quote,
+        *POOL_IDX,
+    )
+    .await;
 }
 
 pub async fn create_or_prepare_pool(
@@ -1051,7 +1107,8 @@ pub async fn init_pool(
     if pool_base >= pool_quote {
         panic!("Base token must be lexically less than quote token");
     }
-    let price: Uint256 = (f64::sqrt(10f64.powf(-12.0)) * 2f64.powf(64.0))
+    // Make the price 1:1 by providing sqrt(1.0) * 2^64
+    let price: Uint256 = (f64::sqrt(1f64) * 2f64.powf(64.0))
         .round()
         .to_u128()
         .unwrap()
@@ -1089,7 +1146,13 @@ pub async fn init_pool(
     .await
     .expect("Could not approve quote token");
 
-    dex_user_cmd(web3, dex, evm_privkey, init_pool_args, None, None).await
+    let native_in = if pool_base == EthAddress::default() {
+        Some(one_eth())
+    } else {
+        None
+    };
+
+    dex_user_cmd(web3, dex, evm_privkey, init_pool_args, native_in, None).await
 }
 
 /// Configures the nativedex module to use the given addresses as the CrocSwapDEX and CrocPolicy when executing gov proposals

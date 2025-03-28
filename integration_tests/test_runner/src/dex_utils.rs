@@ -1078,6 +1078,11 @@ pub async fn dex_mint_ranged_in_amount(
     } else {
         Uint256::from(12u8) // Mint in quote amount code
     };
+    let native_in = if base == EthAddress::default() {
+        Some(qty)
+    } else {
+        None
+    };
     let mint_ranged_pos_args = UserCmdArgs {
         callpath: WARM_PATH, // Warm Path index
         cmd: vec![
@@ -1095,9 +1100,16 @@ pub async fn dex_mint_ranged_in_amount(
         ],
     };
     info!("Minting position in single token: {mint_ranged_pos_args:?}");
-    dex_user_cmd(web3, dex, evm_privkey, mint_ranged_pos_args, None, None)
-        .await
-        .expect("Failed to mint position in pool");
+    dex_user_cmd(
+        web3,
+        dex,
+        evm_privkey,
+        mint_ranged_pos_args,
+        native_in,
+        None,
+    )
+    .await
+    .expect("Failed to mint position in pool");
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1399,6 +1411,12 @@ pub async fn dex_mint_ambient_in_amount(
             .await
             .expect("Could not query position");
 
+    let native_in = if base == EthAddress::default() {
+        Some(qty)
+    } else {
+        None
+    };
+
     let mint_ambient_pos_args = UserCmdArgs {
         callpath: WARM_PATH, // Warm Path index
         cmd: vec![
@@ -1416,9 +1434,16 @@ pub async fn dex_mint_ambient_in_amount(
         ],
     };
     info!("Minting ambient position: {mint_ambient_pos_args:?}");
-    dex_user_cmd(web3, dex, evm_privkey, mint_ambient_pos_args, None, None)
-        .await
-        .expect("Failed to mint position in pool");
+    dex_user_cmd(
+        web3,
+        dex,
+        evm_privkey,
+        mint_ambient_pos_args,
+        native_in,
+        None,
+    )
+    .await
+    .expect("Failed to mint position in pool");
     let amb_pos = croc_query_ambient_tokens(web3, query, None, evm_address, base, quote, pool_idx)
         .await
         .expect("Could not query position");
