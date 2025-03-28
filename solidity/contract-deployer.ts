@@ -1,4 +1,4 @@
-import { WETH9 } from "./typechain/WETH9";
+import { WALTHEA } from "./typechain/WALTHEA";
 import { TestERC20A } from "./typechain/TestERC20A";
 import { TestERC20B } from "./typechain/TestERC20B";
 import { TestERC20C } from "./typechain/TestERC20C";
@@ -75,7 +75,7 @@ async function deploy() {
   var erc20_b_path: string = artifacts + "/artifacts/contracts/TestERC20B.sol/TestERC20B.json"
   var erc20_c_path: string = artifacts + "/artifacts/contracts/TestERC20C.sol/TestERC20C.json"
   var erc721_a_path: string = artifacts + "/artifacts/contracts/TestERC721A.sol/TestERC721A.json"
-  var weth9_path: string = artifacts + "/artifacts/contracts/WETH9.sol/WETH9.json"
+  var walthea_path: string = artifacts + "/artifacts/contracts/WALTHEA.sol/WALTHEA.json"
 
   if (!fs.existsSync(artifacts)) {
     console.log("Artifacts folder not found, please specify the correct path using the --artifacts-root flag")
@@ -110,12 +110,12 @@ async function deploy() {
   const erc721TestAddress = testERC721.address;
   console.log("ERC721 deployed at Address - ", erc721TestAddress);
 
-  const { abi: abi4, bytecode: bytecode4 } = getContractArtifacts(weth9_path);
-  const weth9Factory = new ethers.ContractFactory(abi4, bytecode4, wallet);
-  const weth9 = (await weth9Factory.deploy(overrides)) as WETH9;
-  await weth9.deployed();
-  const weth9Address = weth9.address;
-  console.log("WETH deployed at Address - ", weth9Address);
+  const { abi: abi4, bytecode: bytecode4 } = getContractArtifacts(walthea_path);
+  const waltheaFactory = new ethers.ContractFactory(abi4, bytecode4, wallet);
+  const walthea = (await waltheaFactory.deploy(overrides)) as WALTHEA;
+  await walthea.deployed();
+  const waltheaAddress = walthea.address;
+  console.log("WALTHEA deployed at Address - ", waltheaAddress);
 
 
 }
