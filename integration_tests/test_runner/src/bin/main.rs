@@ -212,7 +212,7 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
-                contracts.weth_address,
+                contracts.walthea_address,
             )
             .await;
             return;
@@ -224,7 +224,7 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
-                contracts.weth_address,
+                contracts.walthea_address,
             )
             .await;
             return;
@@ -245,7 +245,7 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
-                contracts.weth_address,
+                contracts.walthea_address,
             )
             .await;
             return;
@@ -257,7 +257,7 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
-                contracts.weth_address,
+                contracts.walthea_address,
             )
             .await;
             return;
@@ -269,7 +269,7 @@ pub async fn main() {
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
                 dex_contracts,
-                contracts.weth_address,
+                contracts.walthea_address,
             )
             .await;
             return;
