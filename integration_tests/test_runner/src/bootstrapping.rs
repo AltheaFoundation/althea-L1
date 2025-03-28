@@ -563,7 +563,7 @@ pub async fn start_ibc_relayer(
         .expect("Could not connect channel query client");
 
     // Wait for the ibc channel to be created and find the channel ids
-    let channel_id_timeout = Duration::from_secs(60 * 5);
+    let channel_id_timeout = Duration::from_secs(30);
     info!("Getting channel...");
     let althea_channel = get_channel(
         althea_channel_qc,
