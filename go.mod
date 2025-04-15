@@ -19,7 +19,7 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/althea-net/cosmos-sdk v0.46.17
 	github.com/cosmos/ibc-go/v6 => github.com/cosmos/ibc-go/v6 v6.3.1
 
-	github.com/evmos/ethermint => github.com/AltheaFoundation/ethermint bacfa8c59b5870d8d1ee49c6bfab848114b07112
+	github.com/evmos/ethermint => github.com/AltheaFoundation/ethermint v0.22.4-0.20250415175751-bacfa8c59b58
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
@@ -32,10 +32,10 @@ replace (
 	// Canto forked github.com/evmos/evmos, which was originally github.com/tharsis/evmos
 	github.com/tharsis/evmos => github.com/Canto-Network/Canto/v6 v6.0.1
 
+	github.com/zondax/ledger-go => github.com/zondax/ledger-go v1.0.0
+
 	// Fix error "github.com/cosmos/gogoproto@v1.4.7/proto/merge.go:123:28: in call to slices.SortFunc, type func(x *descriptorpb.FileDescriptorProto, y *descriptorpb.FileDescriptorProto) bool of func(x, y *descriptorpb.FileDescriptor Proto) bool {…} does not match inferred type func(a *descriptorpb.FileDescriptorProto, b *descriptorpb.FileDescriptorProto) int for func(a E, b E) int"
 	golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
-
-	github.com/zondax/ledger-go => github.com/zondax/ledger-go v1.0.0
 )
 
 require (
