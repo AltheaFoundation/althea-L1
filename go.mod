@@ -1,6 +1,8 @@
 module github.com/AltheaFoundation/althea-L1
 
-go 1.22
+go 1.22.0
+
+toolchain go1.22.7
 
 require (
 	github.com/cosmos/cosmos-sdk v0.46.17
@@ -17,7 +19,7 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/althea-net/cosmos-sdk v0.46.17
 	github.com/cosmos/ibc-go/v6 => github.com/cosmos/ibc-go/v6 v6.3.1
 
-	github.com/evmos/ethermint => /home/cbo/go/src/ethermint
+	github.com/evmos/ethermint => github.com/AltheaFoundation/ethermint bacfa8c59b5870d8d1ee49c6bfab848114b07112
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
