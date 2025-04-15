@@ -1,8 +1,6 @@
 module github.com/AltheaFoundation/althea-L1
 
-go 1.22.0
-
-toolchain go1.22.7
+go 1.22
 
 require (
 	github.com/cosmos/cosmos-sdk v0.46.17
