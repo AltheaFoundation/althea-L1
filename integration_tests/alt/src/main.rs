@@ -5,6 +5,7 @@ mod args;
 mod dex;
 mod erc20;
 mod erc721;
+mod utils;
 
 use args::{Args, SubCommand};
 use clap::Parser;

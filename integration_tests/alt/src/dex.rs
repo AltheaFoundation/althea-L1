@@ -1,17 +1,27 @@
 use std::time::Duration;
 
-use crate::args::{
-    Args, DEXAuthorityArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs, DEXQueryPoolArgs,
-    DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXSafeModeArgs, DEXSubcommand, DEXSwapArgs,
-    DexArgs,
+use crate::{
+    args::{
+        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXMintAmbientArgs,
+        DEXMintAmbientQtyArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs,
+        DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs,
+        DEXQueryRewardsArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSubcommand, DEXSwapArgs,
+        DexArgs,
+    },
+    utils::approve_erc20s,
 };
-use clarity::{abi::AbiToken, Address as EthAddress};
+use clarity::{
+    abi::{encode_tokens, AbiToken},
+    Address as EthAddress,
+};
+use hex;
 use num256::{Int256, Uint256};
 use test_runner::dex_utils::{
     croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick,
-    croc_query_liquidity, croc_query_pool_params, croc_query_price, croc_query_range_position,
-    dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, SwapArgs, UserCmdArgs,
-    HOT_PROXY, MAX_PRICE, MIN_PRICE, WARM_PATH,
+    croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_price,
+    croc_query_range_position, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd,
+    SwapArgs, UserCmdArgs, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE,
+    WARM_PATH,
 };
 use web30::client::Web3;
 
@@ -26,11 +36,19 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::Price(cmd_args) => query_price(web30, args, cmd_args).await,
         DEXSubcommand::Position(cmd_args) => query_position(web30, args, cmd_args).await,
         DEXSubcommand::Rewards(cmd_args) => query_rewards(web30, args, cmd_args).await,
+        DEXSubcommand::Nonce(cmd_args) => query_nonce(web30, args, cmd_args).await,
+
+        DEXSubcommand::InitPool(cmd_args) => init_pool(web30, args, cmd_args).await,
         DEXSubcommand::Swap(cmd_args) => swap(web30, args, cmd_args).await,
+        DEXSubcommand::MintAmbient(cmd_args) => mint_ambient(web30, args, cmd_args).await,
+        DEXSubcommand::MintAmbientQty(cmd_args) => mint_ambient_qty(web30, args, cmd_args).await,
         DEXSubcommand::MintConcentrated(cmd_args) => mint_concentrated(web30, args, cmd_args).await,
         DEXSubcommand::MintConcentratedQty(cmd_args) => {
             mint_concentrated_qty(web30, args, cmd_args).await
         }
+        DEXSubcommand::MintKnockout(cmd_args) => mint_knockout(web30, args, cmd_args).await,
+        DEXSubcommand::BurnKnockout(cmd_args) => burn_knockout(web30, args, cmd_args).await,
+        DEXSubcommand::RecoverKnockout(cmd_args) => recover_knockout(web30, args, cmd_args).await,
     }
 }
 
@@ -199,6 +217,67 @@ pub async fn query_rewards(web30: &Web3, _args: &Args, cmd_args: &DEXQueryReward
     println!("{:?}", rewards);
 }
 
+pub async fn query_nonce(web30: &Web3, _args: &Args, cmd_args: &DEXQueryNonceArgs) {
+    let salt_bytes = hex::decode(&cmd_args.salt).expect("Invalid salt");
+    let nonce_res = croc_query_nonce(
+        web30,
+        cmd_args.query_contract,
+        None,
+        cmd_args.client,
+        salt_bytes,
+    )
+    .await
+    .expect("Failed to query rewards");
+    println!("{:?}", nonce_res);
+}
+
+pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    let price = (cmd_args.price.sqrt() * 2f64.powi(64)) as u128; // convert to a sqrt price in Q64.64 format
+
+    approve_erc20s(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        cmd_args.base,
+        cmd_args.quote,
+        500u32.into(),
+    )
+    .await;
+
+    let code: Uint256 = 71u8.into();
+    let user_cmd_args: Vec<AbiToken> = vec![
+        code.into(),
+        cmd_args.base.into(),
+        cmd_args.quote.into(),
+        pool_index.into(),
+        price.into(),
+    ];
+    let native_in = if cmd_args.base == EthAddress::default() {
+        Some(10u8.into())
+    } else {
+        None
+    };
+    info!("Init Pool args: {:?}", user_cmd_args);
+    let res = dex_user_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        UserCmdArgs {
+            callpath: COLD_PATH,
+            // ABI: commitLP(uint8 code, address base, address quote, uint256 poolIdx,
+            //        int24 bidTick, int24 askTick, uint128 liq, uint128 limitLower,
+            //        uint128 limitHigher, uint8 reserveFlags, address lpConduit)
+            cmd: user_cmd_args,
+        },
+        native_in,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await
+    .expect("Unable to create new pool on dex");
+    println!("Transaction result: {:?}", res);
+}
+
 pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
     let input_amount: Option<Uint256> = cmd_args
@@ -237,6 +316,17 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
             (cmd_args.output, cmd_args.input, false, qty, true)
         }
     };
+
+    approve_erc20s(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        base,
+        quote,
+        500u32.into(),
+    )
+    .await;
+
     let tip = cmd_args.tip.unwrap_or(0u16);
 
     // If a limit price has been provided, use it. Otherwise, determine if we need to use min/max price
@@ -317,6 +407,152 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
     }
 }
 
+pub async fn mint_ambient(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientArgs) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    let liquidity: Uint256 = cmd_args
+        .liquidity
+        .clone()
+        .parse()
+        .expect("Invalid liquidity");
+
+    // If a limit price has been provided, use it. Otherwise, determine if we need to use min/max price
+    let limit_lower = if let Some(limit) = cmd_args.limit_lower.clone() {
+        limit.parse().expect("Invalid lower limit price")
+    } else {
+        *MIN_PRICE
+    };
+    let limit_upper = if let Some(limit) = cmd_args.limit_upper.clone() {
+        limit.parse().expect("Invalid upper limit price")
+    } else {
+        *MAX_PRICE
+    };
+    let reserve_flags = cmd_args.reserve_flags.unwrap_or(0u8);
+
+    let code: Uint256 = 3u8.into();
+    let user_cmd_args: Vec<AbiToken> = vec![
+        code.into(),
+        cmd_args.base.into(),
+        cmd_args.quote.into(),
+        pool_index.into(),
+        0u32.into(), // Bid tick (unused)
+        0u32.into(), // Ask tick (unused)
+        liquidity.into(),
+        limit_lower.into(),
+        limit_upper.into(),
+        reserve_flags.into(),
+        cmd_args.lp_conduit.unwrap_or_default().into(),
+    ];
+
+    let native_in = if cmd_args.base == EthAddress::default() {
+        Some(liquidity)
+    } else {
+        None
+    };
+
+    approve_erc20s(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        cmd_args.base,
+        cmd_args.quote,
+        liquidity,
+    )
+    .await;
+
+    info!("Mint args: {:?}", user_cmd_args);
+    let res = dex_user_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        UserCmdArgs {
+            callpath: WARM_PATH,
+            // ABI: commitLP(uint8 code, address base, address quote, uint256 poolIdx,
+            //        int24 bidTick, int24 askTick, uint128 liq, uint128 limitLower,
+            //        uint128 limitHigher, uint8 reserveFlags, address lpConduit)
+            cmd: user_cmd_args,
+        },
+        native_in,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await
+    .expect("Unable to mint ranged position on dex");
+    println!("Transaction result: {:?}", res);
+}
+
+pub async fn mint_ambient_qty(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientQtyArgs) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    let qty: Uint256 = cmd_args.qty.clone().parse().expect("Invalid qty");
+
+    // If a limit price has been provided, use it. Otherwise, determine if we need to use min/max price
+    let limit_lower = if let Some(limit) = cmd_args.limit_lower.clone() {
+        limit.parse().expect("Invalid lower limit price")
+    } else {
+        *MIN_PRICE
+    };
+    let limit_upper = if let Some(limit) = cmd_args.limit_upper.clone() {
+        limit.parse().expect("Invalid upper limit price")
+    } else {
+        *MAX_PRICE
+    };
+    let reserve_flags = cmd_args.reserve_flags.unwrap_or(0u8);
+
+    let code: Uint256 = if cmd_args.input_is_base {
+        info!("Minting with base currency");
+        31u8.into()
+    } else {
+        info!("Minting with quote currency");
+        32u8.into()
+    };
+    let native_in = if cmd_args.base == EthAddress::default() && cmd_args.input_is_base {
+        Some(qty)
+    } else {
+        None
+    };
+
+    let user_cmd_args: Vec<AbiToken> = vec![
+        code.into(),
+        cmd_args.base.into(),
+        cmd_args.quote.into(),
+        pool_index.into(),
+        0u32.into(), // Bid tick (unused)
+        0u32.into(), // Ask tick (unused)
+        qty.into(),
+        limit_lower.into(),
+        limit_upper.into(),
+        reserve_flags.into(),
+        cmd_args.lp_conduit.unwrap_or_default().into(),
+    ];
+
+    approve_erc20s(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        cmd_args.base,
+        cmd_args.quote,
+        qty * 2u8.into(),
+    )
+    .await;
+
+    info!("Mint Qty args: {:?}", user_cmd_args);
+    let res = dex_user_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        UserCmdArgs {
+            callpath: WARM_PATH,
+            // ABI: commitLP(uint8 code, address base, address quote, uint256 poolIdx,
+            //        int24 bidTick, int24 askTick, uint128 liq, uint128 limitLower,
+            //        uint128 limitHigher, uint8 reserveFlags, address lpConduit)
+            cmd: user_cmd_args,
+        },
+        native_in,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await
+    .expect("Unable to mint ranged position on dex");
+    println!("Transaction result: {:?}", res);
+}
+
 pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConcentratedArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
     let liquidity: Uint256 = cmd_args
@@ -354,6 +590,23 @@ pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConc
         reserve_flags.into(),
         cmd_args.lp_conduit.unwrap_or_default().into(),
     ];
+
+    let native_in = if cmd_args.base == EthAddress::default() {
+        Some(liquidity)
+    } else {
+        None
+    };
+
+    approve_erc20s(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        cmd_args.base,
+        cmd_args.quote,
+        liquidity,
+    )
+    .await;
+
     info!("Mint args: {:?}", user_cmd_args);
     let res = dex_user_cmd(
         web30,
@@ -366,7 +619,7 @@ pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConc
             //        uint128 limitHigher, uint8 reserveFlags, address lpConduit)
             cmd: user_cmd_args,
         },
-        None,
+        native_in,
         Some(Duration::from_secs(args.timeout)),
     )
     .await
@@ -423,6 +676,17 @@ pub async fn mint_concentrated_qty(
         reserve_flags.into(),
         cmd_args.lp_conduit.unwrap_or_default().into(),
     ];
+
+    approve_erc20s(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        cmd_args.base,
+        cmd_args.quote,
+        qty * 2u8.into(),
+    )
+    .await;
+
     info!("Mint Qty args: {:?}", user_cmd_args);
     let res = dex_user_cmd(
         web30,
@@ -440,5 +704,158 @@ pub async fn mint_concentrated_qty(
     )
     .await
     .expect("Unable to mint ranged position on dex");
+    println!("Transaction result: {:?}", res);
+}
+
+pub async fn mint_knockout(web30: &Web3, args: &Args, cmd_args: &DEXMintKnockoutArgs) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    let qty: Uint256 = cmd_args.qty.clone().parse().expect("Invalid liquidity");
+    let tick_lower: Int256 = cmd_args.tick_lower.parse().expect("Invalid tick_lower");
+    let tick_upper: Int256 = cmd_args.tick_upper.parse().expect("Invalid tick_upper");
+
+    let reserve_flags = cmd_args.reserve_flags.unwrap_or(0u8);
+    let inside_mid = cmd_args.inside_mid.unwrap_or_default();
+
+    let code: Uint256 = 91u8.into();
+    // qty and insideMid are provided as abi-encoded bytes in the "args" parameter
+    let other_args: Vec<AbiToken> = vec![qty.into(), inside_mid.into()];
+    let other_args_bytes = encode_tokens(&other_args);
+    let user_cmd_args: Vec<AbiToken> = vec![
+        code.into(),
+        cmd_args.base.into(),
+        cmd_args.quote.into(),
+        pool_index.into(),
+        tick_lower.into(),
+        tick_upper.into(),
+        cmd_args.is_bid.into(),
+        reserve_flags.into(),
+        other_args_bytes.into(),
+    ];
+
+    let native_in = if cmd_args.base == EthAddress::default() {
+        Some(qty)
+    } else {
+        None
+    };
+
+    approve_erc20s(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        cmd_args.base,
+        cmd_args.quote,
+        qty,
+    )
+    .await;
+
+    info!("Mint args: {:?}", user_cmd_args);
+
+    let res = dex_user_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        UserCmdArgs {
+            callpath: KNOCKOUT_LIQ_PATH,
+            // ABI: (uint8 code, address base, address quote, uint256 poolIdx,
+            //       int24 bidTick, int24 askTick, bool isBid,
+            //       uint8 reserveFlags, bytes memory args)
+            cmd: user_cmd_args,
+        },
+        native_in,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await
+    .expect("Unable to mint knockout position on dex");
+    println!("Transaction result: {:?}", res);
+}
+
+pub async fn burn_knockout(web30: &Web3, args: &Args, cmd_args: &DEXBurnKnockoutArgs) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    let qty: Uint256 = cmd_args.qty.clone().parse().expect("Invalid liquidity");
+    let tick_lower: Int256 = cmd_args.tick_lower.parse().expect("Invalid tick_lower");
+    let tick_upper: Int256 = cmd_args.tick_upper.parse().expect("Invalid tick_upper");
+
+    let reserve_flags = cmd_args.reserve_flags.unwrap_or(0u8);
+    let in_liq_qty = cmd_args.in_liq_qty.unwrap_or_default();
+    let inside_mid = cmd_args.inside_mid.unwrap_or_default();
+
+    let code: Uint256 = 92u8.into();
+    // qty and insideMid are provided as abi-encoded bytes in the "args" parameter
+    let other_args: Vec<AbiToken> = vec![qty.into(), in_liq_qty.into(), inside_mid.into()];
+    let other_args_bytes = encode_tokens(&other_args);
+    let user_cmd_args: Vec<AbiToken> = vec![
+        code.into(),
+        cmd_args.base.into(),
+        cmd_args.quote.into(),
+        pool_index.into(),
+        tick_lower.into(),
+        tick_upper.into(),
+        cmd_args.is_bid.into(),
+        reserve_flags.into(),
+        other_args_bytes.into(),
+    ];
+
+    info!("Burn args: {:?}", user_cmd_args);
+
+    let res = dex_user_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        UserCmdArgs {
+            callpath: KNOCKOUT_LIQ_PATH,
+            // ABI: (uint8 code, address base, address quote, uint256 poolIdx,
+            //       int24 bidTick, int24 askTick, bool isBid,
+            //       uint8 reserveFlags, bytes memory args)
+            cmd: user_cmd_args,
+        },
+        None,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await
+    .expect("Unable to mint knockout position on dex");
+    println!("Transaction result: {:?}", res);
+}
+
+pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKnockoutArgs) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    let tick_lower: Int256 = cmd_args.tick_lower.parse().expect("Invalid tick_lower");
+    let tick_upper: Int256 = cmd_args.tick_upper.parse().expect("Invalid tick_upper");
+    let reserve_flags = cmd_args.reserve_flags.unwrap_or(0u8);
+
+    let pivot_time = cmd_args.pivot_time;
+
+    let code: Uint256 = 94u8.into();
+    // qty and insideMid are provided as abi-encoded bytes in the "args" parameter
+    let other_args: Vec<AbiToken> = vec![pivot_time.into()];
+    let other_args_bytes = encode_tokens(&other_args);
+    let user_cmd_args: Vec<AbiToken> = vec![
+        code.into(),
+        cmd_args.base.into(),
+        cmd_args.quote.into(),
+        pool_index.into(),
+        tick_lower.into(),
+        tick_upper.into(),
+        cmd_args.is_bid.into(),
+        reserve_flags.into(),
+        other_args_bytes.into(),
+    ];
+    info!("Recover args: {:?}", user_cmd_args);
+
+    let res = dex_user_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        UserCmdArgs {
+            callpath: KNOCKOUT_LIQ_PATH,
+            // ABI: (uint8 code, address base, address quote, uint256 poolIdx,
+            //       int24 bidTick, int24 askTick, bool isBid,
+            //       uint8 reserveFlags, bytes memory args)
+            cmd: user_cmd_args,
+        },
+        None,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await
+    .expect("Unable to mint knockout position on dex");
     println!("Transaction result: {:?}", res);
 }

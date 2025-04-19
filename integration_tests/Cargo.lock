@@ -215,6 +215,7 @@ dependencies = [
  "clarity",
  "deep_space",
  "env_logger",
+ "hex",
  "log",
  "num",
  "num256",
