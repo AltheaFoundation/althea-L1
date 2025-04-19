@@ -21,6 +21,7 @@ actix-rt = {workspace = true}
 log = {workspace = true}
 env_logger = {workspace = true}
 num = {workspace = true}
+hex = "0.4"
 
 clap = {version="3", features=["derive"]}
 openssl-probe = "0.1"
