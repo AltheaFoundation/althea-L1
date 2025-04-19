@@ -721,6 +721,51 @@ pub async fn croc_query_conc_rewards(
     })
 }
 
+#[derive(Debug, Clone)]
+pub struct UserBalance {
+    pub surplus_collateral: u128,
+    pub nonce: u32,
+    pub agent_calls_left: u32,
+}
+#[allow(clippy::too_many_arguments)]
+pub async fn croc_query_nonce(
+    web30: &Web3,
+    croc_query_contract: EthAddress,
+    caller: Option<EthAddress>,
+    client: EthAddress,
+    salt: Vec<u8>, // The arbitrary salt bytes used for multidimensional nonces
+) -> Result<UserBalance, Web3Error> {
+    // ABI: queryRelayNonce (address client, bytes32 nonceSalt)
+    // returns (uint128 surplus, uint32 nonce, uint32 agentCallsLeft)
+    let caller = caller.unwrap_or(client);
+    let payload = clarity::abi::encode_call(
+        "queryRelayNonce(address,bytes32)",
+        &[client.into(), salt.into()],
+    )?;
+
+    let query_res = web30
+        .simulate_transaction(
+            TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            None,
+        )
+        .await?;
+
+    let mut i: usize = 8; // Left are 8 bytes unused
+                          // The next 16 hold the surplus collateral
+    let surplus_collateral = u128::from_be_bytes(query_res[i..i + 16].try_into().unwrap());
+    i += 16;
+    // The next 4 hold nonce
+    let nonce = u32::from_be_bytes(query_res[i..i + 4].try_into().unwrap());
+    i += 4;
+    // Remaining 4 hold agent_calls_left
+    let agent_calls_left = u32::from_be_bytes(query_res[i..i + 4].try_into().unwrap());
+
+    Ok(UserBalance {
+        surplus_collateral,
+        nonce,
+        agent_calls_left,
+    })
+}
 /// Specifies a swap() call on the DEX contract
 #[derive(Debug, Clone)]
 pub struct SwapArgs {

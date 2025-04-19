@@ -253,12 +253,27 @@ pub enum DEXSubcommand {
     Position(DEXQueryPositionArgs),
     /// Use CrocQuery to fetch the rewards earned by a ranged position
     Rewards(DEXQueryRewardsArgs),
+    /// Use CrocQuery to fetch the nonce set for a user performing gasless transactions
+    Nonce(DEXQueryNonceArgs),
+
+    /// Creates a new pool
+    InitPool(DEXInitPoolArgs),
     /// Perform a swap on the DEX
     Swap(DEXSwapArgs),
+    /// Mint a ambient liquidity position using both tokens
+    MintAmbient(DEXMintAmbientArgs),
+    /// Mint a ambient liquidity position using only one token
+    MintAmbientQty(DEXMintAmbientQtyArgs),
     /// Mint a concentrated liquidity position using both tokens
     MintConcentrated(DEXMintConcentratedArgs),
     /// Mint a concentrated liquidity position using only one token
     MintConcentratedQty(DEXMintConcentratedQtyArgs),
+    /// Mint a knockout liquidity position
+    MintKnockout(DEXMintKnockoutArgs),
+    /// Burn an in-progress knockout liquidity position
+    BurnKnockout(DEXBurnKnockoutArgs),
+    /// Withdraw the fully-swapped liquidity from a knockout position which has been knocked out
+    RecoverKnockout(DEXRecoverKnockoutArgs),
 }
 
 /// Query the SafeMode status of the DEX
@@ -359,6 +374,44 @@ pub struct DEXQueryRewardsArgs {
 }
 
 #[derive(Parser)]
+pub struct DEXQueryNonceArgs {
+    /// The CrocQuery address
+    #[clap(parse(try_from_str))]
+    pub query_contract: EthAddress,
+    /// The address whose transactions are relayed
+    #[clap(parse(try_from_str))]
+    pub client: EthAddress,
+    /// (Optional) The address to simulate the transaction through
+    #[clap(short, long, parse(try_from_str))]
+    pub caller: Option<EthAddress>,
+    /// The salt value used for a gasless transaction
+    #[clap(parse(try_from_str))]
+    pub salt: String,
+}
+
+#[derive(Parser)]
+pub struct DEXInitPoolArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The base token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub base: EthAddress,
+    /// The quote token
+    #[clap(parse(try_from_str))]
+    pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+    /// The price to set the pool at initially, in terms of base wei for quote wei
+    #[clap(parse(try_from_str))]
+    pub price: f64,
+}
+
+#[derive(Parser)]
 pub struct DEXSwapArgs {
     /// The DEX address
     #[clap(parse(try_from_str))]
@@ -399,7 +452,41 @@ pub struct DEXSwapArgs {
 }
 
 #[derive(Parser)]
-pub struct DEXMintConcentratedArgs {
+pub struct DEXMintAmbientArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The base token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub base: EthAddress,
+    /// The quote token
+    #[clap(parse(try_from_str))]
+    pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+    /// The amount to mint in terms of sqrt(X*Y) for an equivalent constant product pool
+    #[clap(parse(try_from_str))]
+    pub liquidity: String,
+    /// (Optional) a lower price limit to prevent minting a ranged position at an unfavorable price
+    #[clap(long, parse(try_from_str))]
+    pub limit_lower: Option<String>,
+    /// (Optional) an upper price limit to prevent minting a ranged position at an unfavorable price
+    #[clap(long, parse(try_from_str))]
+    pub limit_upper: Option<String>,
+    /// (Optional) an address to use as the LP Conduit argument
+    #[clap(long, parse(try_from_str))]
+    pub lp_conduit: Option<EthAddress>,
+    /// (Optional) the reserve flags to use
+    #[clap(long, parse(try_from_str))]
+    pub reserve_flags: Option<u8>,
+}
+
+#[derive(Parser)]
+pub struct DEXMintAmbientQtyArgs {
     /// The DEX address
     #[clap(parse(try_from_str))]
     pub dex_contract: EthAddress,
@@ -415,6 +502,43 @@ pub struct DEXMintConcentratedArgs {
     /// The quote token
     #[clap(parse(try_from_str))]
     pub quote: EthAddress,
+    /// True to use the base token as the input token, false to use quote
+    #[clap(short = 'b', long, parse(try_from_str), default_value = "true")]
+    pub input_is_base: bool,
+    /// The amount of input tokens to use for the mint
+    #[clap(parse(try_from_str))]
+    pub qty: String,
+    /// (Optional) a lower price limit to prevent minting a ranged position at an unfavorable price
+    #[clap(long, parse(try_from_str))]
+    pub limit_lower: Option<String>,
+    /// (Optional) an upper price limit to prevent minting a ranged position at an unfavorable price
+    #[clap(long, parse(try_from_str))]
+    pub limit_upper: Option<String>,
+    /// (Optional) an address to use as the LP Conduit argument
+    #[clap(long, parse(try_from_str))]
+    pub lp_conduit: Option<EthAddress>,
+    /// (Optional) the reserve flags to use
+    #[clap(long, parse(try_from_str))]
+    pub reserve_flags: Option<u8>,
+}
+
+#[derive(Parser)]
+pub struct DEXMintConcentratedArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The base token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub base: EthAddress,
+    /// The quote token
+    #[clap(parse(try_from_str))]
+    pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
     /// The amount to mint in terms of sqrt(X*Y) for an equivalent constant product pool
     #[clap(parse(try_from_str))]
     pub liquidity: String,
@@ -476,6 +600,117 @@ pub struct DEXMintConcentratedQtyArgs {
     /// (Optional) an address to use as the LP Conduit argument
     #[clap(long, parse(try_from_str))]
     pub lp_conduit: Option<EthAddress>,
+    /// (Optional) the reserve flags to use
+    #[clap(long, parse(try_from_str))]
+    pub reserve_flags: Option<u8>,
+}
+
+#[derive(Parser)]
+pub struct DEXMintKnockoutArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+    /// The base token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub base: EthAddress,
+    /// The quote token
+    #[clap(parse(try_from_str))]
+    pub quote: EthAddress,
+    /// The amount of input tokens to provide to the position
+    #[clap(parse(try_from_str))]
+    pub qty: String,
+    /// a lower tick limit for the knockout position
+    #[clap(parse(try_from_str), allow_hyphen_values(true))]
+    pub tick_lower: String,
+    /// an upper tick limit for the knockout position
+    #[clap(parse(try_from_str), allow_hyphen_values(true))]
+    pub tick_upper: String,
+    /// True to use the base token as the input token, false to use quote
+    #[clap(parse(try_from_str))]
+    pub is_bid: bool,
+    /// (Optional) the reserve flags to use
+    #[clap(long, parse(try_from_str))]
+    pub reserve_flags: Option<u8>,
+    /// If true, the mint can occur with the curve price inside the range. (This should almost always be set to false.)
+    #[clap(long, parse(try_from_str))]
+    pub inside_mid: Option<bool>,
+}
+
+#[derive(Parser)]
+pub struct DEXBurnKnockoutArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+    /// The base token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub base: EthAddress,
+    /// The quote token
+    #[clap(parse(try_from_str))]
+    pub quote: EthAddress,
+    /// The amount of input tokens to remove from the position (or sqrt(X * Y) liquidity units if in-liq-qty is true)
+    #[clap(parse(try_from_str))]
+    pub qty: String,
+    /// a lower tick limit for the knockout position
+    #[clap(parse(try_from_str), allow_hyphen_values(true))]
+    pub tick_lower: String,
+    /// an upper tick limit for the knockout position
+    #[clap(parse(try_from_str), allow_hyphen_values(true))]
+    pub tick_upper: String,
+    /// True to use the base token as the input token, false to use quote
+    #[clap(parse(try_from_str))]
+    pub is_bid: bool,
+    /// (Optional) the reserve flags to use
+    #[clap(long, parse(try_from_str))]
+    pub reserve_flags: Option<u8>,
+    /// (Optional) If true, the qty amount will be interpreted in terms of sqrt(X * Y) liquidity units instead of token amounts
+    #[clap(long, parse(try_from_str))]
+    pub in_liq_qty: Option<bool>,
+    /// (Optional) If true, the burn can occur with the curve price inside the range, this is useful for recovering partially-filled funds.
+    #[clap(long, parse(try_from_str))]
+    pub inside_mid: Option<bool>,
+}
+
+#[derive(Parser)]
+pub struct DEXRecoverKnockoutArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+    /// The base token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub base: EthAddress,
+    /// The quote token
+    #[clap(parse(try_from_str))]
+    pub quote: EthAddress,
+    /// a lower tick limit for the knockout position
+    #[clap(parse(try_from_str), allow_hyphen_values(true))]
+    pub tick_lower: String,
+    /// an upper tick limit for the knockout position
+    #[clap(parse(try_from_str), allow_hyphen_values(true))]
+    pub tick_upper: String,
+    /// True to use the base token as the input token, false to use quote
+    #[clap(parse(try_from_str))]
+    pub is_bid: bool,
+    /// The block time of the initial mint of the knockout position
+    #[clap(parse(try_from_str))]
+    pub pivot_time: u32,
     /// (Optional) the reserve flags to use
     #[clap(long, parse(try_from_str))]
     pub reserve_flags: Option<u8>,
