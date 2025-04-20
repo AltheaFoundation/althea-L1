@@ -262,7 +262,7 @@ pub async fn advanced_dex_test(
     mint_ambient_and_ranged_positions(
         web3,
         dex_contracts.clone(),
-        evm_user.clone(),
+        evm_user,
         base,
         quote,
         *POOL_IDX,
@@ -272,7 +272,7 @@ pub async fn advanced_dex_test(
     mint_ambient_and_ranged_positions(
         web3,
         dex_contracts,
-        evm_user.clone(),
+        evm_user,
         EthAddress::default(),
         quote,
         *POOL_IDX,
@@ -813,7 +813,7 @@ async fn swap_many(
         info!(
             "Swapping {} for {}",
             qty.to_string() + if is_buy { "base" } else { "quote" },
-            if is_buy { "quote" } else { "base" }.to_string()
+            if is_buy { "quote" } else { "base" }
         );
         let native_in = if pool_base == EthAddress::default() {
             Some(qty)
@@ -840,7 +840,7 @@ async fn swap_many(
         )
         .await
         .expect("Unable to query price");
-        info!("Price: {}", price.to_string());
+        info!("Price: {}", price);
         let post_swap_base = web3
             .get_erc20_balance(pool_base, evm_user.eth_address)
             .await

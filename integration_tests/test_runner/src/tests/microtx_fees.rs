@@ -144,10 +144,7 @@ pub fn generate_msg_microtxs(
         fees.push(expected_fee.into());
         info!(
             "{}: {} (+ {}) -> {}",
-            sender.ethermint_address,
-            amount.to_string(),
-            expected_fee.to_string(),
-            receiver.ethermint_address,
+            sender.ethermint_address, amount, expected_fee, receiver.ethermint_address,
         );
     }
 
