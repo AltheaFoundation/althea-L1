@@ -322,19 +322,19 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
     let mut uniswap_liquidity = None;
     for line in output.lines() {
         if line.contains("ERC20 deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             erc20_addresses.push(address_string.trim().parse().unwrap());
             info!("found erc20 address it is {}", address_string);
         } else if line.contains("ERC721 deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             erc721_addresses.push(address_string.trim().parse().unwrap());
             info!("found erc721 address it is {}", address_string);
         } else if line.contains("WALTHEA deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             walthea_address = address_string.trim().parse().unwrap();
             info!("found walthea address it is {}", address_string);
         } else if line.contains("Uniswap Liquidity test deployed at Address - ") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             uniswap_liquidity = Some(address_string.trim().parse().unwrap());
         }
     }
@@ -369,23 +369,23 @@ pub fn parse_dex_contract_addresses() -> DexAddresses {
     let mut upgrade: EthAddress = EthAddress::default();
     for line in output.lines() {
         if line.contains("CrocSwapDex deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             dex = address_string.trim().parse().unwrap();
             info!("found dex address it is {}", address_string);
         } else if line.contains("CrocQuery deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             query = address_string.trim().parse().unwrap();
             info!("found query address it is {}", address_string);
         } else if line.contains("CrocImpact deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             impact = address_string.trim().parse().unwrap();
             info!("found impact address it is {}", address_string);
         } else if line.contains("CrocPolicy deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             policy = address_string.trim().parse().unwrap();
             info!("found policy address it is {}", address_string);
         } else if line.contains("ColdPathUpgrade deployed at Address -") {
-            let address_string = line.split('-').last().unwrap();
+            let address_string = line.split('-').next_back().unwrap();
             upgrade = address_string.trim().parse().unwrap();
             info!("found upgrade address it is {}", address_string);
         }

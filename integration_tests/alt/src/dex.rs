@@ -14,7 +14,6 @@ use clarity::{
     abi::{encode_tokens, AbiToken},
     Address as EthAddress,
 };
-use hex;
 use num256::{Int256, Uint256};
 use test_runner::dex_utils::{
     croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick,

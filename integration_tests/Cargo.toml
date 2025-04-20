@@ -6,7 +6,7 @@ default-members = ["test_runner"]
 althea_proto = "0.9"
 prost = "0.13"
 prost-types = "0.13"
-tonic = "0"
+tonic = "0.12"
 deep_space = {version = "2", features = ["althea", "ethermint"]}
 clarity = "1"
 web30 = "1"

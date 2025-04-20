@@ -28,7 +28,9 @@ async fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or(log_level)).init();
     // On Linux static builds we need to probe ssl certs path to be able to
     // do TLS stuff.
-    openssl_probe::init_ssl_cert_env_vars();
+    unsafe {
+        openssl_probe::init_openssl_env_vars();
+    }
 
     // parse the arguments
     let timeout_secs = args.timeout;
