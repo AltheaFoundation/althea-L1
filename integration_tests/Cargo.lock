@@ -204,6 +204,7 @@ dependencies = [
  "hex",
  "log",
  "num",
+ "num-traits",
  "num256",
  "openssl-probe",
  "test_runner",

@@ -2,6 +2,7 @@ use std::{convert::TryInto, str::FromStr, time::Duration};
 
 use clarity::{
     abi::{encode_tokens, AbiToken},
+    utils::bytes_to_hex_str,
     Address as EthAddress, PrivateKey, Uint256,
 };
 use num256::Int256;
@@ -862,6 +863,33 @@ pub async fn dex_user_cmd(
     web30.wait_for_transaction(txhash, timeout, None).await
 }
 
+/// Calls any userCmd on the DEX contract using raw bytes input for the cmd
+pub async fn dex_user_cmd_bytes(
+    web30: &Web3,
+    dex_contract: EthAddress,
+    wallet: PrivateKey,
+    callpath: u16,
+    cmd_bytes: Vec<u8>,
+    native_in: Option<Uint256>,
+    timeout: Option<Duration>,
+) -> Result<TransactionResponse, Web3Error> {
+    let timeout = timeout.unwrap_or(OPERATION_TIMEOUT);
+    // ABI: userCmd (uint16 callpath, bytes calldata cmd) returns (bytes memory)
+
+    let payload = clarity::abi::encode_call(
+        "userCmd(uint16,bytes)",
+        &[callpath.into(), cmd_bytes.into()],
+    )?;
+    let native_in = native_in.unwrap_or(0u8.into());
+    let txhash = web30
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(dex_contract, payload, native_in, wallet, vec![])
+                .await?,
+        )
+        .await?;
+    web30.wait_for_transaction(txhash, timeout, None).await
+}
 /// Specifies a protocolCmd call to be made on the DEX contract
 /// If CrocPolicy is set up then this call will fail
 #[derive(Debug, Clone)]

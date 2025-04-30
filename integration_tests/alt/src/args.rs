@@ -260,6 +260,8 @@ pub enum DEXSubcommand {
     InitPool(DEXInitPoolArgs),
     /// Perform a swap on the DEX
     Swap(DEXSwapArgs),
+    /// Perform a swap on the DEX using the LongPath
+    LongPathSwap(DEXLongPathSwapArgs),
     /// Mint a ambient liquidity position using both tokens
     MintAmbient(DEXMintAmbientArgs),
     /// Mint a ambient liquidity position using only one token
@@ -449,6 +451,43 @@ pub struct DEXSwapArgs {
     /// (Optional) If provided, will be formatted as a userCmd call instead of calling swap directly
     #[clap(long, default_value = "false", action)]
     pub format_as_user_cmd: bool,
+}
+
+#[derive(Parser)]
+pub struct DEXLongPathSwapArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+    /// The input token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub input: EthAddress,
+    /// The output token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub output: EthAddress,
+    /// Whether the input token should come from DEX Surplus balances
+    #[clap(long, parse(try_from_str), default_value = "false")]
+    pub surplus_in: bool,
+    /// Whether the output token should go to DEX Surplus balances
+    #[clap(long, parse(try_from_str), default_value = "false")]
+    pub surplus_out: bool,
+    /// (Optional) The input amount (only use input_amount OR output_amount, not both)
+    #[clap(short, long, parse(try_from_str))]
+    pub input_amount: Option<String>,
+    /// (Optional) The output amount (only use input_amount OR output_amount, not both)
+    #[clap(short, long, parse(try_from_str))]
+    pub output_amount: Option<String>,
+    /// (Optional) Limits the acceptable price the swap is allowed to push the curve to. The swap may execute up to this limit.
+    #[clap(long, parse(try_from_str))]
+    pub limit_price: Option<String>,
+    /// (Optional) The minimum acceptable output amount
+    #[clap(long, parse(try_from_str))]
+    pub min_output: Option<String>,
 }
 
 #[derive(Parser)]

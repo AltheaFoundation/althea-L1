@@ -2,12 +2,13 @@ use std::time::Duration;
 
 use crate::{
     args::{
-        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXMintAmbientArgs,
-        DEXMintAmbientQtyArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs,
-        DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs,
-        DEXQueryRewardsArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSubcommand, DEXSwapArgs,
-        DexArgs,
+        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXLongPathSwapArgs,
+        DEXMintAmbientArgs, DEXMintAmbientQtyArgs, DEXMintConcentratedArgs,
+        DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs,
+        DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs,
+        DEXSubcommand, DEXSwapArgs, DexArgs,
     },
+    long_path::pack_order,
     utils::approve_erc20s,
 };
 use clarity::{
@@ -15,12 +16,13 @@ use clarity::{
     Address as EthAddress,
 };
 use num256::{Int256, Uint256};
+use num_traits::ToPrimitive;
 use test_runner::dex_utils::{
     croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick,
     croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_price,
     croc_query_range_position, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd,
-    SwapArgs, UserCmdArgs, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE,
-    WARM_PATH,
+    dex_user_cmd_bytes, SwapArgs, UserCmdArgs, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, LONG_PATH,
+    MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use web30::client::Web3;
 
@@ -39,6 +41,7 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
 
         DEXSubcommand::InitPool(cmd_args) => init_pool(web30, args, cmd_args).await,
         DEXSubcommand::Swap(cmd_args) => swap(web30, args, cmd_args).await,
+        DEXSubcommand::LongPathSwap(cmd_args) => long_path_swap(web30, args, cmd_args).await,
         DEXSubcommand::MintAmbient(cmd_args) => mint_ambient(web30, args, cmd_args).await,
         DEXSubcommand::MintAmbientQty(cmd_args) => mint_ambient_qty(web30, args, cmd_args).await,
         DEXSubcommand::MintConcentrated(cmd_args) => mint_concentrated(web30, args, cmd_args).await,
@@ -217,11 +220,17 @@ pub async fn query_rewards(web30: &Web3, _args: &Args, cmd_args: &DEXQueryReward
 }
 
 pub async fn query_nonce(web30: &Web3, _args: &Args, cmd_args: &DEXQueryNonceArgs) {
-    let salt_bytes = hex::decode(&cmd_args.salt).expect("Invalid salt");
+    let salt_bytes = &cmd_args
+        .salt
+        .strip_prefix("0x")
+        .unwrap_or(&cmd_args.salt)
+        .to_string();
+
+    let salt_bytes = hex::decode(salt_bytes).expect("Invalid salt");
     let nonce_res = croc_query_nonce(
         web30,
         cmd_args.query_contract,
-        None,
+        cmd_args.caller,
         cmd_args.client,
         salt_bytes,
     )
@@ -367,6 +376,7 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
                     pool_index.into(),
                     is_buy.into(),
                     in_base_qty.into(),
+                    qty.into(),
                     tip.into(),
                     limit_price.into(),
                     min_out.into(),
@@ -404,6 +414,108 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
         .await;
         println!("Transaction result: {:?}", res);
     }
+}
+
+pub async fn long_path_swap(web30: &Web3, args: &Args, cmd_args: &DEXLongPathSwapArgs) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    let input_amount: Option<Uint256> = cmd_args
+        .input_amount
+        .clone()
+        .map(|s| s.parse().expect("Invalid input_amount"));
+    let output_amount: Option<Uint256> = cmd_args
+        .output_amount
+        .clone()
+        .map(|s| s.parse().expect("Invalid output_amount"));
+
+    match (input_amount, output_amount) {
+        (Some(_), Some(_)) => {
+            println!("ERROR: Provide either input_amount or output_amount, not both");
+            return;
+        }
+        (None, None) => {
+            println!("ERROR: Provide one of input_amount or output_amount");
+            return;
+        }
+        (_, _) => {}
+    };
+    let (base, quote, is_buy, qty, in_base_qty) = if cmd_args.input < cmd_args.output {
+        if let Some(qty) = input_amount {
+            (cmd_args.input, cmd_args.output, true, qty, true)
+        } else {
+            let qty = output_amount.unwrap();
+            (cmd_args.input, cmd_args.output, true, qty, false)
+        }
+    } else {
+        #[allow(clippy::collapsible_else_if)]
+        if let Some(qty) = input_amount {
+            (cmd_args.output, cmd_args.input, false, qty, false)
+        } else {
+            let qty = output_amount.unwrap();
+            (cmd_args.output, cmd_args.input, false, qty, true)
+        }
+    };
+
+    approve_erc20s(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        base,
+        quote,
+        500u32.into(),
+    )
+    .await;
+
+    // If a limit price has been provided, use it. Otherwise, determine if we need to use min/max price
+    let limit_price = if let Some(limit) = cmd_args.limit_price.clone() {
+        limit.parse().expect("Invalid limit price")
+    } else {
+        #[allow(clippy::collapsible_else_if)]
+        if base == cmd_args.input {
+            *MAX_PRICE
+        } else {
+            *MIN_PRICE
+        }
+    };
+
+    let native_in = if cmd_args.input == EthAddress::default() {
+        input_amount
+    } else {
+        None
+    };
+
+    let min_out = cmd_args
+        .min_output
+        .clone()
+        .map_or(Uint256::default(), |s| s.parse().unwrap());
+
+    let surplus_in = cmd_args.surplus_in;
+    let surplus_out = cmd_args.surplus_out;
+
+    let order = pack_order(
+        base,
+        quote,
+        pool_index,
+        is_buy,
+        qty,
+        in_base_qty,
+        limit_price,
+        min_out.to_u128().unwrap(),
+        surplus_in,
+        surplus_out,
+    );
+    let res = dex_user_cmd_bytes(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        LONG_PATH, // callpath
+        // ABI: userCmd(order)
+        order.encode_bytes(), // cmd_bytes
+        native_in,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await
+    .expect("Unable to submit long form swap as userCmd to dex");
+    println!("Transaction result: {:?}", res);
 }
 
 pub async fn mint_ambient(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientArgs) {
