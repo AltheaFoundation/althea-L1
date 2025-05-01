@@ -207,6 +207,9 @@ dependencies = [
  "num-traits",
  "num256",
  "openssl-probe",
+ "rand 0.9.1",
+ "serde",
+ "serde_json",
  "test_runner",
  "web30",
 ]
@@ -2706,9 +2709,9 @@ dependencies = [
 
 [[package]]
 name = "web30"
-version = "1.8.0"
+version = "1.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52d7b81edf124803e76d5f636a9bb51a5c6539b5d2f8d1ce92ecb516d1f673f0"
+checksum = "009bdee3f1295f17e5d65ec3e451bf86f447dd3a9e65edd7eed9bf1e539a176b"
 dependencies = [
  "awc",
  "clarity",

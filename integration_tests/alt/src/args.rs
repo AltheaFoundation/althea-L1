@@ -262,6 +262,14 @@ pub enum DEXSubcommand {
     Swap(DEXSwapArgs),
     /// Perform a swap on the DEX using the LongPath
     LongPathSwap(DEXLongPathSwapArgs),
+
+    /// Generate a permit transaction that can be EIP712 signed
+    GaslessPermit(DEXGaslessPermitArgs),
+    /// Generate a relayable deposit
+    GaslessDeposit(DEXGaslessDepositArgs),
+    /// Generate a relayable swap
+    GaslessSwap(DEXGaslessSwapArgs),
+
     /// Mint a ambient liquidity position using both tokens
     MintAmbient(DEXMintAmbientArgs),
     /// Mint a ambient liquidity position using only one token
@@ -490,6 +498,99 @@ pub struct DEXLongPathSwapArgs {
     pub min_output: Option<String>,
 }
 
+#[derive(Parser)]
+pub struct DEXGaslessPermitArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The address of the wallet performing the permit
+    #[clap(parse(try_from_str))]
+    pub signer: EthAddress,
+    /// The token to call `permit()` on
+    #[clap(parse(try_from_str))]
+    pub token: EthAddress,
+    /// The input amount
+    #[clap(short, long, parse(try_from_str))]
+    pub amount: u128,
+    /// The address approved to spend the tokens
+    #[clap(parse(try_from_str))]
+    pub spender: EthAddress,
+    /// The address approved to spend the tokens
+    #[clap(parse(try_from_str))]
+    pub querier: Option<EthAddress>,
+}
+#[derive(Parser)]
+pub struct DEXGaslessDepositArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the deposit
+    #[clap(parse(try_from_str))]
+    pub depositor: EthAddress,
+    /// The input token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub token: EthAddress,
+    /// The input amount
+    #[clap(short, long, parse(try_from_str))]
+    pub amount: u128,
+    /// The signed permit v part
+    #[clap(long, parse(try_from_str))]
+    pub permit_sig_v: u8,
+    /// The signed permit r part
+    #[clap(long, parse(try_from_str))]
+    pub permit_sig_r: String,
+    /// The signed permit s part
+    #[clap(long, parse(try_from_str))]
+    pub permit_sig_s: String,
+    /// The permit nonce value
+    #[clap(long, parse(try_from_str))]
+    pub permit_nonce: u64,
+    /// The permit deadline value
+    #[clap(long, parse(try_from_str))]
+    pub permit_deadline: u64,
+    /// The tip amount value
+    #[clap(long, parse(try_from_str))]
+    pub tip_amount: String,
+    /// The chain id
+    #[clap(long, parse(try_from_str))]
+    pub chain_id: String,
+}
+#[derive(Parser)]
+pub struct DEXGaslessSwapArgs {
+    /// The DEX address
+    #[clap(parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+    /// The base token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub base: EthAddress,
+    /// The quote token
+    #[clap(parse(try_from_str))]
+    pub quote: EthAddress,
+    /// If the swap is a buy (base for quote)
+    #[clap(parse(try_from_str))]
+    pub is_buy: bool,
+    /// The swap amount
+    #[clap(parse(try_from_str))]
+    pub qty: u128,
+    /// If the qty was in terms of base or quote
+    #[clap(parse(try_from_str))]
+    pub in_base_qty: bool,
+    /// The limit price
+    #[clap(parse(try_from_str))]
+    pub limit_price: u128,
+    /// The minimum amount of tokens to get out
+    #[clap(parse(try_from_str))]
+    pub min_out: u128,
+    /// The tip amount value
+    #[clap(long, parse(try_from_str))]
+    pub tip_amount: String,
+    /// The chain id
+    #[clap(long, parse(try_from_str))]
+    pub chain_id: String,
+}
 #[derive(Parser)]
 pub struct DEXMintAmbientArgs {
     /// The DEX address

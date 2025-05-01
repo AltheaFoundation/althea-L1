@@ -1,15 +1,19 @@
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use crate::{
     args::{
-        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXLongPathSwapArgs,
-        DEXMintAmbientArgs, DEXMintAmbientQtyArgs, DEXMintConcentratedArgs,
-        DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs,
-        DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs,
-        DEXSubcommand, DEXSwapArgs, DexArgs,
+        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXGaslessDepositArgs, DEXGaslessPermitArgs,
+        DEXGaslessSwapArgs, DEXInitPoolArgs, DEXLongPathSwapArgs, DEXMintAmbientArgs,
+        DEXMintAmbientQtyArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs,
+        DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs,
+        DEXQueryRewardsArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSubcommand, DEXSwapArgs,
+        DexArgs,
     },
     long_path::pack_order,
-    utils::approve_erc20s,
+    utils::{
+        approve_erc20s, create_gasless_deposit_with_permit, create_gasless_swap,
+        create_permit_transaction, PermitMessage,
+    },
 };
 use clarity::{
     abi::{encode_tokens, AbiToken},
@@ -38,7 +42,6 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::Position(cmd_args) => query_position(web30, args, cmd_args).await,
         DEXSubcommand::Rewards(cmd_args) => query_rewards(web30, args, cmd_args).await,
         DEXSubcommand::Nonce(cmd_args) => query_nonce(web30, args, cmd_args).await,
-
         DEXSubcommand::InitPool(cmd_args) => init_pool(web30, args, cmd_args).await,
         DEXSubcommand::Swap(cmd_args) => swap(web30, args, cmd_args).await,
         DEXSubcommand::LongPathSwap(cmd_args) => long_path_swap(web30, args, cmd_args).await,
@@ -51,6 +54,10 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::MintKnockout(cmd_args) => mint_knockout(web30, args, cmd_args).await,
         DEXSubcommand::BurnKnockout(cmd_args) => burn_knockout(web30, args, cmd_args).await,
         DEXSubcommand::RecoverKnockout(cmd_args) => recover_knockout(web30, args, cmd_args).await,
+
+        DEXSubcommand::GaslessPermit(cmd_args) => gasless_permit(web30, args, cmd_args).await,
+        DEXSubcommand::GaslessDeposit(cmd_args) => gasless_deposit(web30, args, cmd_args).await,
+        DEXSubcommand::GaslessSwap(cmd_args) => gasless_swap(web30, args, cmd_args).await,
     }
 }
 
@@ -459,9 +466,9 @@ pub async fn long_path_swap(web30: &Web3, args: &Args, cmd_args: &DEXLongPathSwa
         web30,
         cmd_args.dex_contract,
         cmd_args.wallet,
-        base,
-        quote,
-        500u32.into(),
+        EthAddress::default(), // Ignored in the function
+        cmd_args.input,
+        qty,
     )
     .await;
 
@@ -969,4 +976,73 @@ pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKn
     .await
     .expect("Unable to mint knockout position on dex");
     println!("Transaction result: {:?}", res);
+}
+
+pub async fn gasless_permit(web30: &Web3, _args: &Args, cmd_args: &DEXGaslessPermitArgs) {
+    let permit = create_permit_transaction(
+        web30,
+        cmd_args.signer,
+        cmd_args.token,
+        cmd_args.spender,
+        cmd_args.amount,
+        cmd_args.querier,
+    )
+    .await;
+
+    let str = serde_json::to_string(&permit);
+    println!("Permit: {}", str.unwrap());
+}
+
+pub async fn gasless_deposit(_web30: &Web3, _args: &Args, cmd_args: &DEXGaslessDepositArgs) {
+    let permit_sig_r = Uint256::from_str(&cmd_args.permit_sig_r).expect("Invalid signature r");
+    let permit_sig_s = Uint256::from_str(&cmd_args.permit_sig_s).expect("Invalid signature r");
+    let tip = Uint256::from_str(&cmd_args.tip_amount).expect("Invalid tip");
+    let chain_id = Uint256::from_str(&cmd_args.chain_id).expect("Invalid chain id");
+
+    let permit = PermitMessage {
+        owner: cmd_args.depositor,
+        spender: cmd_args.dex_contract,
+        value: cmd_args.amount,
+        nonce: cmd_args.permit_nonce.into(),
+        deadline: cmd_args.permit_deadline.into(),
+    };
+
+    let deposit = create_gasless_deposit_with_permit(
+        cmd_args.dex_contract,
+        cmd_args.depositor,
+        cmd_args.token,
+        cmd_args.amount,
+        cmd_args.permit_sig_v,
+        permit_sig_r.to_be_bytes(),
+        permit_sig_s.to_be_bytes(),
+        permit,
+        tip,
+        chain_id,
+    );
+
+    let str = serde_json::to_string(&deposit);
+    println!("Deposit: {}", str.unwrap());
+}
+
+pub async fn gasless_swap(_web30: &Web3, _args: &Args, cmd_args: &DEXGaslessSwapArgs) {
+    let pool_index = Uint256::from_str(&cmd_args.pool_index).expect("Invalid pool index");
+    let tip = Uint256::from_str(&cmd_args.tip_amount).expect("Invalid tip");
+    let chain_id = Uint256::from_str(&cmd_args.chain_id).expect("Invalid chain id");
+
+    let swap = create_gasless_swap(
+        cmd_args.dex_contract,
+        cmd_args.base,
+        cmd_args.quote,
+        pool_index,
+        cmd_args.is_buy,
+        cmd_args.qty,
+        cmd_args.in_base_qty,
+        cmd_args.limit_price,
+        cmd_args.min_out,
+        tip,
+        chain_id,
+    );
+
+    let str = serde_json::to_string(&swap);
+    println!("Swap: {}", str.unwrap());
 }

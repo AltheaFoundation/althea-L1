@@ -83,6 +83,7 @@ pub(crate) fn pack_order(
     surplus_in: bool,
     surplus_out: bool,
 ) -> OrderDirective {
+    let (input, output) = if is_buy { (base, quote) } else { (quote, base) };
     let pool = PoolDirective {
         pool_idx: pool_idx.to_u128().unwrap(),
         ambient: AmbientDirective {
@@ -106,8 +107,9 @@ pub(crate) fn pack_order(
     };
     let hop = HopDirective {
         settle: SettlementChannel {
-            token: quote,
-            limit_qty: -(min_out as i128),
+            token: output,
+            limit_qty: min_out as i128,
+            // limit_qty: -(min_out as i128), // TODO: This might not be right
             dust_thresh: 0,
             use_surplus: surplus_out,
         },
@@ -120,7 +122,7 @@ pub(crate) fn pack_order(
 
     OrderDirective {
         open: SettlementChannel {
-            token: base,
+            token: input,
             limit_qty: 2i128.pow(125),
             dust_thresh: 0,
             use_surplus: surplus_in,
