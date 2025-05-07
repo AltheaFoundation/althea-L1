@@ -255,6 +255,8 @@ pub enum DEXSubcommand {
     Rewards(DEXQueryRewardsArgs),
     /// Use CrocQuery to fetch the nonce set for a user performing gasless transactions
     Nonce(DEXQueryNonceArgs),
+    /// Use CrocQuery to fetch the surplus tokens held for a user
+    Surplus(DEXQuerySurplusArgs),
 
     /// Creates a new pool
     InitPool(DEXInitPoolArgs),
@@ -397,6 +399,22 @@ pub struct DEXQueryNonceArgs {
     /// The salt value used for a gasless transaction
     #[clap(parse(try_from_str))]
     pub salt: String,
+}
+
+#[derive(Parser)]
+pub struct DEXQuerySurplusArgs {
+    /// The CrocQuery address
+    #[clap(parse(try_from_str))]
+    pub query_contract: EthAddress,
+    /// The address owning the tokens
+    #[clap(parse(try_from_str))]
+    pub owner: EthAddress,
+    /// The token being held
+    #[clap(parse(try_from_str))]
+    pub token: EthAddress,
+    /// (Optional) The address to simulate the transaction through
+    #[clap(short, long, parse(try_from_str))]
+    pub caller: Option<EthAddress>,
 }
 
 #[derive(Parser)]

@@ -6,8 +6,8 @@ use crate::{
         DEXGaslessSwapArgs, DEXInitPoolArgs, DEXLongPathSwapArgs, DEXMintAmbientArgs,
         DEXMintAmbientQtyArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs,
         DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs,
-        DEXQueryRewardsArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSubcommand, DEXSwapArgs,
-        DexArgs,
+        DEXQueryRewardsArgs, DEXQuerySurplusArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs,
+        DEXSubcommand, DEXSwapArgs, DexArgs,
     },
     long_path::pack_order,
     utils::{
@@ -17,6 +17,7 @@ use crate::{
 };
 use clarity::{
     abi::{encode_tokens, AbiToken},
+    utils::bytes_to_hex_str,
     Address as EthAddress,
 };
 use num256::{Int256, Uint256};
@@ -24,9 +25,9 @@ use num_traits::ToPrimitive;
 use test_runner::dex_utils::{
     croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick,
     croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_price,
-    croc_query_range_position, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd,
-    dex_user_cmd_bytes, SwapArgs, UserCmdArgs, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, LONG_PATH,
-    MAX_PRICE, MIN_PRICE, WARM_PATH,
+    croc_query_range_position, croc_query_surplus, dex_query_authority, dex_query_safe_mode,
+    dex_swap, dex_user_cmd, dex_user_cmd_bytes, SwapArgs, UserCmdArgs, COLD_PATH, HOT_PROXY,
+    KNOCKOUT_LIQ_PATH, LONG_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use web30::client::Web3;
 
@@ -42,6 +43,7 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::Position(cmd_args) => query_position(web30, args, cmd_args).await,
         DEXSubcommand::Rewards(cmd_args) => query_rewards(web30, args, cmd_args).await,
         DEXSubcommand::Nonce(cmd_args) => query_nonce(web30, args, cmd_args).await,
+        DEXSubcommand::Surplus(cmd_args) => query_surplus(web30, args, cmd_args).await,
         DEXSubcommand::InitPool(cmd_args) => init_pool(web30, args, cmd_args).await,
         DEXSubcommand::Swap(cmd_args) => swap(web30, args, cmd_args).await,
         DEXSubcommand::LongPathSwap(cmd_args) => long_path_swap(web30, args, cmd_args).await,
@@ -234,6 +236,7 @@ pub async fn query_nonce(web30: &Web3, _args: &Args, cmd_args: &DEXQueryNonceArg
         .to_string();
 
     let salt_bytes = hex::decode(salt_bytes).expect("Invalid salt");
+    debug!("Using salt bytes of {}", bytes_to_hex_str(&salt_bytes));
     let nonce_res = croc_query_nonce(
         web30,
         cmd_args.query_contract,
@@ -242,8 +245,21 @@ pub async fn query_nonce(web30: &Web3, _args: &Args, cmd_args: &DEXQueryNonceArg
         salt_bytes,
     )
     .await
-    .expect("Failed to query rewards");
+    .expect("Failed to query nonce");
     println!("{:?}", nonce_res);
+}
+
+pub async fn query_surplus(web30: &Web3, _args: &Args, cmd_args: &DEXQuerySurplusArgs) {
+    let surplus_res = croc_query_surplus(
+        web30,
+        cmd_args.query_contract,
+        cmd_args.caller,
+        cmd_args.owner,
+        cmd_args.token,
+    )
+    .await
+    .expect("Failed to query surplus");
+    println!("{:?}", surplus_res);
 }
 
 pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {

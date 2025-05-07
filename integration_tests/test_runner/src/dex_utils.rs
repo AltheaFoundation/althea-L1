@@ -2,6 +2,7 @@ use std::{convert::TryInto, str::FromStr, time::Duration};
 
 use clarity::{
     abi::{encode_tokens, AbiToken},
+    utils::bytes_to_hex_str,
     Address as EthAddress, PrivateKey, Uint256,
 };
 use num256::Int256;
@@ -738,9 +739,10 @@ pub async fn croc_query_nonce(
     // ABI: queryRelayNonce (address client, bytes32 nonceSalt)
     // returns (uint128 surplus, uint32 nonce, uint32 agentCallsLeft)
     let caller = caller.unwrap_or(client);
+    let salt_u256 = Uint256::from_be_bytes(&salt);
     let payload = clarity::abi::encode_call(
         "queryRelayNonce(address,bytes32)",
-        &[client.into(), salt.into()],
+        &[client.into(), salt_u256.into()],
     )?;
 
     let query_res = web30
@@ -749,16 +751,66 @@ pub async fn croc_query_nonce(
             None,
         )
         .await?;
+    debug!("query_res: {}", bytes_to_hex_str(&query_res));
+    if query_res.len() < 32 {
+        return Err(Web3Error::ContractCallError(
+            "croc_query_nonce: query result too short".to_string(),
+        ));
+    }
 
-    let mut i: usize = 8; // Left are 8 bytes unused
+    let mut i: usize = 0; // Left are 8 bytes unused
                           // The next 16 hold the surplus collateral
-    let surplus_collateral = u128::from_be_bytes(query_res[i..i + 16].try_into().unwrap());
-    i += 16;
+    let surplus_collateral = u128::from_be_bytes(query_res[i + 16..i + 32].try_into().unwrap());
+    i += 32;
     // The next 4 hold nonce
-    let nonce = u32::from_be_bytes(query_res[i..i + 4].try_into().unwrap());
-    i += 4;
+    let nonce = u32::from_be_bytes(query_res[i + 28..i + 32].try_into().unwrap());
+    i += 32;
     // Remaining 4 hold agent_calls_left
-    let agent_calls_left = u32::from_be_bytes(query_res[i..i + 4].try_into().unwrap());
+    let agent_calls_left = u32::from_be_bytes(query_res[i + 28..i + 32].try_into().unwrap());
+
+    Ok(UserBalance {
+        surplus_collateral,
+        nonce,
+        agent_calls_left,
+    })
+}
+#[allow(clippy::too_many_arguments)]
+pub async fn croc_query_surplus(
+    web30: &Web3,
+    croc_query_contract: EthAddress,
+    caller: Option<EthAddress>,
+    owner: EthAddress,
+    token: EthAddress,
+) -> Result<UserBalance, Web3Error> {
+    // ABI: querySurplus (address owner, address token)
+    // returns (uint128 surplus)
+    let caller = caller.unwrap_or(owner);
+    let payload = clarity::abi::encode_call(
+        "querySurplus(address,address)",
+        &[owner.into(), token.into()],
+    )?;
+
+    let query_res = web30
+        .simulate_transaction(
+            TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            None,
+        )
+        .await?;
+    debug!("query_res: {}", bytes_to_hex_str(&query_res));
+    if query_res.len() < 32 {
+        return Err(Web3Error::ContractCallError(
+            "croc_query_surplus: query result too short".to_string(),
+        ));
+    }
+
+    let mut i: usize = 0;
+    let surplus_collateral = u128::from_be_bytes(query_res[i + 16..i + 32].try_into().unwrap());
+    i += 32;
+    // The next 4 hold nonce
+    let nonce = u32::from_be_bytes(query_res[i + 28..i + 32].try_into().unwrap());
+    i += 32;
+    // Remaining 4 hold agent_calls_left
+    let agent_calls_left = u32::from_be_bytes(query_res[i + 28..i + 32].try_into().unwrap());
 
     Ok(UserBalance {
         surplus_collateral,
