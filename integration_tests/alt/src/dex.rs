@@ -876,7 +876,7 @@ pub async fn install_callpath(
     args: &Args,
     cmd_args: &DEXInstallCallpathArgs,
 ) {
-    let cmd = vec![cmd_args.callpath_contract.into(), cmd_args.callpath_index.into()];
+    let cmd = vec![21u16.into(), cmd_args.callpath_contract.into(), cmd_args.callpath_index.into()];
 
     let protocol_args = ProtocolCmdArgs {
         callpath: BOOT_PATH,
