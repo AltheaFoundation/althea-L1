@@ -749,7 +749,4 @@ pub struct DEXInstallCallpathArgs {
     /// The numerical index of the callpath to install at
     #[clap(long, parse(try_from_str))]
     pub callpath_index: u16,
-    /// Sudo - must be true if the command requires "sudo" privilege, false otherwise
-    #[clap(short,long,parse(try_from_str))]
-    pub sudo: bool,
 }
