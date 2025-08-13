@@ -243,6 +243,8 @@ pub enum DEXSubcommand {
     Curve(DEXQueryPoolArgs),
     /// Use CrocQuery to fetch the params for a particular pool
     PoolParams(DEXQueryPoolArgs),
+    /// Use CrocQuery to fetch the configuration for a pool template
+    Template(DEXQueryTemplateArgs),
     /// Use CrocQuery to fetch the current price tick for a particular pool
     Tick(DEXQueryPoolArgs),
     /// Use CrocQuery to fetch the current liquidity for a particular pool
@@ -274,6 +276,9 @@ pub enum DEXSubcommand {
     BurnKnockout(DEXBurnKnockoutArgs),
     /// Withdraw the fully-swapped liquidity from a knockout position which has been knocked out
     RecoverKnockout(DEXRecoverKnockoutArgs),
+    /// Install a call path on a CrocSwapDEX instance
+    InstallCallpath(DEXInstallCallpathArgs),
+
 }
 
 /// Query the SafeMode status of the DEX
@@ -316,6 +321,20 @@ pub struct DEXQueryPoolArgs {
     #[clap(parse(try_from_str))]
     pub pool_index: String,
 }
+
+#[derive(Parser)]
+pub struct DEXQueryTemplateArgs {
+    /// The CrocQuery address
+    #[clap(parse(try_from_str))]
+    pub query_contract: EthAddress,
+    /// The address to simulate the transaction through
+    #[clap(parse(try_from_str))]
+    pub caller: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+}
+
 
 #[derive(Parser)]
 pub struct DEXQueryPositionArgs {
@@ -714,4 +733,23 @@ pub struct DEXRecoverKnockoutArgs {
     /// (Optional) the reserve flags to use
     #[clap(long, parse(try_from_str))]
     pub reserve_flags: Option<u8>,
+}
+
+#[derive(Parser)]
+pub struct DEXInstallCallpathArgs {
+    /// The DEX address
+    #[clap(short, long, parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The Callpath contract address to install on the DEX
+    #[clap(long,parse(try_from_str))]
+    pub callpath_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(short,long,parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The numerical index of the callpath to install at
+    #[clap(long, parse(try_from_str))]
+    pub callpath_index: u16,
+    /// Sudo - must be true if the command requires "sudo" privilege, false otherwise
+    #[clap(short,long,parse(try_from_str))]
+    pub sudo: bool,
 }
