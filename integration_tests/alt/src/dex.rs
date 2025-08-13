@@ -7,6 +7,7 @@ use crate::{
         DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs,
         DEXQueryRewardsArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSubcommand, DEXSwapArgs,
         DexArgs,
+    DEXInstallCallpathArgs, DEXQueryTemplateArgs
     },
     utils::approve_erc20s,
 };
@@ -14,13 +15,10 @@ use clarity::{
     abi::{encode_tokens, AbiToken},
     Address as EthAddress,
 };
+
 use num256::{Int256, Uint256};
 use test_runner::dex_utils::{
-    croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick,
-    croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_price,
-    croc_query_range_position, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd,
-    SwapArgs, UserCmdArgs, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE,
-    WARM_PATH,
+    croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick, croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price, croc_query_range_position, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH
 };
 use web30::client::Web3;
 
@@ -30,6 +28,7 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::Authority(cmd_args) => authority(web30, args, cmd_args).await,
         DEXSubcommand::Curve(cmd_args) => query_curve(web30, args, cmd_args).await,
         DEXSubcommand::PoolParams(cmd_args) => query_params(web30, args, cmd_args).await,
+        DEXSubcommand::Template(cmd_args) => query_template(web30, args, cmd_args).await,
         DEXSubcommand::Tick(cmd_args) => query_tick(web30, args, cmd_args).await,
         DEXSubcommand::Liquidity(cmd_args) => query_liquidity(web30, args, cmd_args).await,
         DEXSubcommand::Price(cmd_args) => query_price(web30, args, cmd_args).await,
@@ -48,6 +47,7 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::MintKnockout(cmd_args) => mint_knockout(web30, args, cmd_args).await,
         DEXSubcommand::BurnKnockout(cmd_args) => burn_knockout(web30, args, cmd_args).await,
         DEXSubcommand::RecoverKnockout(cmd_args) => recover_knockout(web30, args, cmd_args).await,
+        DEXSubcommand::InstallCallpath(cmd_args) => install_callpath(web30, args, cmd_args).await
     }
 }
 
@@ -99,6 +99,18 @@ pub async fn query_params(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArg
     println!("{:?}", params);
 }
 
+pub async fn query_template(web30: &Web3, _args: &Args, cmd_args: &DEXQueryTemplateArgs) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    let params = croc_query_pool_template(
+        web30,
+        cmd_args.query_contract,
+        Some(cmd_args.caller),
+        pool_index,
+    )
+    .await
+    .expect("Failed to query pool params");
+    println!("{:?}", params);
+}
 pub async fn query_tick(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
     let tick = croc_query_curve_tick(
@@ -857,4 +869,31 @@ pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKn
     .await
     .expect("Unable to mint knockout position on dex");
     println!("Transaction result: {:?}", res);
+}
+
+pub async fn install_callpath(
+    web30: &Web3,
+    args: &Args,
+    cmd_args: &DEXInstallCallpathArgs,
+) {
+    let cmd = vec![cmd_args.callpath_contract.into(), cmd_args.callpath_index.into()];
+
+    let protocol_args = ProtocolCmdArgs {
+        callpath: BOOT_PATH,
+        cmd,
+        sudo: true,
+    };
+
+    let result = dex_direct_protocol_cmd(web30, cmd_args.dex_contract, cmd_args.wallet, protocol_args, None, Some(Duration::from_secs(args.timeout))).await;
+    match result {
+        Ok(r) => {
+            let hash = match r {
+                web30::types::TransactionResponse::Eip1559 { hash, .. } => hash,
+                web30::types::TransactionResponse::Eip2930 { hash, .. } => hash,
+                web30::types::TransactionResponse::Legacy { hash, .. } => hash,
+            };
+            println!("Successful Transaction result: {hash:?}");
+        },
+        Err(e) => println!("Failed Transaction result: {e:?}"),
+    }
 }
