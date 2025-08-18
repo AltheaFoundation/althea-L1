@@ -1038,6 +1038,36 @@ pub async fn croc_policy_treasury_resolution(
     web30.wait_for_transaction(txhash, timeout, None).await
 }
 
+/// Transfers the control of the CrocPolicy contract to a new set of governance addresses
+pub async fn croc_policy_transfer_governance(
+    web30: &Web3,
+    croc_policy_contract: EthAddress,
+    wallet: PrivateKey,
+    ops_address: EthAddress,
+    treasury_address: EthAddress,
+    emergency_address: EthAddress,
+    timeout: Option<Duration>,
+) -> Result<TransactionResponse, Web3Error> {
+    let timeout = timeout.unwrap_or(OPERATION_TIMEOUT);
+    // ABI: transferGovernance (address ops, address treasury, address emergency)
+
+    let payload = clarity::abi::encode_call(
+        "transferGovernance(address,address,address)",
+        &[
+            ops_address.into(),
+            treasury_address.into(),
+            emergency_address.into(),
+        ],
+    )?;
+    let txhash = web30
+        .send_prepared_transaction(
+            web30
+                .prepare_transaction(croc_policy_contract, payload, 0u8.into(), wallet, vec![])
+                .await?,
+        )
+        .await?;
+    web30.wait_for_transaction(txhash, timeout, None).await
+}
 #[allow(clippy::too_many_arguments)]
 pub async fn dex_mint_ranged_pos(
     web3: &Web3,

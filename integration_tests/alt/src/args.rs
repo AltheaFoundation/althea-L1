@@ -276,9 +276,14 @@ pub enum DEXSubcommand {
     BurnKnockout(DEXBurnKnockoutArgs),
     /// Withdraw the fully-swapped liquidity from a knockout position which has been knocked out
     RecoverKnockout(DEXRecoverKnockoutArgs),
-    /// Install a call path on a CrocSwapDEX instance
+    /// Install a call path on a CrocSwapDEX instance (requires admin privileges)
     InstallCallpath(DEXInstallCallpathArgs),
-
+    /// Create or update a pool template on the DEX (requires admin privileges)
+    SetPoolTemplate(DEXSetPoolTemplateArgs),
+    /// Transfer the control of the DEX contract to a new address (requires admin privileges)
+    TransferDEXAuthority(DEXTransferDEXAuthorityArgs),
+    /// Transfer the Croc policy to a new address (requires admin privileges)
+    TransferCrocPolicy(DEXTransferCrocPolicyArgs),
 }
 
 /// Query the SafeMode status of the DEX
@@ -749,4 +754,79 @@ pub struct DEXInstallCallpathArgs {
     /// The numerical index of the callpath to install at
     #[clap(long, parse(try_from_str))]
     pub callpath_index: u16,
+}
+
+#[derive(Parser)]
+pub struct DEXSetPoolTemplateArgs {
+    /// The DEX address
+    #[clap(short, long, parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(short, long,parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The index of the pool's template to set
+    #[clap(long, parse(try_from_str))]
+    pub pool_index: String,
+    /// The fee rate of the pool, given in basis points
+    #[clap(short, long, parse(try_from_str))]
+    pub fee_rate_basis_points: u32,
+    /// The tick size of the pool (must be a power of 2)
+    #[clap(short, long, parse(try_from_str))]
+    pub tick_size: u32,
+    /// The minimum time to live of a concentrated liquidity position (must be a multiple of 10)
+    #[clap(short, long, parse(try_from_str))]
+    pub jit_thresh: u32,
+    // The exact required width of knockout positions in pools using this template (must be a power of 2)
+    #[clap(long, parse(try_from_str))]
+    pub knockout_width: u32,
+    // If true, knockout positions must respect the tick size of the pool and be placed "on grid"
+    #[clap(long, parse(try_from_str))]
+    pub knockout_on_grid: bool,
+    /// The place type can either disable knockouts entirely, or restrict what the valid lower and upper ticks are given the current price
+    /// Recommended values are either 0 to disable, or 3
+    /// 
+    /// A value of 0 means that all knockout positions are disabled
+    /// A value of 1 means that bids must be placed with the upper tick below the current price | asks must be placed with the lower tick above the current price
+    /// A value of 2 means that bids must be placed with the lower tick below the current price | asks must be placed with the upper tick above the current price
+    /// A value of 3 means that bids must have both ticks below the current price | asks must have both ticks above the current price
+    /// 
+    /// Value 1 seems to be equivalent to value 3, but implicitly so because bid upper ticks must be higher than their lower tick, and ask lower ticks must be below their upper tick
+    /// Value 2 can lead to strange situations where the knockout position can be created straddling the current price, and will take in a mix of both tokens to create.
+    /// 
+    /// Background: a bid swaps base tokens for quote tokens, and will fill when the price moves equal to or lower than the lower tick (expects other users to perform quote -> base swaps)
+    /// while an ask swaps quote for base tokens, and will fill when the price moves equal to or higher than the upper tick (expects other users to perform base -> quote swaps)
+    /// Restricting users to making new knockout positions which do not contain the current price prevents users from being required to supply both tokens to mint a knockout
+    pub knockout_place_type: u8,
+}
+
+#[derive(Parser)]
+pub struct DEXTransferDEXAuthorityArgs {
+    /// The CrocPolicy contract address
+    #[clap(short, long, parse(try_from_str))]
+    pub dex_contract: EthAddress,
+    /// The wallet performing the action
+    #[clap(short, long, parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The new authority address (Should probably be the CrocPolicy contract address)
+    #[clap(short, long, parse(try_from_str))]
+    pub new_authority: EthAddress,
+}
+
+#[derive(Parser)]
+pub struct DEXTransferCrocPolicyArgs {
+    /// The CrocPolicy contract address
+    #[clap(short, long, parse(try_from_str))]
+    pub croc_policy: EthAddress,
+    /// The wallet performing the action
+    #[clap(short, long, parse(try_from_str))]
+    pub wallet: EthPrivateKey,
+    /// The new Operations role address
+    #[clap(short, long, parse(try_from_str))]
+    pub ops_address: EthAddress,
+    /// The new Emergency role address
+    #[clap(short, long, parse(try_from_str))]
+    pub emergency_address: EthAddress,
+    /// The new Treasury role address
+    #[clap(short, long, parse(try_from_str))]
+    pub treasury_address: EthAddress,
 }

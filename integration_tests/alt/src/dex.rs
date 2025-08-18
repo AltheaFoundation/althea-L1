@@ -2,12 +2,7 @@ use std::time::Duration;
 
 use crate::{
     args::{
-        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXMintAmbientArgs,
-        DEXMintAmbientQtyArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs,
-        DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs,
-        DEXQueryRewardsArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSubcommand, DEXSwapArgs,
-        DexArgs,
-    DEXInstallCallpathArgs, DEXQueryTemplateArgs
+        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXInstallCallpathArgs, DEXMintAmbientArgs, DEXMintAmbientQtyArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXQueryTemplateArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSetPoolTemplateArgs, DEXSubcommand, DEXSwapArgs, DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs
     },
     utils::approve_erc20s,
 };
@@ -18,12 +13,13 @@ use clarity::{
 
 use num256::{Int256, Uint256};
 use test_runner::dex_utils::{
-    croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick, croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price, croc_query_range_position, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH
+    croc_policy_transfer_governance, croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick, croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price, croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH
 };
 use web30::client::Web3;
 
 pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs) {
     match &dex_args.subcmd {
+        // Queries
         DEXSubcommand::SafeMode(cmd_args) => safe_mode(web30, args, cmd_args).await,
         DEXSubcommand::Authority(cmd_args) => authority(web30, args, cmd_args).await,
         DEXSubcommand::Curve(cmd_args) => query_curve(web30, args, cmd_args).await,
@@ -36,6 +32,7 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::Rewards(cmd_args) => query_rewards(web30, args, cmd_args).await,
         DEXSubcommand::Nonce(cmd_args) => query_nonce(web30, args, cmd_args).await,
 
+        // Transactions
         DEXSubcommand::InitPool(cmd_args) => init_pool(web30, args, cmd_args).await,
         DEXSubcommand::Swap(cmd_args) => swap(web30, args, cmd_args).await,
         DEXSubcommand::MintAmbient(cmd_args) => mint_ambient(web30, args, cmd_args).await,
@@ -47,7 +44,12 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::MintKnockout(cmd_args) => mint_knockout(web30, args, cmd_args).await,
         DEXSubcommand::BurnKnockout(cmd_args) => burn_knockout(web30, args, cmd_args).await,
         DEXSubcommand::RecoverKnockout(cmd_args) => recover_knockout(web30, args, cmd_args).await,
-        DEXSubcommand::InstallCallpath(cmd_args) => install_callpath(web30, args, cmd_args).await
+
+        // DEX Configuration
+        DEXSubcommand::InstallCallpath(cmd_args) => install_callpath(web30, args, cmd_args).await,
+        DEXSubcommand::SetPoolTemplate(cmd_args) => set_pool_template(web30, args, cmd_args).await,
+        DEXSubcommand::TransferDEXAuthority(cmd_args) => transfer_dex_authority(web30, args, cmd_args).await,
+        DEXSubcommand::TransferCrocPolicy(cmd_args) => transfer_croc_policy(web30, args, cmd_args).await,
     }
 }
 
@@ -252,7 +254,7 @@ pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
         cmd_args.wallet,
         cmd_args.base,
         cmd_args.quote,
-        500u32.into(),
+        50000u32.into(),
     )
     .await;
 
@@ -276,9 +278,7 @@ pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
         cmd_args.wallet,
         UserCmdArgs {
             callpath: COLD_PATH,
-            // ABI: commitLP(uint8 code, address base, address quote, uint256 poolIdx,
-            //        int24 bidTick, int24 askTick, uint128 liq, uint128 limitLower,
-            //        uint128 limitHigher, uint8 reserveFlags, address lpConduit)
+            // ABI: init_pool(uint8 code, address base, address quote, uint256 poolIdx, uint128 price)
             cmd: user_cmd_args,
         },
         native_in,
@@ -896,4 +896,88 @@ pub async fn install_callpath(
         },
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
+}
+
+pub async fn set_pool_template(
+    web30: &Web3,
+    args: &Args,
+    cmd_args: &DEXSetPoolTemplateArgs,
+) {
+    let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
+    if !cmd_args.tick_size.is_power_of_two() {
+        panic!("Tick size must be a power of two");
+    }
+    if !cmd_args.knockout_width.is_power_of_two() {
+        panic!("Knockout width must be a power of two");
+    }
+    if cmd_args.jit_thresh % 10 != 0 {
+        panic!("JIT threshold must be a multiple of 10");
+    }
+    let tick_size = cmd_args.tick_size.ilog2();
+    let fee_rate = cmd_args.fee_rate_basis_points * 100;
+    let knockout_width = cmd_args.knockout_width.ilog2();
+    let knockout_place_type: u32 = (cmd_args.knockout_place_type << 4) as u32;
+    let knockout_bits = knockout_width | knockout_place_type;
+    let jit_thresh = cmd_args.jit_thresh / 10;
+    // u16 code, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout, uint8 oracleFlags)
+    let cmd = vec![110u16.into(), pool_index.into(), fee_rate.into(), tick_size.into(), jit_thresh.into(), knockout_bits.into(), 0u8.into()];
+    let protocol_args = ProtocolCmdArgs {
+        callpath: COLD_PATH,
+        cmd,
+        sudo: false,
+    };
+
+    let result = dex_direct_protocol_cmd(web30, cmd_args.dex_contract, cmd_args.wallet, protocol_args, None, Some(Duration::from_secs(args.timeout))).await;
+    match result {
+        Ok(r) => {
+            let hash = match r {
+                web30::types::TransactionResponse::Eip1559 { hash, .. } => hash,
+                web30::types::TransactionResponse::Eip2930 { hash, .. } => hash,
+                web30::types::TransactionResponse::Legacy { hash, .. } => hash,
+            };
+            println!("Successful Transaction result: {hash:?}");
+        },
+        Err(e) => println!("Failed Transaction result: {e:?}"),
+    }
+
+}
+
+pub async fn transfer_dex_authority(
+    web30: &Web3,
+    args: &Args,
+    cmd_args: &DEXTransferDEXAuthorityArgs,
+) {
+    let result = dex_authority_transfer(web30, cmd_args.dex_contract, cmd_args.new_authority, cmd_args.wallet, Some(Duration::from_secs(args.timeout))).await;
+    match result {
+        Ok(r) => {
+            let hash = match r {
+                web30::types::TransactionResponse::Eip1559 { hash, .. } => hash,
+                web30::types::TransactionResponse::Eip2930 { hash, .. } => hash,
+                web30::types::TransactionResponse::Legacy { hash, .. } => hash,
+            };
+            println!("Successful Transaction result: {hash:?}");
+        },
+        Err(e) => println!("Failed Transaction result: {e:?}"),
+    }
+
+}
+
+pub async fn transfer_croc_policy(
+    web30: &Web3,
+    args: &Args,
+    cmd_args: &DEXTransferCrocPolicyArgs,
+) {
+    let result = croc_policy_transfer_governance(web30, cmd_args.croc_policy, cmd_args.wallet, cmd_args.ops_address, cmd_args.treasury_address, cmd_args.emergency_address, Some(Duration::from_secs(args.timeout))).await;
+    match result {
+        Ok(r) => {
+            let hash = match r {
+                web30::types::TransactionResponse::Eip1559 { hash, .. } => hash,
+                web30::types::TransactionResponse::Eip2930 { hash, .. } => hash,
+                web30::types::TransactionResponse::Legacy { hash, .. } => hash,
+            };
+            println!("Successful Transaction result: {hash:?}");
+        },
+        Err(e) => println!("Failed Transaction result: {e:?}"),
+    }
+
 }
