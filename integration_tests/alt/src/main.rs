@@ -6,6 +6,7 @@ mod dex;
 mod erc20;
 mod erc721;
 mod utils;
+mod config;
 
 use args::{Args, SubCommand};
 use clap::Parser;
@@ -17,6 +18,8 @@ use erc721::handle_erc721_subcommand;
 use num256::Uint256;
 use std::time::Duration;
 use web30::client::Web3;
+
+use crate::config::handle_config_subcommand;
 
 #[actix_rt::main]
 async fn main() {
@@ -43,11 +46,10 @@ async fn main() {
 
     // control flow for the command structure
     match &args.subcmd {
-        SubCommand::Erc20(erc20_args) => handle_erc20_subcommand(&web30, &args, erc20_args).await,
-        SubCommand::Erc721(erc721_args) => {
-            handle_erc721_subcommand(&web30, &args, erc721_args).await
-        }
-        SubCommand::Dex(dex_args) => handle_dex_subcommand(&web30, &args, dex_args).await,
+        SubCommand::Erc20(erc20_args)=>handle_erc20_subcommand(&web30, &args,erc20_args).await,
+        SubCommand::Erc721(erc721_args)=>{handle_erc721_subcommand(&web30, &args,erc721_args).await}
+        SubCommand::Dex(dex_args)=>handle_dex_subcommand(&web30, &args,dex_args).await,
+        SubCommand::Config(config_command)=>handle_config_subcommand(&web30, &args,config_command).await,
     }
 }
 
