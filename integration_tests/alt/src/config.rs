@@ -61,8 +61,43 @@ pub async fn handle_config_subcommand(web30: &Web3, args: &Args, command_args: &
 
 /// Runs a pool index update to fix the 36000 (stablecoin pair) pool template
 pub async fn config1(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
-    let CommonArgs{dex_contract, ..} = common_args();
+    let CommonArgs{dex_contract, USDS, USDC, sUSDS, USDT, ALTHEA, GRAV, ..} = common_args();
     let wallet = cmd_args.wallet;
+
+    let address = wallet.to_address();
+    let usdc_bal = web30.get_erc20_balance(USDC, address).await.expect("Unable to get USDC balance");
+    let usds_bal = web30.get_erc20_balance(USDS, address).await.expect("Unable to get USDS balance");
+    let susds_bal = web30.get_erc20_balance(sUSDS, address).await.expect("Unable to get sUSDS balance");
+    let usdt_bal = web30.get_erc20_balance(USDT, address).await.expect("Unable to get USDT balance");
+    let althea_bal = web30.get_erc20_balance(ALTHEA, address).await.expect("Unable to get ALTHEA balance");
+    let grav_bal = web30.get_erc20_balance(GRAV, address).await.expect("Unable to get GRAV balance");
+
+    // USDC/USDS at price 1.0, providing 10 USDC - will need 10 USDS
+    // sUSDS/USDS at price 0.943396226415094340, providing 10 sUSDS - will need 10.6 USDS
+    // USDT/USDS at price 1.0, providing 10 USDT - will need 10 USDS
+    // ALTHEA/USDS at price 0.5, providing 10 USDS - will need 5 ALTHEA
+    // GRAV/USDS at price 0.0002438, providing 10 USDS - will need 41017 GRAV
+
+    // TOTAL: USDC = 10, sUSDS = 10, USDT = 10, ALTHEA = 5, GRAV = 41017, USDS = 50.6
+    if usdc_bal < (10u32 * 10u32.pow(6)).into() {
+        panic!("Not enough USDC balance to run all config commands, need at least 10 USDC");
+    } 
+    if susds_bal < (one_eth() * 10u32.into()) {
+        panic!("Not enough sUSDS balance to run all config commands, need at least 10 sUSDS");
+    }
+    if usdt_bal < (10u32 * 10u32.pow(6)).into() {
+        panic!("Not enough USDT balance to run all config commands, need at least 10 USDT");
+    }
+    if althea_bal < (one_eth() * 5u32.into()) {
+        panic!("Not enough ALTHEA balance to run all config commands, need at least 5 ALTHEA");
+    }
+    if grav_bal < (41020u32 * 10u32.pow(6)).into() {
+        panic!("Not enough GRAV balance to run all config commands, need at least 41020 GRAV");
+    }
+    if usds_bal < (one_eth() * 51u32.into()) {
+        panic!("Not enough USDS balance to run all config commands, need at least 51 USDS");
+    }
+
     let pool_index = STABLESWAP_TEMPLATE.to_string();
     let tick_size = 1;
     let fee_rate_basis_points = 50;
@@ -329,7 +364,7 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = VOLATILESWAP_TEMPLATE.to_string();
     let base = ALTHEA; // 18 decimals
     let quote = USDS; // 18 decimals
-    let qty = (one_eth() * 10u32.into()).to_string(); // 10 ALTHEA
+    let qty = (one_eth() * 10u32.into()).to_string(); // 10 USDS
     // Want to place liquidity between 2.50 USDS/ALTHEA and 1.50 USDS/ALTHEA
     let lower_limit = 0.40f64; // 1 ALTHEA / 2.50 USDS = 0.40
     let upper_limit = 0.666666666666666667f64; // 1 ALTHEA / 1.50 USDS = 0.666666666666666667
@@ -343,7 +378,7 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
         pool_index,
         base,
         quote,
-        input_is_base: true,
+        input_is_base: false, // Use USDS instead of ALTHEA as the input
         qty,
         tick_lower,
         tick_upper,
@@ -506,7 +541,6 @@ pub async fn config15(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 
 // Test a swap on the ALTHEA/USDS pool
 pub async fn config16(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
-    panic!("Reminder to set the althea and usds amounts correctly based on actual token balances!");
     let CommonArgs{dex_contract, ALTHEA, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
 
@@ -546,7 +580,6 @@ pub async fn config16(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 
 // Test a swap on the GRAV/USDS pool
 pub async fn config17(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
-    panic!("Reminder to set the grav and usds amounts correctly based on actual token balances!");
     let CommonArgs{dex_contract, GRAV, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
 
