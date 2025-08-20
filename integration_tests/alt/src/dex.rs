@@ -917,7 +917,8 @@ pub async fn set_pool_template(
     let fee_rate = cmd_args.fee_rate_basis_points * 100;
     let knockout_width = cmd_args.knockout_width.ilog2();
     let knockout_place_type: u32 = (cmd_args.knockout_place_type << 4) as u32;
-    let knockout_bits = knockout_width | knockout_place_type;
+    let knockout_on_grid = if cmd_args.knockout_on_grid { 1 } else { 0 } << 7;
+    let knockout_bits = knockout_width | knockout_place_type | knockout_on_grid;
     let jit_thresh = cmd_args.jit_thresh / 10;
     // u16 code, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout, uint8 oracleFlags)
     let cmd = vec![110u16.into(), pool_index.into(), fee_rate.into(), tick_size.into(), jit_thresh.into(), knockout_bits.into(), 0u8.into()];

@@ -29,6 +29,7 @@ pub enum SubCommand {
     Erc20(Erc20Args),
     Erc721(Erc721Args),
     Dex(DexArgs),
+    Config(ConfigCommand),
 }
 
 /// Interact with ERC20 tokens
@@ -829,4 +830,40 @@ pub struct DEXTransferCrocPolicyArgs {
     /// The new Treasury role address
     #[clap(short, long, parse(try_from_str))]
     pub treasury_address: EthAddress,
+}
+
+/// Config the Althea L1 mainnet DEX
+#[derive(Parser)]
+pub struct ConfigCommand {
+    #[clap(subcommand)]
+    pub subcmd: ConfigSubcommand,
+}
+
+#[derive(Parser)]
+pub enum ConfigSubcommand {
+    Config1(ConfigArgs),
+    Config2(ConfigArgs),
+    Config3(ConfigArgs),
+    Config4(ConfigArgs),
+    Config5(ConfigArgs),
+    Config6(ConfigArgs),
+    Config7(ConfigArgs),
+    Config8(ConfigArgs),
+    Config9(ConfigArgs),
+    Config10(ConfigArgs),
+    Config11(ConfigArgs),
+    Config12(ConfigArgs),
+    Config13(ConfigArgs),
+    Config14(ConfigArgs),
+    Config15(ConfigArgs),
+    Config16(ConfigArgs),
+    Config17(ConfigArgs),
+    Config18(ConfigArgs),
+}
+
+#[derive(Parser)]
+pub struct ConfigArgs {
+    /// The wallet performing the action
+    #[clap(short, long, parse(try_from_str))]
+    pub wallet: EthPrivateKey,
 }
