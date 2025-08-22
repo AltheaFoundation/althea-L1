@@ -88,7 +88,7 @@ func NewCollectTreasuryProposalCmd() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "collect-treasury [metadata] [in-safe-mode bool]",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		Short: "Submit a CollectTreasury proposal",
 		Long: `Submit a proposal to distribute the native DEX protocol take for a single token to the registered 'treasury_' address.
 The proposal details must be supplied via a JSON file.`,
@@ -134,7 +134,7 @@ func NewSetTreasuryProposalCmd() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "set-treasury [metadata] [in-safe-mode bool]",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		Short: "Submit a SetTreasury proposal",
 		Long: `Submit a proposal to update the 'treasury_' address on the native DEX.
 The proposal details must be supplied via a JSON file.`,
@@ -180,7 +180,7 @@ func NewAuthorityTransferProposalCmd() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "authority-transfer [metadata] [in-safe-mode bool]",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		Short: "Submit a AuthorityTransfer proposal",
 		Long: `Submit a proposal to transfer the 'authority_' address on the native DEX, effectively replacing the CrocPolicy contract with another one.
 WARNING: THIS MAY HAVE SEVERE UNINTENDED CONSEQUENCES. ENSURE THE NEW CONTRACT IS COMPATIBLE WITH THIS MODULE BEFORE PROPOSING.
@@ -227,7 +227,7 @@ func NewHotPathOpenProposalCmd() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "hot-path-open [metadata] [in-safe-mode bool]",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		Short: "Submit a HotPathOpen proposal",
 		Long: `Submit a proposal to enable or disable calling swap() directly on the native DEX.
 The proposal details must be supplied via a JSON file.`,
@@ -273,7 +273,7 @@ func NewSetSafeModeProposalCmd() *cobra.Command {
 	// nolint: exhaustruct
 	cmd := &cobra.Command{
 		Use:   "set-safe-mode [metadata] [in-safe-mode bool]",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		Short: "Submit a SetSafeMode proposal",
 		Long: `Submit a proposal to lock down the native DEX, or unlock it once it has been locked.
 The proposal details must be supplied via a JSON file.`,
