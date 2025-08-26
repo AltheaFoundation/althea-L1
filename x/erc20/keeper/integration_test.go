@@ -249,7 +249,7 @@ func convertERC20(priv *ethsecp256k1.PrivKey, amt sdkmath.Int, contract common.A
 }
 
 func deliverTx(priv *ethsecp256k1.PrivKey, msgs ...sdk.Msg) abci.ResponseDeliverTx {
-	encodingConfig := encoding.MakeConfig(althea.ModuleBasics)
+	encodingConfig := encoding.MakeConfig(althea.ModuleBasicManager)
 	accountAddress := sdk.AccAddress(priv.PubKey().Address().Bytes())
 	// denom := s.app.ClaimsKeeper.GetParams(s.ctx).ClaimsDenom
 	denom := STAKING_TOKEN

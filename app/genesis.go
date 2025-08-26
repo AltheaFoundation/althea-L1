@@ -6,5 +6,5 @@ import (
 
 func NewDefaultGenesisState() simapp.GenesisState {
 	encCfg := MakeEncodingConfig()
-	return ModuleBasics.DefaultGenesis(encCfg.Codec)
+	return ModuleBasicManager.DefaultGenesis(encCfg.Codec)
 }

@@ -34,8 +34,8 @@ func MakeEncodingConfig() params.EncodingConfig {
 	ethermintenccdc.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
 	// Register all Amino and Protobuf Interfaces + Types for the modules Althea-Chain uses
-	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
-	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	ModuleBasicManager.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasicManager.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
 	return encodingConfig
 }
