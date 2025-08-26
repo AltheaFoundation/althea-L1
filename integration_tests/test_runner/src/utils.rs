@@ -586,8 +586,7 @@ pub async fn vote_yes_with_retry(
         counter += 1;
         if counter > MAX_VOTES {
             error!(
-                "Vote for proposal has failed more than {} times, error {:?}",
-                MAX_VOTES, e
+                "Vote for proposal has failed more than {MAX_VOTES} times, error {e:?}"
             );
             panic!("failed to vote{}", e);
         }
@@ -775,7 +774,7 @@ pub async fn delegate_and_confirm(
             delegate_to,
             deleg_result.unwrap_err()
         );
-        error!("{}", err_str);
+        error!("{err_str}");
         return Err(CosmosGrpcError::BadResponse(err_str));
     }
     let deleg_confirm = contact.get_delegation(delegate_to, user_address).await;
@@ -786,7 +785,7 @@ pub async fn delegate_and_confirm(
             delegate_to,
             deleg_confirm.unwrap_err()
         );
-        error!("{}", err_str);
+        error!("{err_str}");
         return Err(CosmosGrpcError::BadResponse(err_str));
     }
     Ok(deleg_confirm.unwrap())

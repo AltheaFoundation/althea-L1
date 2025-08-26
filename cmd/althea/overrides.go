@@ -14,32 +14,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	module "github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/group"
 	groupcli "github.com/cosmos/cosmos-sdk/x/group/client/cli"
 )
 
-// Overrides the TxCommands from moduleBasics before applying them to commands
-func AddOverrideTxCommands(commands *cobra.Command, moduleBasics module.BasicManager) {
-	tempCmd := &cobra.Command{Use: "temp", Short: "Do not use this command!"}
-	moduleBasics.AddTxCommands(tempCmd)
-
-	for _, command := range tempCmd.Commands() {
-		// nolint: go-staticcheck
-		var overwrite *cobra.Command
-		overwrite = OverrideGroupModuleTxCommand(*command)
-		commands.AddCommand(overwrite)
-	}
-}
-
-// If the command is from the group module, overrides it with a custom implementation
-func OverrideGroupModuleTxCommand(command cobra.Command) *cobra.Command {
-	if command.Name() == group.ModuleName {
-		return CustomGroupTxCommand()
-	}
-
-	return &command
+// Adds the module commands we override
+func AddOverrideTxCommands(commands *cobra.Command) {
+	commands.AddCommand(CustomGroupTxCommand())
 }
 
 // Overrides the submit-proposal command from the group module

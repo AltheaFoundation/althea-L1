@@ -14,4 +14,5 @@ var (
 	HotPathOpenHandler        = govclient.NewProposalHandler(cli.NewHotPathOpenProposalCmd)
 	SetSafeModeHandler        = govclient.NewProposalHandler(cli.NewSetSafeModeProposalCmd)
 	TransferGovernanceHandler = govclient.NewProposalHandler(cli.NewTransferGovernanceProposalCmd)
+	OpsProposalHandler        = govclient.NewProposalHandler(cli.NewOpsProposalCmd)
 )

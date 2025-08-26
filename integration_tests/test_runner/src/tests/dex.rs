@@ -173,7 +173,7 @@ pub async fn populate_pool_basic(
     .await
     .expect("Could not query position");
     if range_pos.liq > 0u8.into() {
-        info!("Range position already exists: {:?}", range_pos);
+        info!("Range position already exists: {range_pos:?}");
     } else {
         let qty: Uint256 = one_eth() * 1024u32.into(); // 1024 eth
         let bb = web3
@@ -840,7 +840,7 @@ async fn swap_many(
         )
         .await
         .expect("Unable to query price");
-        info!("Price: {}", price);
+        info!("Price: {price}");
         let post_swap_base = web3
             .get_erc20_balance(pool_base, evm_user.eth_address)
             .await
@@ -1181,12 +1181,12 @@ pub async fn submit_and_pass_nativedex_config_proposal(
                     ParamChange {
                         subspace: "nativedex".to_string(),
                         key: "VerifiedNativeDexAddress".to_string(),
-                        value: format!("\"{}\"", dex_contract),
+                        value: format!("\"{dex_contract}\""),
                     },
                     ParamChange {
                         subspace: "nativedex".to_string(),
                         key: "VerifiedCrocPolicyAddress".to_string(),
-                        value: format!("\"{}\"", policy_contract),
+                        value: format!("\"{policy_contract}\""),
                     },
                 ],
             },
@@ -1198,7 +1198,7 @@ pub async fn submit_and_pass_nativedex_config_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {res:?}");
 }
 
 pub async fn submit_and_pass_upgrade_proxy_proposal(
@@ -1236,7 +1236,7 @@ pub async fn submit_and_pass_upgrade_proxy_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {res:?}");
 }
 
 pub async fn submit_and_pass_collect_treasury_proposal(
@@ -1274,7 +1274,7 @@ pub async fn submit_and_pass_collect_treasury_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {res:?}");
 }
 
 pub async fn submit_and_pass_set_treasury_proposal(
@@ -1312,7 +1312,7 @@ pub async fn submit_and_pass_set_treasury_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {res:?}");
 }
 
 pub async fn submit_and_pass_hot_path_open_proposal(
@@ -1350,7 +1350,7 @@ pub async fn submit_and_pass_hot_path_open_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {res:?}");
 }
 
 pub async fn submit_and_pass_safe_mode_proposal(
@@ -1386,7 +1386,7 @@ pub async fn submit_and_pass_safe_mode_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {res:?}");
 }
 
 pub async fn submit_and_pass_transfer_governance_proposal(
@@ -1424,7 +1424,7 @@ pub async fn submit_and_pass_transfer_governance_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {res:?}");
 }
 
 pub async fn bad_upgrade_proxy_call(
@@ -1492,5 +1492,5 @@ pub async fn submit_and_pass_nativedex_ops_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    info!("Gov proposal executed with {:?}", res);
+    info!("Gov proposal executed with {res:?}");
 }
