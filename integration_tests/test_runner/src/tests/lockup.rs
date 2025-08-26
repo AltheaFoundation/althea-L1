@@ -224,7 +224,7 @@ pub async fn fail_to_send(
             sender,
         )
         .await;
-    info!("Set withdraw address: {:?}", res);
+    info!("Set withdraw address: {res:?}");
     res.expect_err(
         "Successfully submitted distribution MsgSetWithdrawAddress? Should not be possible!",
     );
@@ -307,7 +307,7 @@ pub async fn fail_to_send(
             msg_send_authorized.ethermint_key,
         )
         .await;
-    info!("Double wrapped Msg Send: {:?}", res);
+    info!("Double wrapped Msg Send: {res:?}");
     res.expect_err("Successfully sent double-wrapped MsgSend? Should not be possible!");
 
     let msg_multi_send_authorized = authorized_users[1];
@@ -502,7 +502,7 @@ pub async fn create_authz_bank_msg_send(
             sender.clone(),
         )
         .await;
-    info!("Granted MsgSend authorization with response {:?}", res);
+    info!("Granted MsgSend authorization with response {res:?}");
     res?;
 
     let send = create_bank_msg_send(sender.clone(), receiver, amount);
@@ -541,7 +541,7 @@ pub async fn create_double_authz_bank_msg_send(
             sender.clone(),
         )
         .await;
-    info!("Granted MsgSend authorization with response {:?}", res);
+    info!("Granted MsgSend authorization with response {res:?}");
     res?;
 
     let send = create_bank_msg_send(sender.clone(), receiver, amount);
@@ -587,7 +587,7 @@ pub async fn create_authz_bank_msg_multi_send(
             sender.clone(),
         )
         .await;
-    info!("Granted MsgSend authorization with response {:?}", res);
+    info!("Granted MsgSend authorization with response {res:?}");
     res?;
 
     let multi_send = create_bank_msg_multi_send(sender.clone(), receiver, amount);
@@ -626,7 +626,7 @@ pub async fn create_authz_microtx_msg_microtx(
             sender.clone(),
         )
         .await;
-    info!("Granted MsgMicrotx authorization with response {:?}", res);
+    info!("Granted MsgMicrotx authorization with response {res:?}");
     res?;
 
     let microtx = create_microtx_msg_microtx(sender.clone(), receiver, amount);
@@ -665,10 +665,7 @@ pub async fn create_authz_evm_msg_ethereum_tx(
             sender.ethermint_key,
         )
         .await;
-    info!(
-        "Granted MsgEthereumTx authorization with response {:?}",
-        res
-    );
+    info!("Granted MsgEthereumTx authorization with response {res:?}");
     res?;
 
     let evmtx =

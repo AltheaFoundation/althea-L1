@@ -174,11 +174,8 @@ pub async fn erc20_register_and_round_trip_test(
     // Check that the balance changed
     info!("Successfully executed ERC20 conversion message");
     let balances = contact.get_balances(recvr.ethermint_address).await;
-    info!(
-        "Account balances after ERC20 conversion execution: {:?}",
-        balances
-    );
-    let expected_erc20_denom = format!("erc20/{}", registered_erc20);
+    info!("Account balances after ERC20 conversion execution: {balances:?}");
+    let expected_erc20_denom = format!("erc20/{registered_erc20}");
 
     // The linter is annoying here, I cannot actually inline those format args into the string
     assert!(
@@ -215,10 +212,7 @@ pub async fn erc20_register_and_round_trip_test(
     info!("Sent {expected_erc20_denom} to transfer receiver, got response {res:?}");
 
     let balances = contact.get_balances(transfer_recvr.ethermint_address).await;
-    info!(
-        "Account balances after sending ERC20 via x/bank: {:?}",
-        balances
-    );
+    info!("Account balances after sending ERC20 via x/bank: {balances:?}");
 
     // The linter is annoying here, I cannot actually inline those format args into the string
     assert!(
@@ -436,10 +430,7 @@ pub async fn coin_register_and_round_trip_test(
     let balance = web3
         .get_erc20_balance(generated_erc20, recvr.eth_address)
         .await;
-    info!(
-        "Account balances after Coin conversion execution: {:?}",
-        balance
-    );
+    info!("Account balances after Coin conversion execution: {balance:?}");
 
     // The linter is annoying here, I cannot actually inline those format args into the string
     assert!(
@@ -467,7 +458,7 @@ pub async fn coin_register_and_round_trip_test(
     let balance = web3
         .get_erc20_balance(generated_erc20, transfer_recvr.eth_address)
         .await;
-    info!("Account balance after erc20 transfer(): {:?}", balance);
+    info!("Account balance after erc20 transfer(): {balance:?}");
 
     // The linter is annoying here, I cannot actually inline those format args into the string
     assert!(
@@ -495,10 +486,7 @@ pub async fn coin_register_and_round_trip_test(
     info!("Sent {convert_amount}{generated_erc20} to erc20 module {erc20_module_eth_address}, got response {res:?}");
 
     let balances = contact.get_balances(transfer_recvr.ethermint_address).await;
-    info!(
-        "Account balances after sending ERC20 via x/bank: {:?}",
-        balances
-    );
+    info!("Account balances after sending ERC20 via x/bank: {balances:?}");
 
     // The linter is annoying here, I cannot actually inline those format args into the string
     assert!(

@@ -730,7 +730,7 @@ pub async fn submit_and_pass_onboarding_proposal(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    trace!("Gov proposal executed with {:?}", res);
+    trace!("Gov proposal executed with {res:?}");
 }
 
 pub async fn submit_and_pass_token_proposal(
@@ -774,7 +774,7 @@ pub async fn submit_and_pass_token_proposal(
 
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    trace!("Gov proposal executed with {:?}", res);
+    trace!("Gov proposal executed with {res:?}");
 }
 
 // Creates either a RegisterERC20 proposal or a RegisterCoin proposal depending on is_erc20

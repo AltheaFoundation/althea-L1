@@ -29,7 +29,7 @@ pub async fn erc721_owner_of(web30: &Web3, _args: &Args, cmd_args: &ERC721OwnerO
         .get_erc721_owner_of(erc721, caller, token_id)
         .await
         .expect("Failed to get ERC721 owner of");
-    println!("{}", owner_of);
+    println!("{owner_of}");
 }
 
 pub async fn erc721_approved(web30: &Web3, _args: &Args, cmd_args: &ERC721ApprovedArgs) {
@@ -53,7 +53,7 @@ pub async fn erc721_supply(web30: &Web3, _args: &Args, cmd_args: &ERC721SupplyAr
         .get_erc721_supply(erc721, caller)
         .await
         .expect("Failed to get ERC721 supply");
-    println!("{}", supply);
+    println!("{supply}");
 }
 
 pub async fn erc721_approve(web30: &Web3, args: &Args, cmd_args: &ERC721ApproveArgs) {

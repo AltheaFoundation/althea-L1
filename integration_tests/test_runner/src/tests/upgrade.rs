@@ -44,8 +44,7 @@ pub async fn upgrade_part_1(
     let upgrade_height = run_upgrade(althea_contact, keys, UPGRADE_NAME.to_string(), false).await;
 
     info!(
-        "Ready to run the new binary, waiting for chain panic at upgrade height of {}!",
-        upgrade_height
+        "Ready to run the new binary, waiting for chain panic at upgrade height of {upgrade_height}!"
     );
     // Wait for the block before the upgrade height, we won't get a response from the chain
     let res = wait_for_block(althea_contact, (upgrade_height - 1) as u64).await;
@@ -55,10 +54,7 @@ pub async fn upgrade_part_1(
 
     delay_for(Duration::from_secs(10)).await; // wait for the new block to halt the chain
     let status = althea_contact.get_chain_status().await;
-    info!(
-        "Done waiting, chain should be halted, status response: {:?}",
-        status
-    );
+    info!("Done waiting, chain should be halted, status response: {status:?}");
 }
 
 /// Perform a series of integration tests after an upgrade has executed
@@ -117,8 +113,7 @@ pub async fn run_upgrade(
 
     if wait_for_upgrade {
         info!(
-            "Ready to run the new binary, waiting for chain panic at upgrade height of {}!",
-            upgrade_height
+            "Ready to run the new binary, waiting for chain panic at upgrade height of {upgrade_height}!"
         );
         // Wait for the block before the upgrade height, we won't get a response from the chain
         let res = wait_for_block(contact, (upgrade_height - 1) as u64).await;
@@ -128,10 +123,7 @@ pub async fn run_upgrade(
 
         delay_for(Duration::from_secs(10)).await; // wait for the new block to halt the chain
         let status = contact.get_chain_status().await;
-        info!(
-            "Done waiting, chain should be halted, status response: {:?}",
-            status
-        );
+        info!("Done waiting, chain should be halted, status response: {status:?}");
     }
     upgrade_height
 }

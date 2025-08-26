@@ -115,7 +115,7 @@ pub async fn main() {
 
     let test_type = env::var("TEST_TYPE");
 
-    info!("Starting tests with {:?}", test_type);
+    info!("Starting tests with {test_type:?}");
     if let Ok(test_type) = test_type {
         if test_type == "LOCKUP" {
             lockup_test(

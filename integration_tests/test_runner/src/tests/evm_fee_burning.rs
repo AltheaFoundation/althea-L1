@@ -90,7 +90,7 @@ pub async fn evm_fee_burning_test(
     // info!("Results: {:?}", results);
     sleep(Duration::from_secs(10)).await;
     let post_balances = snapshot_validator_rewards(contact, &validator_keys).await;
-    info!("Pre: {:?}, Post: {:?}", pre_balances, post_balances);
+    info!("Pre: {pre_balances:?}, Post: {post_balances:?}");
     for (pre, post) in pre_balances.iter().zip(post_balances.iter()) {
         for (pr, po) in pre.iter().zip(post.iter()) {
             assert_eq!(pr.denom, po.denom);

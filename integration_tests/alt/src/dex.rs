@@ -76,7 +76,7 @@ pub async fn safe_mode(web30: &Web3, _args: &Args, cmd_args: &DEXSafeModeArgs) {
     let safe_mode = dex_query_safe_mode(web30, dex, Some(caller))
         .await
         .expect("Failed to get safe mode status");
-    println!("{}", safe_mode);
+    println!("{safe_mode}");
 }
 
 pub async fn authority(web30: &Web3, _args: &Args, cmd_args: &DEXAuthorityArgs) {
@@ -85,7 +85,7 @@ pub async fn authority(web30: &Web3, _args: &Args, cmd_args: &DEXAuthorityArgs) 
     let authority = dex_query_authority(web30, dex, Some(caller))
         .await
         .expect("Failed to get safe mode status");
-    println!("{}", authority);
+    println!("{authority}");
 }
 
 pub async fn query_curve(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
@@ -100,7 +100,7 @@ pub async fn query_curve(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs
     )
     .await
     .expect("Failed to query curve state");
-    println!("{:?}", curve);
+    println!("{curve:?}");
 }
 
 pub async fn query_params(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
@@ -115,7 +115,7 @@ pub async fn query_params(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArg
     )
     .await
     .expect("Failed to query pool params");
-    println!("{:?}", params);
+    println!("{params:?}");
 }
 
 pub async fn query_template(web30: &Web3, _args: &Args, cmd_args: &DEXQueryTemplateArgs) {
@@ -128,7 +128,7 @@ pub async fn query_template(web30: &Web3, _args: &Args, cmd_args: &DEXQueryTempl
     )
     .await
     .expect("Failed to query pool params");
-    println!("{:?}", params);
+    println!("{params:?}");
 }
 pub async fn query_tick(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
@@ -142,7 +142,7 @@ pub async fn query_tick(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs)
     )
     .await
     .expect("Failed to query tick");
-    println!("{:?}", tick);
+    println!("{tick:?}");
 }
 
 pub async fn query_liquidity(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
@@ -157,7 +157,7 @@ pub async fn query_liquidity(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPool
     )
     .await
     .expect("Failed to query liquidity");
-    println!("{:?}", liquidity);
+    println!("{liquidity:?}");
 }
 
 pub async fn query_price(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
@@ -172,7 +172,7 @@ pub async fn query_price(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs
     )
     .await
     .expect("Failed to query price");
-    println!("{:?}", price);
+    println!("{price:?}");
 }
 
 pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPositionArgs) {
@@ -221,7 +221,7 @@ pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPosit
             )
             .await
             .expect("Failed to query position");
-            println!("{:?}", position);
+            println!("{position:?}");
         }
         (None, None, None, None) => {
             let position = croc_query_ambient_position(
@@ -235,7 +235,7 @@ pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPosit
             )
             .await
             .expect("Failed to query position");
-            println!("{:?}", position);
+            println!("{position:?}");
         }
         (_, _, _, _) => println!("ERROR: Provide both lower and upper ticks for ranged positions or neither for ambient positions"),
     }
@@ -265,7 +265,7 @@ pub async fn query_rewards(web30: &Web3, _args: &Args, cmd_args: &DEXQueryReward
     )
     .await
     .expect("Failed to query rewards");
-    println!("{:?}", rewards);
+    println!("{rewards:?}");
 }
 
 pub async fn query_nonce(web30: &Web3, _args: &Args, cmd_args: &DEXQueryNonceArgs) {
@@ -325,7 +325,7 @@ pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
     } else {
         None
     };
-    info!("Init Pool args: {:?}", user_cmd_args);
+    info!("Init Pool args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -340,7 +340,7 @@ pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
     )
     .await
     .expect("Unable to create new pool on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
@@ -444,7 +444,7 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
         )
         .await
         .expect("Unable to submit swap as userCmd to dex");
-        println!("Transaction result: {:?}", res);
+        println!("Transaction result: {res:?}");
     } else {
         let swap_args = SwapArgs {
             base,
@@ -458,7 +458,7 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
             min_out,
             reserve_flags,
         };
-        info!("Swap args: {:?}", swap_args);
+        info!("Swap args: {swap_args:?}");
         let res = dex_swap(
             web30,
             cmd_args.dex_contract,
@@ -468,7 +468,7 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
             Some(Duration::from_secs(args.timeout)),
         )
         .await;
-        println!("Transaction result: {:?}", res);
+        println!("Transaction result: {res:?}");
     }
 }
 
@@ -524,7 +524,7 @@ pub async fn mint_ambient(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientAr
     )
     .await;
 
-    info!("Mint args: {:?}", user_cmd_args);
+    info!("Mint args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -541,7 +541,7 @@ pub async fn mint_ambient(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientAr
     )
     .await
     .expect("Unable to mint ranged position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn mint_ambient_qty(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientQtyArgs) {
@@ -598,7 +598,7 @@ pub async fn mint_ambient_qty(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbie
     )
     .await;
 
-    info!("Mint Qty args: {:?}", user_cmd_args);
+    info!("Mint Qty args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -615,7 +615,7 @@ pub async fn mint_ambient_qty(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbie
     )
     .await
     .expect("Unable to mint ranged position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConcentratedArgs) {
@@ -672,7 +672,7 @@ pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConc
     )
     .await;
 
-    info!("Mint args: {:?}", user_cmd_args);
+    info!("Mint args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -689,7 +689,7 @@ pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConc
     )
     .await
     .expect("Unable to mint ranged position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn mint_concentrated_qty(
@@ -752,7 +752,7 @@ pub async fn mint_concentrated_qty(
     )
     .await;
 
-    info!("Mint Qty args: {:?}", user_cmd_args);
+    info!("Mint Qty args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -769,7 +769,7 @@ pub async fn mint_concentrated_qty(
     )
     .await
     .expect("Unable to mint ranged position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn mint_knockout(web30: &Web3, args: &Args, cmd_args: &DEXMintKnockoutArgs) {
@@ -813,7 +813,7 @@ pub async fn mint_knockout(web30: &Web3, args: &Args, cmd_args: &DEXMintKnockout
     )
     .await;
 
-    info!("Mint args: {:?}", user_cmd_args);
+    info!("Mint args: {user_cmd_args:?}");
 
     let res = dex_user_cmd(
         web30,
@@ -831,7 +831,7 @@ pub async fn mint_knockout(web30: &Web3, args: &Args, cmd_args: &DEXMintKnockout
     )
     .await
     .expect("Unable to mint knockout position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn burn_knockout(web30: &Web3, args: &Args, cmd_args: &DEXBurnKnockoutArgs) {
@@ -860,7 +860,7 @@ pub async fn burn_knockout(web30: &Web3, args: &Args, cmd_args: &DEXBurnKnockout
         other_args_bytes.into(),
     ];
 
-    info!("Burn args: {:?}", user_cmd_args);
+    info!("Burn args: {user_cmd_args:?}");
 
     let res = dex_user_cmd(
         web30,
@@ -878,7 +878,7 @@ pub async fn burn_knockout(web30: &Web3, args: &Args, cmd_args: &DEXBurnKnockout
     )
     .await
     .expect("Unable to mint knockout position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKnockoutArgs) {
@@ -904,7 +904,7 @@ pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKn
         reserve_flags.into(),
         other_args_bytes.into(),
     ];
-    info!("Recover args: {:?}", user_cmd_args);
+    info!("Recover args: {user_cmd_args:?}");
 
     let res = dex_user_cmd(
         web30,
@@ -922,7 +922,7 @@ pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKn
     )
     .await
     .expect("Unable to mint knockout position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn install_callpath(web30: &Web3, args: &Args, cmd_args: &DEXInstallCallpathArgs) {

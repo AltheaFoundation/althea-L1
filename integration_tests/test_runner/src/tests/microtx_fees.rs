@@ -69,10 +69,7 @@ pub async fn microtx_fees_test(contact: &Contact, validator_keys: Vec<ValidatorK
         .expect("Unable to get MicrotxFeeBasisPoints from microtx module");
     let param = param.param.unwrap().value;
     let microtx_fee_basis_points = param.trim_matches('"');
-    info!(
-        "Got microtx_fee_basis_points: [{}]",
-        microtx_fee_basis_points
-    );
+    info!("Got microtx_fee_basis_points: [{microtx_fee_basis_points}]");
 
     let microtx_fee_basis_points: u128 = serde_json::from_str(microtx_fee_basis_points).unwrap();
     info!("Generating MsgMicrotxs");
@@ -205,7 +202,7 @@ pub async fn exec_and_check(
                 res,
             );
         }
-        debug!("Sent MsgMicrotx with response {:?}", res);
+        debug!("Sent MsgMicrotx with response {res:?}");
     }
 }
 

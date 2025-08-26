@@ -73,7 +73,7 @@ pub async fn get_channel(
             // Check to see if this client state contains foreign_chain_id (e.g. "cavity-1")
             let client_state = decode_any::<ClientState>(client_state_any).unwrap();
             if client_state.chain_id == foreign_chain_id {
-                info!("Discovered IBC Channel: {:?}", channel);
+                info!("Discovered IBC Channel: {channel:?}");
                 return Ok(channel);
             }
         }
@@ -126,7 +126,7 @@ pub async fn send_ibc_transfer(
         timeout_timestamp, // 150 minutes from now
         ..Default::default()
     };
-    info!("Submitting MsgTransfer {:?}", msg_transfer);
+    info!("Submitting MsgTransfer {msg_transfer:?}");
     let msg_transfer = Msg::new(MSG_TRANSFER_TYPE_URL, msg_transfer);
     let fee_coin = fee_coin.unwrap_or(Coin {
         amount: 100u16.into(),
@@ -190,7 +190,7 @@ pub async fn send_and_assert_ibc_transfer(
         timeout_timestamp, // 150 minutes from now
         ..Default::default()
     };
-    info!("Submitting MsgTransfer {:?}", msg_transfer);
+    info!("Submitting MsgTransfer {msg_transfer:?}");
     let msg_transfer = Msg::new(MSG_TRANSFER_TYPE_URL, msg_transfer);
     let fee_coin = fee_coin.unwrap_or(Coin {
         amount: 100u16.into(),
@@ -206,7 +206,7 @@ pub async fn send_and_assert_ibc_transfer(
             sender,
         )
         .await;
-    info!("Sent MsgTransfer with response {:?}", send_res);
+    info!("Sent MsgTransfer with response {send_res:?}");
 
     // Give the ibc-relayer a bit of time to work in the event of multiple runs
     delay_for(packet_timeout).await;
@@ -261,10 +261,7 @@ pub async fn send_and_assert_ibc_transfer(
             );
         }
         (Some(_), None) => {
-            error!(
-                "User wound up with no balance after ibc transfer? {}",
-                receiver,
-            );
+            error!("User wound up with no balance after ibc transfer? {receiver}",);
             return false;
         }
     }

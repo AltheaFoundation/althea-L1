@@ -56,7 +56,7 @@ fn parse_phrases(filename: &str) -> (Vec<CosmosPrivateKey>, Vec<String>) {
 /// that we have one key for each validator in this file.
 pub fn parse_validator_keys() -> (Vec<CosmosPrivateKey>, Vec<String>) {
     let filename = "/validator-phrases";
-    info!("Reading mnemonics from {}", filename);
+    info!("Reading mnemonics from {filename}");
     parse_phrases(filename)
 }
 
@@ -76,7 +76,7 @@ pub fn get_keys() -> Vec<ValidatorKeys> {
 /// over IBC for testing purposes
 pub fn parse_ibc_validator_keys() -> (Vec<CosmosPrivateKey>, Vec<String>) {
     let filename = "/ibc-validator-phrases";
-    info!("Reading mnemonics from {}", filename);
+    info!("Reading mnemonics from {filename}");
     parse_phrases(filename)
 }
 
@@ -110,7 +110,7 @@ pub async fn deploy_erc20_contracts(contact: &Contact) {
 
     let output = match paths {
         Some(path) => {
-            info!("Deploying contracts from {:?}", path);
+            info!("Deploying contracts from {path:?}");
             Command::new("npx")
                 .args([
                     "ts-node",
@@ -165,7 +165,7 @@ pub async fn deploy_dex() {
 
     let output = match paths {
         Some(path) => {
-            info!("Deploying contracts from {:?}", path);
+            info!("Deploying contracts from {path:?}");
             Command::new("npx")
                 .args([
                     "ts-node",
@@ -216,7 +216,7 @@ pub async fn deploy_multicall() {
 
     let output = match paths {
         Some(path) => {
-            info!("Deploying contracts from {:?}", path);
+            info!("Deploying contracts from {path:?}");
             Command::new("npx")
                 .args([
                     "ts-node",
@@ -324,15 +324,15 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
         if line.contains("ERC20 deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
             erc20_addresses.push(address_string.trim().parse().unwrap());
-            info!("found erc20 address it is {}", address_string);
+            info!("found erc20 address it is {address_string}");
         } else if line.contains("ERC721 deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
             erc721_addresses.push(address_string.trim().parse().unwrap());
-            info!("found erc721 address it is {}", address_string);
+            info!("found erc721 address it is {address_string}");
         } else if line.contains("WALTHEA deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
             walthea_address = address_string.trim().parse().unwrap();
-            info!("found walthea address it is {}", address_string);
+            info!("found walthea address it is {address_string}");
         } else if line.contains("Uniswap Liquidity test deployed at Address - ") {
             let address_string = line.split('-').next_back().unwrap();
             uniswap_liquidity = Some(address_string.trim().parse().unwrap());
@@ -371,23 +371,23 @@ pub fn parse_dex_contract_addresses() -> DexAddresses {
         if line.contains("CrocSwapDex deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
             dex = address_string.trim().parse().unwrap();
-            info!("found dex address it is {}", address_string);
+            info!("found dex address it is {address_string}");
         } else if line.contains("CrocQuery deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
             query = address_string.trim().parse().unwrap();
-            info!("found query address it is {}", address_string);
+            info!("found query address it is {address_string}");
         } else if line.contains("CrocImpact deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
             impact = address_string.trim().parse().unwrap();
-            info!("found impact address it is {}", address_string);
+            info!("found impact address it is {address_string}");
         } else if line.contains("CrocPolicy deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
             policy = address_string.trim().parse().unwrap();
-            info!("found policy address it is {}", address_string);
+            info!("found policy address it is {address_string}");
         } else if line.contains("ColdPathUpgrade deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
             upgrade = address_string.trim().parse().unwrap();
-            info!("found upgrade address it is {}", address_string);
+            info!("found upgrade address it is {address_string}");
         }
     }
     DexAddresses {
@@ -476,7 +476,7 @@ pub fn create_ibc_channel(hermes_base: Command) {
     let out_file = File::options()
         .write(true)
         .create(true)
-        .open(format!("{}channel-creation", IBC_RELAYER_LOGS_ROOT))
+        .open(format!("{IBC_RELAYER_LOGS_ROOT}channel-creation"))
         .unwrap()
         .into_raw_fd();
     unsafe {
@@ -506,7 +506,7 @@ pub fn run_ibc_relayer(hermes_base: Command, full_scan: bool) {
     let out_file = File::options()
         .write(true)
         .create(true)
-        .open(format!("{}hermes-logs", IBC_RELAYER_LOGS_ROOT))
+        .open(format!("{IBC_RELAYER_LOGS_ROOT}hermes-logs"))
         .unwrap()
         .into_raw_fd();
     unsafe {
@@ -579,10 +579,7 @@ pub async fn start_ibc_relayer(
     thread::spawn(|| {
         run_ibc_relayer(hermes_base(), true); // likely will not return from here, just keep running
     });
-    info!(
-        "Running ibc relayer in the background, directing output to {}",
-        IBC_RELAYER_LOGS_ROOT
-    );
+    info!("Running ibc relayer in the background, directing output to {IBC_RELAYER_LOGS_ROOT}");
 }
 
 fn hermes_base() -> Command {
