@@ -310,7 +310,7 @@ pub async fn enable_ica_host(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    trace!("Gov proposal executed with {:?}", res);
+    trace!("Gov proposal executed with {res:?}");
 }
 
 /// Creates and ratifies a ParameterChangeProposal to enable the ICA Controller module
@@ -366,7 +366,7 @@ pub async fn enable_ica_controller(
         .await;
     vote_yes_on_proposals(contact, keys, None).await;
     wait_for_proposals_to_execute(contact).await;
-    trace!("Gov proposal executed with {:?}", res);
+    trace!("Gov proposal executed with {res:?}");
 }
 
 pub async fn send_microtx_via_ica_and_confirm(
@@ -435,7 +435,7 @@ pub async fn send_microtx_via_ica(
         receiver: microtx_receiver.to_string(),
         amount: Some(amount.into()),
     };
-    info!("Sending Microtx via ICA: {:?}", msg_microtx);
+    info!("Sending Microtx via ICA: {msg_microtx:?}");
     let msg = encode_any(msg_microtx, MSG_MICROTX_TYPE_URL);
 
     let ica_submit = MsgSubmitTx {

@@ -2,7 +2,12 @@ use std::time::Duration;
 
 use crate::{
     args::{
-        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXInstallCallpathArgs, DEXMintAmbientArgs, DEXMintAmbientQtyArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXQueryTemplateArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSetPoolTemplateArgs, DEXSubcommand, DEXSwapArgs, DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs
+        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXInstallCallpathArgs,
+        DEXMintAmbientArgs, DEXMintAmbientQtyArgs, DEXMintConcentratedArgs,
+        DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs,
+        DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXQueryTemplateArgs, DEXRecoverKnockoutArgs,
+        DEXSafeModeArgs, DEXSetPoolTemplateArgs, DEXSubcommand, DEXSwapArgs,
+        DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs,
     },
     utils::approve_erc20s,
 };
@@ -13,7 +18,12 @@ use clarity::{
 
 use num256::{Int256, Uint256};
 use test_runner::dex_utils::{
-    croc_policy_transfer_governance, croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick, croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price, croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH
+    croc_policy_transfer_governance, croc_query_ambient_position, croc_query_conc_rewards,
+    croc_query_curve, croc_query_curve_tick, croc_query_liquidity, croc_query_nonce,
+    croc_query_pool_params, croc_query_pool_template, croc_query_price, croc_query_range_position,
+    dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode,
+    dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH,
+    HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH,
 };
 use web30::client::Web3;
 
@@ -48,8 +58,12 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         // DEX Configuration
         DEXSubcommand::InstallCallpath(cmd_args) => install_callpath(web30, args, cmd_args).await,
         DEXSubcommand::SetPoolTemplate(cmd_args) => set_pool_template(web30, args, cmd_args).await,
-        DEXSubcommand::TransferDEXAuthority(cmd_args) => transfer_dex_authority(web30, args, cmd_args).await,
-        DEXSubcommand::TransferCrocPolicy(cmd_args) => transfer_croc_policy(web30, args, cmd_args).await,
+        DEXSubcommand::TransferDEXAuthority(cmd_args) => {
+            transfer_dex_authority(web30, args, cmd_args).await
+        }
+        DEXSubcommand::TransferCrocPolicy(cmd_args) => {
+            transfer_croc_policy(web30, args, cmd_args).await
+        }
     }
 }
 
@@ -59,7 +73,7 @@ pub async fn safe_mode(web30: &Web3, _args: &Args, cmd_args: &DEXSafeModeArgs) {
     let safe_mode = dex_query_safe_mode(web30, dex, Some(caller))
         .await
         .expect("Failed to get safe mode status");
-    println!("{}", safe_mode);
+    println!("{safe_mode}");
 }
 
 pub async fn authority(web30: &Web3, _args: &Args, cmd_args: &DEXAuthorityArgs) {
@@ -68,7 +82,7 @@ pub async fn authority(web30: &Web3, _args: &Args, cmd_args: &DEXAuthorityArgs) 
     let authority = dex_query_authority(web30, dex, Some(caller))
         .await
         .expect("Failed to get safe mode status");
-    println!("{}", authority);
+    println!("{authority}");
 }
 
 pub async fn query_curve(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
@@ -83,7 +97,7 @@ pub async fn query_curve(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs
     )
     .await
     .expect("Failed to query curve state");
-    println!("{:?}", curve);
+    println!("{curve:?}");
 }
 
 pub async fn query_params(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
@@ -98,7 +112,7 @@ pub async fn query_params(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArg
     )
     .await
     .expect("Failed to query pool params");
-    println!("{:?}", params);
+    println!("{params:?}");
 }
 
 pub async fn query_template(web30: &Web3, _args: &Args, cmd_args: &DEXQueryTemplateArgs) {
@@ -111,7 +125,7 @@ pub async fn query_template(web30: &Web3, _args: &Args, cmd_args: &DEXQueryTempl
     )
     .await
     .expect("Failed to query pool params");
-    println!("{:?}", params);
+    println!("{params:?}");
 }
 pub async fn query_tick(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
@@ -125,7 +139,7 @@ pub async fn query_tick(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs)
     )
     .await
     .expect("Failed to query tick");
-    println!("{:?}", tick);
+    println!("{tick:?}");
 }
 
 pub async fn query_liquidity(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
@@ -140,7 +154,7 @@ pub async fn query_liquidity(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPool
     )
     .await
     .expect("Failed to query liquidity");
-    println!("{:?}", liquidity);
+    println!("{liquidity:?}");
 }
 
 pub async fn query_price(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs) {
@@ -155,7 +169,7 @@ pub async fn query_price(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPoolArgs
     )
     .await
     .expect("Failed to query price");
-    println!("{:?}", price);
+    println!("{price:?}");
 }
 
 pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPositionArgs) {
@@ -183,7 +197,7 @@ pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPosit
             )
             .await
             .expect("Failed to query position");
-            println!("{:?}", position);
+            println!("{position:?}");
         }
         (None, None) => {
             let position = croc_query_ambient_position(
@@ -197,7 +211,7 @@ pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPosit
             )
             .await
             .expect("Failed to query position");
-            println!("{:?}", position);
+            println!("{position:?}");
         }
         (_, _) => println!("ERROR: Provide both lower and upper ticks for ranged positions or neither for ambient positions"),
     }
@@ -227,7 +241,7 @@ pub async fn query_rewards(web30: &Web3, _args: &Args, cmd_args: &DEXQueryReward
     )
     .await
     .expect("Failed to query rewards");
-    println!("{:?}", rewards);
+    println!("{rewards:?}");
 }
 
 pub async fn query_nonce(web30: &Web3, _args: &Args, cmd_args: &DEXQueryNonceArgs) {
@@ -241,7 +255,7 @@ pub async fn query_nonce(web30: &Web3, _args: &Args, cmd_args: &DEXQueryNonceArg
     )
     .await
     .expect("Failed to query rewards");
-    println!("{:?}", nonce_res);
+    println!("{nonce_res:?}");
 }
 
 pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
@@ -271,7 +285,7 @@ pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
     } else {
         None
     };
-    info!("Init Pool args: {:?}", user_cmd_args);
+    info!("Init Pool args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -286,7 +300,7 @@ pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
     )
     .await
     .expect("Unable to create new pool on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
@@ -390,7 +404,7 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
         )
         .await
         .expect("Unable to submit swap as userCmd to dex");
-        println!("Transaction result: {:?}", res);
+        println!("Transaction result: {res:?}");
     } else {
         let swap_args = SwapArgs {
             base,
@@ -404,7 +418,7 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
             min_out,
             reserve_flags,
         };
-        info!("Swap args: {:?}", swap_args);
+        info!("Swap args: {swap_args:?}");
         let res = dex_swap(
             web30,
             cmd_args.dex_contract,
@@ -414,7 +428,7 @@ pub async fn swap(web30: &Web3, args: &Args, cmd_args: &DEXSwapArgs) {
             Some(Duration::from_secs(args.timeout)),
         )
         .await;
-        println!("Transaction result: {:?}", res);
+        println!("Transaction result: {res:?}");
     }
 }
 
@@ -470,7 +484,7 @@ pub async fn mint_ambient(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientAr
     )
     .await;
 
-    info!("Mint args: {:?}", user_cmd_args);
+    info!("Mint args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -487,7 +501,7 @@ pub async fn mint_ambient(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientAr
     )
     .await
     .expect("Unable to mint ranged position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn mint_ambient_qty(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbientQtyArgs) {
@@ -544,7 +558,7 @@ pub async fn mint_ambient_qty(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbie
     )
     .await;
 
-    info!("Mint Qty args: {:?}", user_cmd_args);
+    info!("Mint Qty args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -561,7 +575,7 @@ pub async fn mint_ambient_qty(web30: &Web3, args: &Args, cmd_args: &DEXMintAmbie
     )
     .await
     .expect("Unable to mint ranged position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConcentratedArgs) {
@@ -618,7 +632,7 @@ pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConc
     )
     .await;
 
-    info!("Mint args: {:?}", user_cmd_args);
+    info!("Mint args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -635,7 +649,7 @@ pub async fn mint_concentrated(web30: &Web3, args: &Args, cmd_args: &DEXMintConc
     )
     .await
     .expect("Unable to mint ranged position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn mint_concentrated_qty(
@@ -698,7 +712,7 @@ pub async fn mint_concentrated_qty(
     )
     .await;
 
-    info!("Mint Qty args: {:?}", user_cmd_args);
+    info!("Mint Qty args: {user_cmd_args:?}");
     let res = dex_user_cmd(
         web30,
         cmd_args.dex_contract,
@@ -715,7 +729,7 @@ pub async fn mint_concentrated_qty(
     )
     .await
     .expect("Unable to mint ranged position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn mint_knockout(web30: &Web3, args: &Args, cmd_args: &DEXMintKnockoutArgs) {
@@ -759,7 +773,7 @@ pub async fn mint_knockout(web30: &Web3, args: &Args, cmd_args: &DEXMintKnockout
     )
     .await;
 
-    info!("Mint args: {:?}", user_cmd_args);
+    info!("Mint args: {user_cmd_args:?}");
 
     let res = dex_user_cmd(
         web30,
@@ -777,7 +791,7 @@ pub async fn mint_knockout(web30: &Web3, args: &Args, cmd_args: &DEXMintKnockout
     )
     .await
     .expect("Unable to mint knockout position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn burn_knockout(web30: &Web3, args: &Args, cmd_args: &DEXBurnKnockoutArgs) {
@@ -806,7 +820,7 @@ pub async fn burn_knockout(web30: &Web3, args: &Args, cmd_args: &DEXBurnKnockout
         other_args_bytes.into(),
     ];
 
-    info!("Burn args: {:?}", user_cmd_args);
+    info!("Burn args: {user_cmd_args:?}");
 
     let res = dex_user_cmd(
         web30,
@@ -824,7 +838,7 @@ pub async fn burn_knockout(web30: &Web3, args: &Args, cmd_args: &DEXBurnKnockout
     )
     .await
     .expect("Unable to mint knockout position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
 pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKnockoutArgs) {
@@ -850,7 +864,7 @@ pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKn
         reserve_flags.into(),
         other_args_bytes.into(),
     ];
-    info!("Recover args: {:?}", user_cmd_args);
+    info!("Recover args: {user_cmd_args:?}");
 
     let res = dex_user_cmd(
         web30,
@@ -868,15 +882,15 @@ pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKn
     )
     .await
     .expect("Unable to mint knockout position on dex");
-    println!("Transaction result: {:?}", res);
+    println!("Transaction result: {res:?}");
 }
 
-pub async fn install_callpath(
-    web30: &Web3,
-    args: &Args,
-    cmd_args: &DEXInstallCallpathArgs,
-) {
-    let cmd = vec![21u16.into(), cmd_args.callpath_contract.into(), cmd_args.callpath_index.into()];
+pub async fn install_callpath(web30: &Web3, args: &Args, cmd_args: &DEXInstallCallpathArgs) {
+    let cmd = vec![
+        21u16.into(),
+        cmd_args.callpath_contract.into(),
+        cmd_args.callpath_index.into(),
+    ];
 
     let protocol_args = ProtocolCmdArgs {
         callpath: BOOT_PATH,
@@ -884,7 +898,15 @@ pub async fn install_callpath(
         sudo: true,
     };
 
-    let result = dex_direct_protocol_cmd(web30, cmd_args.dex_contract, cmd_args.wallet, protocol_args, None, Some(Duration::from_secs(args.timeout))).await;
+    let result = dex_direct_protocol_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        protocol_args,
+        None,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await;
     match result {
         Ok(r) => {
             let hash = match r {
@@ -893,16 +915,12 @@ pub async fn install_callpath(
                 web30::types::TransactionResponse::Legacy { hash, .. } => hash,
             };
             println!("Successful Transaction result: {hash:?}");
-        },
+        }
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
 }
 
-pub async fn set_pool_template(
-    web30: &Web3,
-    args: &Args,
-    cmd_args: &DEXSetPoolTemplateArgs,
-) {
+pub async fn set_pool_template(web30: &Web3, args: &Args, cmd_args: &DEXSetPoolTemplateArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
     if !cmd_args.tick_size.is_power_of_two() {
         panic!("Tick size must be a power of two");
@@ -920,14 +938,30 @@ pub async fn set_pool_template(
     let knockout_bits = knockout_width | knockout_place_type;
     let jit_thresh = cmd_args.jit_thresh / 10;
     // u16 code, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout, uint8 oracleFlags)
-    let cmd = vec![110u16.into(), pool_index.into(), fee_rate.into(), tick_size.into(), jit_thresh.into(), knockout_bits.into(), 0u8.into()];
+    let cmd = vec![
+        110u16.into(),
+        pool_index.into(),
+        fee_rate.into(),
+        tick_size.into(),
+        jit_thresh.into(),
+        knockout_bits.into(),
+        0u8.into(),
+    ];
     let protocol_args = ProtocolCmdArgs {
         callpath: COLD_PATH,
         cmd,
         sudo: false,
     };
 
-    let result = dex_direct_protocol_cmd(web30, cmd_args.dex_contract, cmd_args.wallet, protocol_args, None, Some(Duration::from_secs(args.timeout))).await;
+    let result = dex_direct_protocol_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        protocol_args,
+        None,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await;
     match result {
         Ok(r) => {
             let hash = match r {
@@ -936,10 +970,9 @@ pub async fn set_pool_template(
                 web30::types::TransactionResponse::Legacy { hash, .. } => hash,
             };
             println!("Successful Transaction result: {hash:?}");
-        },
+        }
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
-
 }
 
 pub async fn transfer_dex_authority(
@@ -947,7 +980,14 @@ pub async fn transfer_dex_authority(
     args: &Args,
     cmd_args: &DEXTransferDEXAuthorityArgs,
 ) {
-    let result = dex_authority_transfer(web30, cmd_args.dex_contract, cmd_args.new_authority, cmd_args.wallet, Some(Duration::from_secs(args.timeout))).await;
+    let result = dex_authority_transfer(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.new_authority,
+        cmd_args.wallet,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await;
     match result {
         Ok(r) => {
             let hash = match r {
@@ -956,18 +996,22 @@ pub async fn transfer_dex_authority(
                 web30::types::TransactionResponse::Legacy { hash, .. } => hash,
             };
             println!("Successful Transaction result: {hash:?}");
-        },
+        }
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
-
 }
 
-pub async fn transfer_croc_policy(
-    web30: &Web3,
-    args: &Args,
-    cmd_args: &DEXTransferCrocPolicyArgs,
-) {
-    let result = croc_policy_transfer_governance(web30, cmd_args.croc_policy, cmd_args.wallet, cmd_args.ops_address, cmd_args.treasury_address, cmd_args.emergency_address, Some(Duration::from_secs(args.timeout))).await;
+pub async fn transfer_croc_policy(web30: &Web3, args: &Args, cmd_args: &DEXTransferCrocPolicyArgs) {
+    let result = croc_policy_transfer_governance(
+        web30,
+        cmd_args.croc_policy,
+        cmd_args.wallet,
+        cmd_args.ops_address,
+        cmd_args.treasury_address,
+        cmd_args.emergency_address,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await;
     match result {
         Ok(r) => {
             let hash = match r {
@@ -976,8 +1020,7 @@ pub async fn transfer_croc_policy(
                 web30::types::TransactionResponse::Legacy { hash, .. } => hash,
             };
             println!("Successful Transaction result: {hash:?}");
-        },
+        }
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
-
 }

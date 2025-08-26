@@ -19,7 +19,7 @@ pub async fn approve_erc20s(
             .await
             .expect("Failed to get base ERC20 allowance");
         if allowance < amount {
-            info!("Approving DEX to spend {} base token wei", amount);
+            info!("Approving DEX to spend {amount} base token wei");
             web30
                 .erc20_approve(
                     base,
@@ -38,7 +38,7 @@ pub async fn approve_erc20s(
         .await
         .expect("Failed to get quote ERC20 allowance");
     if allowance < amount {
-        info!("Approving DEX to spend {} quote token wei", amount);
+        info!("Approving DEX to spend {amount} quote token wei");
         web30
             .erc20_approve(
                 quote,
