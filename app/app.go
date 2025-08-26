@@ -212,6 +212,7 @@ var (
 				nativedexclient.HotPathOpenHandler,
 				nativedexclient.SetSafeModeHandler,
 				nativedexclient.TransferGovernanceHandler,
+				nativedexclient.OpsProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
