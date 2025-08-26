@@ -184,7 +184,7 @@ var (
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
-	ModuleBasics = module.NewBasicManager(
+	ModuleBasicsLessGroup = []module.AppModuleBasic{
 		auth.AppModuleBasic{},
 		authzmodule.AppModuleBasic{},
 		genutil.AppModuleBasic{},
@@ -224,9 +224,13 @@ var (
 		erc20.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
 		ica.AppModuleBasic{},
+	}
+	ModuleBasics = append(
+		ModuleBasicsLessGroup,
 		groupmodule.AppModuleBasic{},
 		gasfree.AppModuleBasic{},
 	)
+	ModuleBasicManager = module.NewBasicManager(ModuleBasics...)
 
 	// module account permissions
 	maccPerms = map[string][]string{
@@ -1220,7 +1224,7 @@ func (app *AltheaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.API
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register all GRPC routes declared by modules in the ModuleBasics
-	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	ModuleBasicManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 

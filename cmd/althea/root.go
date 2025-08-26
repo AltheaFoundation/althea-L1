@@ -193,13 +193,13 @@ func Execute(rootCmd *cobra.Command, defaultHome string) error {
 func initRootCmd(rootCmd *cobra.Command, encodingConfig *params.EncodingConfig) {
 	rootCmd.AddCommand(
 		// ValidateChainID will make sure the configured chain id adheres to strings like althea_1234-1
-		ethermintclient.ValidateChainID(InitCmd(althea.ModuleBasics, althea.DefaultNodeHome)),
+		ethermintclient.ValidateChainID(InitCmd(althea.ModuleBasicManager, althea.DefaultNodeHome)),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, althea.DefaultNodeHome),
-		genutilcli.GenTxCmd(althea.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, althea.DefaultNodeHome),
-		ValidateGenesisCmd(althea.ModuleBasics),
+		genutilcli.GenTxCmd(althea.ModuleBasicManager, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, althea.DefaultNodeHome),
+		ValidateGenesisCmd(althea.ModuleBasicManager),
 		AddGenesisAccountCmd(althea.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		testnetCmd(althea.ModuleBasics, banktypes.GenesisBalancesIterator{}),
+		testnetCmd(althea.ModuleBasicManager, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),  // Output useful info about keys
 		config.Cmd(), // Set config options one by one
 	)
@@ -349,7 +349,7 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 	)
 
-	althea.ModuleBasics.AddQueryCommands(cmd)
+	althea.ModuleBasicManager.AddQueryCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -379,8 +379,13 @@ func txCommand() *cobra.Command {
 		authcmd.GetAuxToFeeCommand(),
 	)
 
-	althea.ModuleBasics.AddTxCommands(cmd)
-	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
+	// Add regular tx commands (not the group module)
+	moduleBasicManagerLessGroup := module.NewBasicManager(althea.ModuleBasicsLessGroup...)
+	moduleBasicManagerLessGroup.AddTxCommands(cmd)
+	// Add the overriden group tx command
+	AddOverrideTxCommands(cmd)
+
+	cmd.Flags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
 }

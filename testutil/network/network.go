@@ -108,7 +108,7 @@ func DefaultConfig() Config {
 		InterfaceRegistry: encCfg.InterfaceRegistry,
 		AccountRetriever:  authtypes.AccountRetriever{},
 		AppConstructor:    NewAppConstructor(encCfg),
-		GenesisState:      althea.ModuleBasics.DefaultGenesis(encCfg.Codec),
+		GenesisState:      althea.ModuleBasicManager.DefaultGenesis(encCfg.Codec),
 		TimeoutCommit:     2 * time.Second,
 		ChainID:           fmt.Sprintf("canto_%d-1", tmrand.Int63n(9999999999999)+1),
 		NumValidators:     4,

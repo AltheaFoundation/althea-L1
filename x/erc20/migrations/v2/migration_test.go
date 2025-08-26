@@ -18,7 +18,7 @@ import (
 )
 
 func TestUpdateParams(t *testing.T) {
-	encCfg := encoding.MakeConfig(althea.ModuleBasics)
+	encCfg := encoding.MakeConfig(althea.ModuleBasicManager)
 	erc20Key := sdk.NewKVStoreKey(erc20types.StoreKey)
 	tErc20Key := sdk.NewTransientStoreKey(fmt.Sprintf("%s_test", erc20types.StoreKey))
 	ctx := testutil.DefaultContext(erc20Key, tErc20Key)
