@@ -2,7 +2,7 @@ use deep_space::{Coin, Contact, PrivateKey};
 use web30::client::Web3;
 
 use crate::utils::{
-    get_ethermint_key, one_eth, ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
+    ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN, ValidatorKeys, get_ethermint_key, get_fee_option, one_eth
 };
 
 /// A simple test to assert the EVM is correctly configured with the STAKING_TOKEN (aalthea) as the EVM denom.
@@ -32,14 +32,10 @@ pub async fn native_token_test(
             amount: one_eth() * 100u8.into(),
             denom: STAKING_TOKEN.to_string(),
         };
-        let fee_amount = Coin {
-            amount: 10u8.into(),
-            denom: STAKING_TOKEN.to_string(),
-        };
         contact
             .send_coins(
                 send_amount,
-                Some(fee_amount),
+                get_fee_option(None),
                 user.ethermint_address,
                 Some(OPERATION_TIMEOUT),
                 key,

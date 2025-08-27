@@ -24,9 +24,7 @@ use tokio::time::sleep;
 use tonic::transport::Channel;
 
 use crate::utils::{
-    encode_any, footoken_metadata, get_fee, one_atom, vote_yes_on_proposals,
-    wait_for_proposals_to_execute, ValidatorKeys, ADDRESS_PREFIX, IBC_ADDRESS_PREFIX,
-    IBC_STAKING_TOKEN, OPERATION_TIMEOUT, STAKING_TOKEN, TOTAL_TIMEOUT,
+    ADDRESS_PREFIX, IBC_ADDRESS_PREFIX, IBC_STAKING_TOKEN, OPERATION_TIMEOUT, STAKING_TOKEN, TOTAL_TIMEOUT, ValidatorKeys, encode_any, footoken_metadata, get_fee, get_fee_option, one_atom, vote_yes_on_proposals, wait_for_proposals_to_execute
 };
 use crate::{
     ibc_utils::get_channel,
@@ -73,14 +71,8 @@ pub async fn ica_host_happy_path(
     enable_ica_host(althea_contact, &keys).await;
     enable_ica_controller(ibc_contact, &keys).await;
 
-    let ibc_fee = Coin {
-        amount: 1u8.into(),
-        denom: IBC_STAKING_TOKEN.to_string(),
-    };
-    let zero_fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.to_string(),
-    };
+    let ibc_fee = get_fee(Some(IBC_STAKING_TOKEN.to_string()));
+    let althea_fee = get_fee(None);
 
     let ica_owner = ibc_keys[0];
     let ica_owner_addr = ica_owner.to_address(&IBC_ADDRESS_PREFIX).unwrap();
@@ -104,7 +96,7 @@ pub async fn ica_host_happy_path(
     althea_contact
         .send_coins(
             fund_amt,
-            Some(zero_fee),
+            Some(althea_fee),
             ica_address,
             Some(OPERATION_TIMEOUT),
             keys[0].validator_key,
@@ -122,7 +114,7 @@ pub async fn ica_host_happy_path(
     althea_contact
         .send_coins(
             send_to_ica_coin.clone(),
-            Some(get_fee(None)),
+            get_fee_option(None),
             ica_address,
             Some(TOTAL_TIMEOUT),
             keys[0].validator_key,
@@ -448,10 +440,8 @@ pub async fn send_microtx_via_ica(
     };
     info!("Submitting MsgSubmitTx: {ica_submit:?}");
     let ica_msg = Msg::new(MSG_SUBMIT_TX_TYPE_URL, ica_submit);
-    let ctrl_fee = Coin {
-        amount: 100u8.into(),
-        denom: IBC_STAKING_TOKEN.to_string(),
-    };
+    let ctrl_fee = get_fee(Some(IBC_STAKING_TOKEN.to_string()));
+
     ctrl_contact
         .send_message(
             &[ica_msg],

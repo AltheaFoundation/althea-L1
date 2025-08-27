@@ -6,10 +6,7 @@ use crate::evm_utils::{
 };
 use crate::type_urls::MSG_LIQUIFY_TYPE_URL;
 use crate::utils::{
-    execute_register_coin_proposal, get_fee, get_test_token_name, get_unregistered_coin_for_erc20,
-    get_user_key, one_eth, send_funds_bulk, EthermintUserKey, RegisterCoinProposalParams,
-    ValidatorKeys, COINS_FOR_REGISTERING, MIN_GLOBAL_FEE_AMOUNT, OPERATION_TIMEOUT, STAKING_TOKEN,
-    TOTAL_TIMEOUT,
+    COINS_FOR_REGISTERING, EthermintUserKey, MIN_GLOBAL_FEE_AMOUNT, OPERATION_TIMEOUT, RegisterCoinProposalParams, STAKING_TOKEN, TOTAL_TIMEOUT, ValidatorKeys, execute_register_coin_proposal, get_fee, get_fee_option, get_test_token_name, get_unregistered_coin_for_erc20, get_user_key, one_eth, send_funds_bulk
 };
 use althea_proto::althea::erc20::v1::query_client::QueryClient as Erc20QueryClient;
 use althea_proto::althea::erc20::v1::QueryTokenPairRequest;
@@ -135,7 +132,7 @@ pub async fn liquid_accounts_test(
                         amount: one_eth(),
                         denom: registered_coin.clone(),
                     },
-                    Some(get_fee(None)),
+                    get_fee_option(None),
                     h.ethermint_address,
                     Some(OPERATION_TIMEOUT),
                     k.validator_key,

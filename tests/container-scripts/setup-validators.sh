@@ -65,8 +65,8 @@ jq '.app_state.bank.denom_metadata += [{"name": "erc20coin3", "symbol": "erc20co
 jq '.app_state.bank.denom_metadata += [{"name": "erc20coin4", "symbol": "erc20coin4", "base": "aerc20coin4", display: "erc20coin4", "description": "(18 decimals)", "denom_units": [{"denom": "aerc20coin4", "exponent": 0}, {"denom": "erc20coin4", "exponent": 18}]}]' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 # Link the native coin to the EVM
 jq ".app_state.evm.params.evm_denom=\"${STAKING_TOKEN}\"" /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
-# Unset the base fee in feemarket
-jq '.app_state.feemarket.params.min_gas_price = "0.000000000000000000"' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
+# Set the base fee in feemarket
+jq '.app_state.feemarket.params.min_gas_price = "0.000200000000000000"' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
 
 # a 120 second voting period to allow us to pass governance proposals in the tests
 jq '.app_state.gov.voting_params.voting_period = "120s"' /genesis.json > tmp_genesis.json && mv tmp_genesis.json /genesis.json
@@ -111,7 +111,7 @@ do
     cp /genesis.json /validator$i/config/genesis.json
     GAIA_HOME="--home /validator$i"
     ARGS="$GAIA_HOME --keyring-backend test --chain-id=$CHAIN_ID --ip 7.7.7.$i"
-    GENTX_FLAGS="--moniker validator$i --commission-rate 0.05 --commission-max-rate 0.05 --fees 1aalthea"
+    GENTX_FLAGS="--moniker validator$i --commission-rate 0.05 --commission-max-rate 0.05 --fees 2000000000000000aalthea"
     # the /8 containing 7.7.7.7 is assigned to the DOD and never routable on the public internet
     # we're using it in private to prevent gaia from blacklisting it as unroutable
     # and allow local pex

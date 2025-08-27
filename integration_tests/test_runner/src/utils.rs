@@ -21,7 +21,7 @@ use deep_space::private_key::{CosmosPrivateKey, PrivateKey};
 use deep_space::{Contact, EthermintPrivateKey};
 use futures::future::join_all;
 use prost::{DecodeError, Message};
-use prost_types::Any;
+use prost_types::{Any};
 use rand::{rngs::ThreadRng, Rng};
 use std::{convert::TryInto, env};
 use std::{
@@ -57,7 +57,7 @@ pub const STARTING_STAKE_PER_VALIDATOR: u128 = STAKE_SUPPLY_PER_VALIDATOR / 2;
 
 /// The amount of STAKING_TOKEN required to be submitted with any cosmos transaction now that the feemarket module is enabled
 /// MUST coincide with .app_state.feemarket.params.min_gas_price in tests/cointainer-scripts/setup-validators.sh
-pub const MIN_GLOBAL_FEE_AMOUNT: u128 = 10;
+pub const MIN_GLOBAL_FEE_AMOUNT: u128 = 10000;
 // Retrieve values from runtime ENV vars
 lazy_static! {
     // ALTHEA CHAIN CONSTANTS
@@ -127,6 +127,10 @@ pub fn get_fee(denom: Option<String>) -> Coin {
             amount: MIN_GLOBAL_FEE_AMOUNT.into(),
         },
     }
+}
+
+pub fn get_fee_option(denom: Option<String>) -> Option<Coin> {
+    Some(get_fee(denom))
 }
 
 pub fn get_deposit(denom_override: Option<String>) -> Coin {
@@ -799,15 +803,12 @@ pub async fn send_funds_bulk(
     amount: Coin,
     timeout: Option<Duration>,
 ) -> Result<(), CosmosGrpcError> {
-    let fee = Coin {
-        denom: STAKING_TOKEN.clone(),
-        amount: 10u8.into(),
-    };
+    let fee = get_fee_option(None);
     for dest in receivers {
         contact
             .send_coins(
                 amount.clone(),
-                Some(fee.clone()),
+                fee.clone(),
                 *dest,
                 timeout,
                 sender.clone(),

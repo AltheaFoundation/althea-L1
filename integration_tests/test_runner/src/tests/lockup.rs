@@ -6,9 +6,7 @@ use crate::type_urls::{
     MSG_SEND_TYPE_URL, MSG_SET_WITHDRAW_ADDRESS_TYPE_URL, MSG_TRANSFER_TYPE_URL,
 };
 use crate::utils::{
-    create_parameter_change_proposal, encode_any, footoken_metadata, get_user_key, one_atom,
-    send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute, EthermintUserKey,
-    ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
+    create_parameter_change_proposal, encode_any, footoken_metadata, get_fee, get_user_key, one_atom, send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute, EthermintUserKey, ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN
 };
 use althea_proto::althea::microtx::v1::MsgMicrotx;
 use althea_proto::cosmos_sdk_proto::cosmos::authz::v1beta1::{
@@ -150,11 +148,8 @@ pub async fn lockup_the_chain(
 ) {
     let to_change = create_lockup_param_changes(lock_exempt);
     let proposer = validator_keys.first().unwrap();
-    let zero_fee = Coin {
-        denom: STAKING_TOKEN.clone(),
-        amount: 0u8.into(),
-    };
-    create_parameter_change_proposal(contact, proposer.validator_key, to_change, zero_fee).await;
+    
+    create_parameter_change_proposal(contact, proposer.validator_key, to_change, get_fee(None)).await;
 
     vote_yes_on_proposals(contact, validator_keys, Some(OPERATION_TIMEOUT)).await;
     wait_for_proposals_to_execute(contact).await;
@@ -218,7 +213,7 @@ pub async fn fail_to_send(
         .send_message(
             &[msg_set_withdraw_address],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender,
@@ -234,7 +229,7 @@ pub async fn fail_to_send(
         .send_message(
             &[msg_send],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender,
@@ -247,7 +242,7 @@ pub async fn fail_to_send(
         .send_message(
             &[msg_multi_send],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender,
@@ -260,7 +255,7 @@ pub async fn fail_to_send(
         .send_message(
             &[msg_microtx],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender,
@@ -281,7 +276,7 @@ pub async fn fail_to_send(
         .send_message(
             std::slice::from_ref(&authz_send),
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             msg_send_authorized.ethermint_key,
@@ -301,7 +296,7 @@ pub async fn fail_to_send(
         .send_message(
             std::slice::from_ref(&double_authz_send),
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             msg_send_authorized.ethermint_key,
@@ -324,7 +319,7 @@ pub async fn fail_to_send(
         .send_message(
             std::slice::from_ref(&authz_multi_send),
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             msg_multi_send_authorized.ethermint_key,
@@ -345,7 +340,7 @@ pub async fn fail_to_send(
         .send_message(
             std::slice::from_ref(&authz_msg_microtx),
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             msg_microtx_authorized.ethermint_key,
@@ -496,7 +491,7 @@ pub async fn create_authz_bank_msg_send(
         .send_message(
             &[grant_msg_send],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender.clone(),
@@ -535,7 +530,7 @@ pub async fn create_double_authz_bank_msg_send(
         .send_message(
             &[grant_msg_send],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender.clone(),
@@ -581,7 +576,7 @@ pub async fn create_authz_bank_msg_multi_send(
         .send_message(
             &[grant_msg_multi_send],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender.clone(),
@@ -620,7 +615,7 @@ pub async fn create_authz_microtx_msg_microtx(
         .send_message(
             &[grant_msg_microtx],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender.clone(),
@@ -659,7 +654,7 @@ pub async fn create_authz_evm_msg_ethereum_tx(
         .send_message(
             &[grant_msg_ethereum_tx],
             None,
-            &[],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             sender.ethermint_key,
@@ -780,11 +775,7 @@ async fn unlock_the_chain(contact: &Contact, validator_keys: &[ValidatorKeys]) {
         value: format!("{}", false),
     };
     let proposer = validator_keys.first().unwrap();
-    let zero_fee = Coin {
-        denom: STAKING_TOKEN.clone(),
-        amount: 0u8.into(),
-    };
-    create_parameter_change_proposal(contact, proposer.validator_key, vec![unlock], zero_fee).await;
+    create_parameter_change_proposal(contact, proposer.validator_key, vec![unlock], get_fee(None)).await;
 
     vote_yes_on_proposals(contact, validator_keys, Some(OPERATION_TIMEOUT)).await;
     wait_for_proposals_to_execute(contact).await;

@@ -1,7 +1,6 @@
 use crate::type_urls::MSG_MICROTX_TYPE_URL;
 use crate::utils::{
-    bulk_get_user_keys, get_convertible_coin, one_atom_128, send_funds_bulk, EthermintUserKey,
-    ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
+    ADDRESS_PREFIX, EthermintUserKey, OPERATION_TIMEOUT, ValidatorKeys, bulk_get_user_keys, get_convertible_coin, get_fee, one_atom_128, send_funds_bulk
 };
 use althea_proto::althea::microtx::v1::MsgMicrotx;
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
@@ -159,10 +158,6 @@ pub async fn exec_and_check(
     msg_exp_fees: &[Uint256],
     token_balance: u128,
 ) {
-    let zero_fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
     let token_balance: Uint256 = token_balance.into();
     for (((sender, msg), amt), exp_fee) in senders
         .iter()
@@ -174,7 +169,7 @@ pub async fn exec_and_check(
             .send_message(
                 std::slice::from_ref(msg),
                 None,
-                std::slice::from_ref(&zero_fee),
+                std::slice::from_ref(&get_fee(None)),
                 Some(OPERATION_TIMEOUT),
                 None,
                 sender.ethermint_key,

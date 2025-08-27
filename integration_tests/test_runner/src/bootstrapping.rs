@@ -1,8 +1,6 @@
 use crate::ibc_utils::get_channel;
 use crate::utils::{
-    get_chain_id, get_deposit, get_ibc_chain_id, parse_contracts_root, parse_dex_contracts_root,
-    ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC, HERMES_CONFIG, IBC_RELAYER_ADDRESS,
-    IBC_STAKING_TOKEN, OPERATION_TIMEOUT, RELAYER_MNEMONIC_FILE,
+    get_chain_id, get_deposit, get_fee_option, get_ibc_chain_id, parse_contracts_root, parse_dex_contracts_root, ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC, HERMES_CONFIG, IBC_RELAYER_ADDRESS, IBC_STAKING_TOKEN, OPERATION_TIMEOUT, RELAYER_MNEMONIC_FILE
 };
 use crate::utils::{
     send_erc20_bulk, EthermintUserKey, ValidatorKeys, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT,
@@ -534,7 +532,7 @@ pub async fn start_ibc_relayer(
     contact
         .send_coins(
             althea_deposit,
-            None,
+            get_fee_option(None),
             ALTHEA_RELAYER_ADDRESS.parse().unwrap(),
             Some(OPERATION_TIMEOUT),
             keys[0].validator_key,
@@ -545,10 +543,7 @@ pub async fn start_ibc_relayer(
     ibc_contact
         .send_coins(
             ibc_deposit,
-            Some(deep_space::Coin {
-                amount: 100u8.into(),
-                denom: IBC_STAKING_TOKEN.to_string(),
-            }),
+            get_fee_option(Some(IBC_STAKING_TOKEN.to_string())),
             IBC_RELAYER_ADDRESS.parse().unwrap(),
             Some(OPERATION_TIMEOUT),
             ibc_keys[0],
