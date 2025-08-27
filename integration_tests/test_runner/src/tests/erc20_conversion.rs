@@ -4,9 +4,7 @@ use std::str::FromStr;
 
 use crate::type_urls::{MSG_CONVERT_COIN_TYPE_URL, MSG_CONVERT_ERC20_TYPE_URL};
 use crate::utils::{
-    execute_register_coin_proposal, execute_register_erc20_proposal, footoken_metadata, one_atom,
-    one_eth, EthermintUserKey, RegisterCoinProposalParams, RegisterErc20ProposalParams,
-    ValidatorKeys, OPERATION_TIMEOUT, STAKING_TOKEN, TOTAL_TIMEOUT,
+    EthermintUserKey, OPERATION_TIMEOUT, RegisterCoinProposalParams, RegisterErc20ProposalParams, STAKING_TOKEN, TOTAL_TIMEOUT, ValidatorKeys, execute_register_coin_proposal, execute_register_erc20_proposal, footoken_metadata, get_fee, get_fee_option, one_atom, one_eth
 };
 use althea_proto::canto::erc20::v1::query_client::QueryClient as Erc20QueryClient;
 use althea_proto::canto::erc20::v1::{MsgConvertCoin, MsgConvertErc20, QueryTokenPairRequest};
@@ -102,10 +100,7 @@ pub async fn erc20_register_and_round_trip_test(
                 amount: one_atom(),
                 denom: STAKING_TOKEN.to_string(),
             },
-            Some(Coin {
-                amount: 0u8.into(),
-                denom: STAKING_TOKEN.to_string(),
-            }),
+            get_fee_option(None),
             recvr.ethermint_address,
             Some(OPERATION_TIMEOUT),
             validator_keys.first().unwrap().validator_key,
@@ -132,11 +127,7 @@ pub async fn erc20_register_and_round_trip_test(
         .send_message(
             &[msg],
             None,
-            &[Coin {
-                // fee coin
-                amount: 100u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             recvr.ethermint_key,
@@ -159,11 +150,7 @@ pub async fn erc20_register_and_round_trip_test(
         .send_message(
             &[msg],
             None,
-            &[Coin {
-                // fee coin
-                amount: 100u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             recvr.ethermint_key,
@@ -202,11 +189,7 @@ pub async fn erc20_register_and_round_trip_test(
                 amount: convert_amount,
                 denom: expected_erc20_denom.clone(),
             },
-            Some(Coin {
-                // fee coin
-                amount: 100u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }),
+            get_fee_option(None),
             transfer_recvr.ethermint_address,
             Some(OPERATION_TIMEOUT),
             recvr.ethermint_key,
@@ -252,11 +235,7 @@ pub async fn erc20_register_and_round_trip_test(
         .send_message(
             &[msg],
             None,
-            &[Coin {
-                // fee coin
-                amount: 100u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             transfer_recvr.ethermint_key,
@@ -280,11 +259,7 @@ pub async fn erc20_register_and_round_trip_test(
         .send_message(
             &[msg],
             None,
-            &[Coin {
-                // fee coin
-                amount: 100u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             transfer_recvr.ethermint_key,
@@ -385,10 +360,7 @@ pub async fn coin_register_and_round_trip_test(
                 amount: one_atom(),
                 denom: registered_denom.to_string(),
             },
-            Some(Coin {
-                amount: 0u8.into(),
-                denom: STAKING_TOKEN.to_string(),
-            }),
+            get_fee_option(None),
             recvr.ethermint_address,
             Some(OPERATION_TIMEOUT),
             validator_keys.first().unwrap().validator_key,
@@ -413,11 +385,7 @@ pub async fn coin_register_and_round_trip_test(
         .send_message(
             &[msg],
             None,
-            &[Coin {
-                // fee coin
-                amount: 100u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             recvr.ethermint_key,

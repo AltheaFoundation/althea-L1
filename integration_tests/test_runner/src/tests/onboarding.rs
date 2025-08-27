@@ -28,10 +28,7 @@ use web30::client::Web3;
 use crate::ibc_utils::{get_hash_for_denom_trace, send_ibc_transfer};
 use crate::type_urls::MSG_CONVERT_ERC20_TYPE_URL;
 use crate::utils::{
-    get_chain_id, one_atom, one_eth, one_hundred_atom, one_hundred_eth, send_funds_bulk,
-    vote_yes_on_proposals, wait_for_proposals_to_execute, EthermintUserKey, ValidatorKeys,
-    ADDRESS_PREFIX, ETH_NODE, IBC_ADDRESS_PREFIX, IBC_NODE_GRPC, IBC_STAKING_TOKEN,
-    OPERATION_TIMEOUT, STAKING_TOKEN,
+    ADDRESS_PREFIX, ETH_NODE, EthermintUserKey, IBC_ADDRESS_PREFIX, IBC_NODE_GRPC, IBC_STAKING_TOKEN, OPERATION_TIMEOUT, STAKING_TOKEN, ValidatorKeys, get_chain_id, get_fee, one_atom, one_eth, one_hundred_atom, one_hundred_eth, send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute
 };
 use crate::{
     ibc_utils::get_channel,
@@ -536,16 +533,13 @@ pub async fn send_stake_to_althea(
         denom: IBC_STAKING_TOKEN.clone(),
         amount,
     };
-    let zero_coin = Coin {
-        denom: IBC_STAKING_TOKEN.clone(),
-        amount: 0u8.into(),
-    };
+    let ibc_fee = get_fee(Some(IBC_STAKING_TOKEN.to_string()));
     send_ibc_transfer(
         ibc_contact,
         ibc_sender,
         althea_receiver,
         ibc_coin.clone(),
-        Some(zero_coin),
+        Some(ibc_fee),
         ibc_to_althea_channel.channel_id,
         Duration::from_secs(60),
     )
@@ -578,16 +572,12 @@ pub async fn send_erc20_to_ibc_chain(
         denom: erc20_coin_denom.clone(),
         amount,
     };
-    let zero_coin = Coin {
-        denom: STAKING_TOKEN.clone(),
-        amount: 0u8.into(),
-    };
     send_ibc_transfer(
         althea_contact,
         althea_sender,
         ibc_receiver,
         ibc_coin.clone(),
-        Some(zero_coin),
+        Some(get_fee(None)),
         althea_to_ibc_channel.channel_id,
         Duration::from_secs(60),
     )
@@ -657,7 +647,7 @@ pub async fn convert_erc20(
     };
     let msg = Msg::new(MSG_CONVERT_ERC20_TYPE_URL, msg_convert_erc20);
     althea_contact
-        .send_message(&[msg], None, &[], Some(OPERATION_TIMEOUT), None, sender)
+        .send_message(&[msg], None, &[get_fee(None)], Some(OPERATION_TIMEOUT), None, sender)
         .await
 }
 
@@ -691,10 +681,6 @@ pub async fn submit_and_pass_onboarding_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
     let mut changes = Vec::new();
     changes.push(ParamChange {
         subspace: "onboarding".to_string(),
@@ -723,7 +709,7 @@ pub async fn submit_and_pass_onboarding_proposal(
                 changes,
             },
             deposit,
-            fee,
+            get_fee(None),
             keys[0].validator_key,
             Some(OPERATION_TIMEOUT),
         )
@@ -756,17 +742,13 @@ pub async fn submit_and_pass_token_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
 
     let res = create_token_proposal(
         contact,
         token,
         is_erc20,
         deposit,
-        fee,
+        get_fee(None),
         keys[0].validator_key,
         Some(OPERATION_TIMEOUT),
     )
