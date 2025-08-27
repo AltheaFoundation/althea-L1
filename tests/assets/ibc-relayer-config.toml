@@ -111,7 +111,7 @@ default_gas = 100000
 max_gas = 4000000
 # Specify the price per gas used of the fee to submit a transaction and
 # the denomination of the fee. Required
-gas_price = { price = 0.000, denom = 'aalthea' }
+gas_price = { price = 1.000, denom = 'aalthea' }
 # Specify the ratio by which to increase the gas estimate used to compute the fee,
 # to account for potential estimation error. Default: 1.1, ie. 10%.
 # Valid range: 0.0+
