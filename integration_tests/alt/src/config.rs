@@ -29,10 +29,10 @@ pub fn common_args() -> CommonArgs {
         _croc_query: Address::from_str("0xf7b59E4f71E467C0e409609A4a0688b073C56142").unwrap(),
         ALTHEA: Address::default(),
         GRAV: Address::from_str("0x1D54EcB8583Ca25895c512A8308389fFD581F9c9").unwrap(),
-        USDC: Address::from_str("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48").unwrap(),
-        sUSDS: Address::from_str("0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD").unwrap(),
-        USDT: Address::from_str("0xdAC17F958D2ee523a2206206994597C13D831ec7").unwrap(),
-        USDS: Address::from_str("0xdC035D45d973E3EC169d2276DDab16f1e407384F").unwrap(),
+        USDC: Address::from_str("0x80b5a32E4F032B2a058b4F29EC95EEfEEB87aDcd").unwrap(),
+        sUSDS: Address::from_str("0x5FD55A1B9FC24967C4dB09C513C3BA0DFa7FF687").unwrap(),
+        USDT: Address::from_str("0xecEEEfCEE421D8062EF8d6b4D814efe4dc898265").unwrap(),
+        USDS: Address::from_str("0xd567B3d7B8FE3C79a1AD8dA978812cfC4Fa05e75").unwrap(),
     }
 }
 
@@ -260,7 +260,7 @@ pub async fn config8(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = STABLESWAP_TEMPLATE.to_string();
     let base = USDC; // 6 decimals
     let quote = USDS; // 18 decimals
-    let qty = (10.0 * 10f64.powi(6)).to_string(); // 10 USDC
+    let qty = (8.9 * 10f64.powi(6)).to_string(); // 8.9 USDC
     // Want to place liquidity between 0.50 USDC/USDS and 1.50 USDC/USDS
     let lower_limit = 0.50 * 10f64.powi(-12); // 0.50 USDC / 1 USDS = 0.50 * 10^6 / 10^18 = 0.50 * 10^-12
     let upper_limit = 1.50 * 10f64.powi(-12); // 1.50 USDC / 1 USDS = 1.50 * 10^6 / 10^18 = 1.50 * 10^-12
@@ -294,7 +294,7 @@ pub async fn config9(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = STABLESWAP_TEMPLATE.to_string();
     let base = sUSDS; // 18 decimals
     let quote = USDS; // 18 decimals
-    let qty = (one_eth() * 10u32.into()).to_string(); // 10 sUSDS
+    let qty = (one_eth() * 8.9u32.into()).to_string(); // 8.9 sUSDS
     // sUSDS grows in value over time according to the sky savings rate, so we want to account for future growth
     // while allowing for a slight dip in price to 1.05 (price is at 1.06)
     // Want to place liquidity between 1.12 USDS/sUSDS and 1.05 USDS/sUSDS
@@ -330,7 +330,7 @@ pub async fn config10(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = STABLESWAP_TEMPLATE.to_string();
     let base = USDT; // 6 decimals
     let quote = USDS; // 18 decimals
-    let qty = (10.0 * 10f64.powi(6)).to_string(); // 10 USDT
+    let qty = (8.9 * 10f64.powi(6)).to_string(); // 8.9 USDT
     // Want to place liquidity between 0.50 USDT/USDS and 1.50 USDT/USDS
     let lower_limit = 0.5 * 10f64.powi(-12); // 0.50 USDT / 1.00 USDS = 0.5 * 10^6 / 10^18 = 0.5 * 10^-12
     let upper_limit = 1.5 * 10f64.powi(-12); // 1.50 USDT / 1.00 USDS = 1.5 * 10^6 / 10^18 = 1.5 * 10^-12
@@ -364,7 +364,7 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = VOLATILESWAP_TEMPLATE.to_string();
     let base = ALTHEA; // 18 decimals
     let quote = USDS; // 18 decimals
-    let qty = (one_eth() * 10u32.into()).to_string(); // 10 USDS
+    let qty = (one_eth() * 8.9u32.into()).to_string(); // 8.9 USDS
     // Want to place liquidity between 2.50 USDS/ALTHEA and 1.50 USDS/ALTHEA
     let lower_limit = 0.40f64; // 1 ALTHEA / 2.50 USDS = 0.40
     let upper_limit = 0.666666666666666667f64; // 1 ALTHEA / 1.50 USDS = 0.666666666666666667
@@ -398,7 +398,7 @@ pub async fn config12(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = VOLATILESWAP_TEMPLATE.to_string();
     let base = GRAV; // 6 decimals
     let quote = USDS; // 18 decimals
-    let qty = (10f64 * 10f64.powi(18)).to_string(); // 10 USDS
+    let qty = (8.9f64 * 10f64.powi(18)).to_string(); // 8.9 USDS
     // Want to place liquidity between 0.0001219 GRAV/USDS and 0.0004876 GRAV/USDS
     let lower_limit = 0.0001219 * 10f64.powi(-12); // 0.0001219 GRAV / 1 USDS = 0.0001219 * 10^6 / 10^18 = 0.0001219 * 10^-12
     let upper_limit = 0.0004876 * 10f64.powi(-12); // 0.0004876 GRAV / 1 USDS = 0.0004876 * 10^6 / 10^18 = 0.0004876 * 10^-12
