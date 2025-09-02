@@ -254,7 +254,7 @@ pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
         cmd_args.wallet,
         cmd_args.base,
         cmd_args.quote,
-        50000u32.into(),
+        10000000000u64.into(),
     )
     .await;
 
