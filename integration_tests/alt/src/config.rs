@@ -294,7 +294,7 @@ pub async fn config9(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = STABLESWAP_TEMPLATE.to_string();
     let base = sUSDS; // 18 decimals
     let quote = USDS; // 18 decimals
-    let qty = (one_eth() * 8.9u32.into()).to_string(); // 8.9 sUSDS
+    let qty = (one_eth() * 8u32.into()).to_string(); // 8 sUSDS
     // sUSDS grows in value over time according to the sky savings rate, so we want to account for future growth
     // while allowing for a slight dip in price to 1.05 (price is at 1.06)
     // Want to place liquidity between 1.12 USDS/sUSDS and 1.05 USDS/sUSDS
@@ -364,7 +364,7 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = VOLATILESWAP_TEMPLATE.to_string();
     let base = ALTHEA; // 18 decimals
     let quote = USDS; // 18 decimals
-    let qty = (one_eth() * 8.9u32.into()).to_string(); // 8.9 USDS
+    let qty = (one_eth() * 8u32.into()).to_string(); // 8 USDS
     // Want to place liquidity between 2.50 USDS/ALTHEA and 1.50 USDS/ALTHEA
     let lower_limit = 0.40f64; // 1 ALTHEA / 2.50 USDS = 0.40
     let upper_limit = 0.666666666666666667f64; // 1 ALTHEA / 1.50 USDS = 0.666666666666666667
