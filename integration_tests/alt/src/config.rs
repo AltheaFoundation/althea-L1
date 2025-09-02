@@ -69,7 +69,6 @@ pub async fn config1(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let usds_bal = web30.get_erc20_balance(USDS, address).await.expect("Unable to get USDS balance");
     let susds_bal = web30.get_erc20_balance(sUSDS, address).await.expect("Unable to get sUSDS balance");
     let usdt_bal = web30.get_erc20_balance(USDT, address).await.expect("Unable to get USDT balance");
-    let althea_bal = web30.get_erc20_balance(ALTHEA, address).await.expect("Unable to get ALTHEA balance");
     let grav_bal = web30.get_erc20_balance(GRAV, address).await.expect("Unable to get GRAV balance");
 
     // USDC/USDS at price 1.0, providing 10 USDC - will need 10 USDS
@@ -87,9 +86,6 @@ pub async fn config1(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     }
     if usdt_bal < (10u32 * 10u32.pow(6)).into() {
         panic!("Not enough USDT balance to run all config commands, need at least 10 USDT");
-    }
-    if althea_bal < (one_eth() * 5u32.into()) {
-        panic!("Not enough ALTHEA balance to run all config commands, need at least 5 ALTHEA");
     }
     if grav_bal < (41020u32 * 10u32.pow(6)).into() {
         panic!("Not enough GRAV balance to run all config commands, need at least 41020 GRAV");
