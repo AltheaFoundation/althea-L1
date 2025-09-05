@@ -49,13 +49,13 @@ pub async fn handle_config_subcommand(web30: &Web3, args: &Args, command_args: &
         // ConfigSubcommand::Config8(config_args) => config8(web30, args, config_args).await,
         // ConfigSubcommand::Config9(config_args) => config9(web30, args, config_args).await,
         // ConfigSubcommand::Config10(config_args) => config10(web30, args, config_args).await,
-        ConfigSubcommand::Config11(config_args) => config11(web30, args, config_args).await,
-        ConfigSubcommand::Config12(config_args) => config12(web30, args, config_args).await,
-        ConfigSubcommand::Config13(config_args) => config13(web30, args, config_args).await,
-        ConfigSubcommand::Config14(config_args) => config14(web30, args, config_args).await,
-        ConfigSubcommand::Config15(config_args) => config15(web30, args, config_args).await,
-        ConfigSubcommand::Config16(config_args) => config16(web30, args, config_args).await,
-        ConfigSubcommand::Config17(config_args) => config17(web30, args, config_args).await,
+        // ConfigSubcommand::Config11(config_args) => config11(web30, args, config_args).await,
+        // ConfigSubcommand::Config12(config_args) => config12(web30, args, config_args).await,
+        // ConfigSubcommand::Config13(config_args) => config13(web30, args, config_args).await,
+        // ConfigSubcommand::Config14(config_args) => config14(web30, args, config_args).await,
+        // ConfigSubcommand::Config15(config_args) => config15(web30, args, config_args).await,
+        // ConfigSubcommand::Config16(config_args) => config16(web30, args, config_args).await,
+        // ConfigSubcommand::Config17(config_args) => config17(web30, args, config_args).await,
         ConfigSubcommand::Config18(config_args) => config18(web30, args, config_args).await,
         _args => {
             panic!("Config subcommand not supported");
@@ -193,6 +193,7 @@ pub async fn config4(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Initialize the USDS/USDT pool
+#[allow(dead_code)]
 pub async fn config5(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDS, USDT, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -259,6 +260,7 @@ pub async fn config7(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Seed the USDC/USDS pool with some liquidity
+#[allow(dead_code)]
 pub async fn config8(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDS, USDC, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -286,6 +288,7 @@ pub async fn config8(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Seed the sUSDS/USDS pool with some liquidity
+#[allow(dead_code)]
 pub async fn config9(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, sUSDS, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -312,6 +315,7 @@ pub async fn config9(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Seed the USDS/USDT pool with some liquidity
+#[allow(dead_code)]
 pub async fn config10(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDT, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -338,6 +342,7 @@ pub async fn config10(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Seed the ALTHEA/USDS pool with some liquidity
+#[allow(dead_code)]
 pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, ALTHEA, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -364,6 +369,7 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Seed the GRAV/USDS pool with some liquidity
+#[allow(dead_code)]
 pub async fn config12(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, GRAV, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -390,6 +396,7 @@ pub async fn config12(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Test a swap on the USDC/USDS pool
+#[allow(dead_code)]
 pub async fn config13(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDC, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -428,6 +435,7 @@ pub async fn config13(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Test a swap on the sUSDS/USDS pool
+#[allow(dead_code)]
 pub async fn config14(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, sUSDS, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -466,6 +474,7 @@ pub async fn config14(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Test a swap on the USDS/USDT pool
+#[allow(dead_code)]
 pub async fn config15(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDT, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -505,6 +514,7 @@ pub async fn config15(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Test a swap on the ALTHEA/USDS pool
+#[allow(dead_code)]
 pub async fn config16(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, ALTHEA, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -541,6 +551,7 @@ pub async fn config16(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Test a swap on the GRAV/USDS pool
+#[allow(dead_code)]
 pub async fn config17(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, GRAV, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -581,9 +592,6 @@ pub async fn config17(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 
 // Transfer control of the DEX to the CrocPolicy contract
 pub async fn config18(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
-    panic!("This safeguarding line needs to be removed before you can run this!");
-
-    #[allow(unreachable_code)]
     let CommonArgs{dex_contract, croc_policy, ..} = common_args();
     let wallet = cmd_args.wallet;
 
