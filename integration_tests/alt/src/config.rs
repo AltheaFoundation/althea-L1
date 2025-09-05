@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
 use clarity::Address;
-use test_runner::utils::one_eth;
+use test_runner::{utils::one_eth};
 use web30::client::Web3;
 
-use crate::{args::{Args, ConfigArgs, ConfigCommand, ConfigSubcommand, DEXInitPoolArgs, DEXMintConcentratedQtyArgs, DEXSetPoolTemplateArgs, DEXSwapArgs, DEXTransferDEXAuthorityArgs}, dex::{init_pool, mint_concentrated_qty, set_pool_template, swap, transfer_dex_authority}};
+use crate::{args::{Args, ConfigArgs, ConfigCommand, ConfigSubcommand, DEXInitPoolArgs, DEXMintAmbientQtyArgs, DEXSetPoolTemplateArgs, DEXSwapArgs, DEXTransferDEXAuthorityArgs}, dex::{init_pool, mint_ambient_qty, set_pool_template, swap, transfer_dex_authority}};
 
 pub const STABLESWAP_TEMPLATE: u32 = 36000;
 pub const VOLATILESWAP_TEMPLATE: u32 = 36001;
@@ -27,24 +27,25 @@ pub fn common_args() -> CommonArgs {
         dex_contract: Address::from_str("0xd263DC98dEc57828e26F69bA8687281BA5D052E0").unwrap(),
         croc_policy: Address::from_str("0x14Ae279edb4D569BAFb98ff08299A0135Da6867a").unwrap(),
         _croc_query: Address::from_str("0xf7b59E4f71E467C0e409609A4a0688b073C56142").unwrap(),
-        ALTHEA: Address::default(),
+        ALTHEA: Address::default(), // 0x0000000000000000000000000000000000000000
         GRAV: Address::from_str("0x1D54EcB8583Ca25895c512A8308389fFD581F9c9").unwrap(),
-        USDC: Address::from_str("0x80b5a32E4F032B2a058b4F29EC95EEfEEB87aDcd").unwrap(),
         sUSDS: Address::from_str("0x5FD55A1B9FC24967C4dB09C513C3BA0DFa7FF687").unwrap(),
-        USDT: Address::from_str("0xecEEEfCEE421D8062EF8d6b4D814efe4dc898265").unwrap(),
+        USDC: Address::from_str("0x80b5a32E4F032B2a058b4F29EC95EEfEEB87aDcd").unwrap(),
         USDS: Address::from_str("0xd567B3d7B8FE3C79a1AD8dA978812cfC4Fa05e75").unwrap(),
+        USDT: Address::from_str("0xecEEEfCEE421D8062EF8d6b4D814efe4dc898265").unwrap(),
     }
 }
 
+
 pub async fn handle_config_subcommand(web30: &Web3, args: &Args, command_args: &ConfigCommand) {
     match &command_args.subcmd {
-        ConfigSubcommand::Config1(cmd_args) => config1(web30, args, cmd_args).await,
-        ConfigSubcommand::Config2(config_args) => config2(web30, args, config_args).await,
-        ConfigSubcommand::Config3(config_args) => config3(web30, args, config_args).await,
-        ConfigSubcommand::Config4(config_args) => config4(web30, args, config_args).await,
+        // ConfigSubcommand::Config1(cmd_args) => config1(web30, args, cmd_args).await,
+        // ConfigSubcommand::Config2(config_args) => config2(web30, args, config_args).await,
+        // ConfigSubcommand::Config3(config_args) => config3(web30, args, config_args).await,
+        // ConfigSubcommand::Config4(config_args) => config4(web30, args, config_args).await,
         ConfigSubcommand::Config5(config_args) => config5(web30, args, config_args).await,
-        ConfigSubcommand::Config6(config_args) => config6(web30, args, config_args).await,
-        ConfigSubcommand::Config7(config_args) => config7(web30, args, config_args).await,
+        // ConfigSubcommand::Config6(config_args) => config6(web30, args, config_args).await,
+        // ConfigSubcommand::Config7(config_args) => config7(web30, args, config_args).await,
         ConfigSubcommand::Config8(config_args) => config8(web30, args, config_args).await,
         ConfigSubcommand::Config9(config_args) => config9(web30, args, config_args).await,
         ConfigSubcommand::Config10(config_args) => config10(web30, args, config_args).await,
@@ -56,12 +57,16 @@ pub async fn handle_config_subcommand(web30: &Web3, args: &Args, command_args: &
         ConfigSubcommand::Config16(config_args) => config16(web30, args, config_args).await,
         ConfigSubcommand::Config17(config_args) => config17(web30, args, config_args).await,
         ConfigSubcommand::Config18(config_args) => config18(web30, args, config_args).await,
+        _args => {
+            panic!("Config subcommand not supported");
+        }
     }
 }
 
 /// Runs a pool index update to fix the 36000 (stablecoin pair) pool template
+#[allow(dead_code)]
 pub async fn config1(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
-    let CommonArgs{dex_contract, USDS, USDC, sUSDS, USDT, ALTHEA, GRAV, ..} = common_args();
+    let CommonArgs{dex_contract, USDS, USDC, sUSDS, USDT, GRAV, ..} = common_args();
     let wallet = cmd_args.wallet;
 
     let address = wallet.to_address();
@@ -73,7 +78,7 @@ pub async fn config1(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 
     // USDC/USDS at price 1.0, providing 10 USDC - will need 10 USDS
     // sUSDS/USDS at price 0.943396226415094340, providing 10 sUSDS - will need 10.6 USDS
-    // USDT/USDS at price 1.0, providing 10 USDT - will need 10 USDS
+    // USDS/USDT at price 1.0, providing 10 USDS - will need 10 USDT
     // ALTHEA/USDS at price 0.5, providing 10 USDS - will need 5 ALTHEA
     // GRAV/USDS at price 0.0002438, providing 10 USDS - will need 41017 GRAV
 
@@ -116,6 +121,7 @@ pub async fn config1(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     set_pool_template(web30, args, &pool_template_args).await;
 }
 
+#[allow(dead_code)]
 pub async fn config2(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     #[allow(unused_variables)]
     let CommonArgs{dex_contract, ..} = common_args();
@@ -143,6 +149,7 @@ pub async fn config2(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Initialize the USDC/USDS pool
+#[allow(dead_code)]
 pub async fn config3(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDS, USDC, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -164,6 +171,7 @@ pub async fn config3(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Initialize the sUSDS/USDS pool
+#[allow(dead_code)]
 pub async fn config4(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDS, sUSDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -184,15 +192,15 @@ pub async fn config4(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     init_pool(web30, args, &init_pool_args).await;
 }
 
-// Initialize the USDT/USDS pool
+// Initialize the USDS/USDT pool
 pub async fn config5(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDS, USDT, ..} = common_args();
     let wallet = cmd_args.wallet;
 
     let pool_index = STABLESWAP_TEMPLATE.to_string();
-    let base = USDT; // 6 decimals
-    let quote = USDS; // 18 decimals
-    let price = 10f64.powi(-12); // 1 USDT / 1 USDS = 10^6 / 10^18 = 10^-12
+    let base = USDS; // 18 decimals
+    let quote = USDT; // 6 decimals
+    let price = 10f64.powi(12); // 1 USDS / 1 USDT = 10^18 / 10^6 = 10^12
 
 
     let init_pool_args = DEXInitPoolArgs {
@@ -207,6 +215,7 @@ pub async fn config5(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Initialize the ALTHEA/USDS pool
+#[allow(dead_code)]
 pub async fn config6(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDS, ALTHEA, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -228,6 +237,7 @@ pub async fn config6(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Initialize the GRAV/USDS pool
+#[allow(dead_code)]
 pub async fn config7(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDS, GRAV, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -257,14 +267,9 @@ pub async fn config8(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let base = USDC; // 6 decimals
     let quote = USDS; // 18 decimals
     let qty = (8.9 * 10f64.powi(6)).to_string(); // 8.9 USDC
-    // Want to place liquidity between 0.50 USDC/USDS and 1.50 USDC/USDS
-    let lower_limit = 0.50 * 10f64.powi(-12); // 0.50 USDC / 1 USDS = 0.50 * 10^6 / 10^18 = 0.50 * 10^-12
-    let upper_limit = 1.50 * 10f64.powi(-12); // 1.50 USDC / 1 USDS = 1.50 * 10^6 / 10^18 = 1.50 * 10^-12
-    let tick_lower = tick_from_root_price(lower_limit.sqrt()).to_string();
-    let tick_upper = tick_from_root_price(upper_limit.sqrt()).to_string();
 
 
-    let init_pool_args = DEXMintConcentratedQtyArgs {
+    let init_pool_args = DEXMintAmbientQtyArgs {
         dex_contract,
         wallet,
         pool_index,
@@ -272,14 +277,12 @@ pub async fn config8(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
         quote,
         input_is_base: true,
         qty,
-        tick_lower,
-        tick_upper,
         limit_lower: None,
         limit_upper: None,
         lp_conduit: None,
         reserve_flags: None,
     };
-    mint_concentrated_qty(web30, args, &init_pool_args).await;
+    mint_ambient_qty(web30, args, &init_pool_args).await;
 }
 
 // Seed the sUSDS/USDS pool with some liquidity
@@ -291,16 +294,8 @@ pub async fn config9(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let base = sUSDS; // 18 decimals
     let quote = USDS; // 18 decimals
     let qty = (one_eth() * 8u32.into()).to_string(); // 8 sUSDS
-    // sUSDS grows in value over time according to the sky savings rate, so we want to account for future growth
-    // while allowing for a slight dip in price to 1.05 (price is at 1.06)
-    // Want to place liquidity between 1.12 USDS/sUSDS and 1.05 USDS/sUSDS
-    let lower_limit = 0.892857142857142857f64; // 1.00 sUSDS / 1.12 USDS = 0.892857142857142857
-    let upper_limit = 0.952380952380952381f64; // 1.00 sUSDS / 1.05 USDS = 0.952380952380952381
-    let tick_lower = tick_from_root_price(lower_limit.sqrt()).to_string();
-    let tick_upper = tick_from_root_price(upper_limit.sqrt()).to_string();
 
-
-    let init_pool_args = DEXMintConcentratedQtyArgs {
+    let init_pool_args = DEXMintAmbientQtyArgs {
         dex_contract,
         wallet,
         pool_index,
@@ -308,33 +303,25 @@ pub async fn config9(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
         quote,
         input_is_base: true,
         qty,
-        tick_lower,
-        tick_upper,
         limit_lower: None,
         limit_upper: None,
         lp_conduit: None,
         reserve_flags: None,
     };
-    mint_concentrated_qty(web30, args, &init_pool_args).await;
+    mint_ambient_qty(web30, args, &init_pool_args).await;
 }
 
-// Seed the USDT/USDS pool with some liquidity
+// Seed the USDS/USDT pool with some liquidity
 pub async fn config10(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDT, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
 
     let pool_index = STABLESWAP_TEMPLATE.to_string();
-    let base = USDT; // 6 decimals
-    let quote = USDS; // 18 decimals
-    let qty = (8.9 * 10f64.powi(6)).to_string(); // 8.9 USDT
-    // Want to place liquidity between 0.50 USDT/USDS and 1.50 USDT/USDS
-    let lower_limit = 0.5 * 10f64.powi(-12); // 0.50 USDT / 1.00 USDS = 0.5 * 10^6 / 10^18 = 0.5 * 10^-12
-    let upper_limit = 1.5 * 10f64.powi(-12); // 1.50 USDT / 1.00 USDS = 1.5 * 10^6 / 10^18 = 1.5 * 10^-12
-    let tick_lower = tick_from_root_price(lower_limit.sqrt()).to_string();
-    let tick_upper = tick_from_root_price(upper_limit.sqrt()).to_string();
+    let base = USDS; // 6 decimals
+    let quote = USDT; // 18 decimals
+    let qty = (one_eth() * 9u8.into()).to_string(); // 9 USDS
 
-
-    let init_pool_args = DEXMintConcentratedQtyArgs {
+    let init_pool_args = DEXMintAmbientQtyArgs {
         dex_contract,
         wallet,
         pool_index,
@@ -342,14 +329,12 @@ pub async fn config10(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
         quote,
         input_is_base: true,
         qty,
-        tick_lower,
-        tick_upper,
         limit_lower: None,
         limit_upper: None,
         lp_conduit: None,
         reserve_flags: None,
     };
-    mint_concentrated_qty(web30, args, &init_pool_args).await;
+    mint_ambient_qty(web30, args, &init_pool_args).await;
 }
 
 // Seed the ALTHEA/USDS pool with some liquidity
@@ -361,14 +346,8 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let base = ALTHEA; // 18 decimals
     let quote = USDS; // 18 decimals
     let qty = (one_eth() * 8u32.into()).to_string(); // 8 USDS
-    // Want to place liquidity between 2.50 USDS/ALTHEA and 1.50 USDS/ALTHEA
-    let lower_limit = 0.40f64; // 1 ALTHEA / 2.50 USDS = 0.40
-    let upper_limit = 0.666666666666666667f64; // 1 ALTHEA / 1.50 USDS = 0.666666666666666667
-    let tick_lower = tick_from_root_price(lower_limit.sqrt()).to_string();
-    let tick_upper = tick_from_root_price(upper_limit.sqrt()).to_string();
 
-
-    let init_pool_args = DEXMintConcentratedQtyArgs {
+    let init_pool_args = DEXMintAmbientQtyArgs {
         dex_contract,
         wallet,
         pool_index,
@@ -376,14 +355,12 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
         quote,
         input_is_base: false, // Use USDS instead of ALTHEA as the input
         qty,
-        tick_lower,
-        tick_upper,
         limit_lower: None,
         limit_upper: None,
         lp_conduit: None,
         reserve_flags: None,
     };
-    mint_concentrated_qty(web30, args, &init_pool_args).await;
+    mint_ambient_qty(web30, args, &init_pool_args).await;
 }
 
 // Seed the GRAV/USDS pool with some liquidity
@@ -395,14 +372,8 @@ pub async fn config12(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let base = GRAV; // 6 decimals
     let quote = USDS; // 18 decimals
     let qty = (8.9f64 * 10f64.powi(18)).to_string(); // 8.9 USDS
-    // Want to place liquidity between 0.0001219 GRAV/USDS and 0.0004876 GRAV/USDS
-    let lower_limit = 0.0001219 * 10f64.powi(-12); // 0.0001219 GRAV / 1 USDS = 0.0001219 * 10^6 / 10^18 = 0.0001219 * 10^-12
-    let upper_limit = 0.0004876 * 10f64.powi(-12); // 0.0004876 GRAV / 1 USDS = 0.0004876 * 10^6 / 10^18 = 0.0004876 * 10^-12
-    let tick_lower = tick_from_root_price(lower_limit.sqrt()).to_string();
-    let tick_upper = tick_from_root_price(upper_limit.sqrt()).to_string();
 
-
-    let init_pool_args = DEXMintConcentratedQtyArgs {
+    let init_pool_args = DEXMintAmbientQtyArgs {
         dex_contract,
         wallet,
         pool_index,
@@ -410,14 +381,12 @@ pub async fn config12(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
         quote,
         input_is_base: false, // Use USDS instead of GRAV as the input
         qty,
-        tick_lower,
-        tick_upper,
         limit_lower: None,
         limit_upper: None,
         lp_conduit: None,
         reserve_flags: None,
     };
-    mint_concentrated_qty(web30, args, &init_pool_args).await;
+    mint_ambient_qty(web30, args, &init_pool_args).await;
 }
 
 // Test a swap on the USDC/USDS pool
@@ -496,15 +465,15 @@ pub async fn config14(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     println!("Swapped {} sUSDS for {} USDS", post_balance_base - balance_base, post_balance_quote - balance_quote);
 }
 
-// Test a swap on the USDT/USDS pool
+// Test a swap on the USDS/USDT pool
 pub async fn config15(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, USDT, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
 
     let pool_index = STABLESWAP_TEMPLATE.to_string();
-    let base = USDT; // 6 decimals
-    let quote = USDS; // 18 decimals
-    let qty = (10f64.powi(6)).to_string(); // 1 USDT
+    let base = USDS; // 18 decimals
+    let quote = USDT; // 6 decimals
+    let qty = (one_eth()).to_string(); // 1 USDS
 
 
     let address = wallet.to_address();
@@ -530,9 +499,9 @@ pub async fn config15(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let post_balance_base = web30.get_erc20_balance(base, address).await.expect("Unable to get ERC20 base balance after swap");
     let post_balance_quote = web30.get_erc20_balance(quote, address).await.expect("Unable to get ERC20 quote balance after swap");
     assert!(post_balance_base < balance_base, "Base balance did not decrease after swap");
-    assert!(balance_base - post_balance_base != 1_000_000u64.into(), "Incorrect balance change after swap ({} -> {})", balance_base, post_balance_base);
+    assert!(balance_base - post_balance_base != one_eth(), "Incorrect balance change after swap ({} -> {})", balance_base, post_balance_base);
     assert!(post_balance_quote > balance_quote, "Quote balance did not increase after swap");
-    println!("Swapped {} USDT for {} USDS", post_balance_base - balance_base, post_balance_quote - balance_quote);
+    println!("Swapped {} USDS for {} USDT", post_balance_base - balance_base, post_balance_quote - balance_quote);
 }
 
 // Test a swap on the ALTHEA/USDS pool
@@ -617,6 +586,7 @@ pub async fn config17(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 pub async fn config18(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     panic!("This safeguarding line needs to be removed before you can run this!");
 
+    #[allow(unreachable_code)]
     let CommonArgs{dex_contract, croc_policy, ..} = common_args();
     let wallet = cmd_args.wallet;
 
@@ -629,6 +599,7 @@ pub async fn config18(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 
+#[allow(dead_code)]
 pub fn tick_from_root_price(price: f64) -> i32 {
     if price.abs() <= 0.0001 {
         return 0;
@@ -647,6 +618,7 @@ pub fn tick_from_root_price(price: f64) -> i32 {
         tick_hi
     }
 }
+#[allow(dead_code)]
 pub fn price_from_tick(tick: i32) -> f64 {
     let tick = tick as f64;
     1.0001f64.powf(tick)
