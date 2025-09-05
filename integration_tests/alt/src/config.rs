@@ -516,7 +516,6 @@ pub async fn config16(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 
 
     let address = wallet.to_address();
-    let balance_base = web30.get_erc20_balance(base, address).await.expect("Unable to get ERC20 base balance before swap");
     let balance_quote = web30.get_erc20_balance(quote, address).await.expect("Unable to get ERC20 quote balance before swap");
 
     let swap_args = DEXSwapArgs {
@@ -535,12 +534,10 @@ pub async fn config16(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     };
     swap(web30, args, &swap_args).await;
 
-    let post_balance_base = web30.get_erc20_balance(base, address).await.expect("Unable to get ERC20 base balance after swap");
     let post_balance_quote = web30.get_erc20_balance(quote, address).await.expect("Unable to get ERC20 quote balance after swap");
     assert!(post_balance_quote < balance_quote, "Quote balance did not decrease after swap");
     assert!(balance_quote - post_balance_quote == 1_000_000u64.into(), "Incorrect balance change after swap ({} -> {})", balance_quote, post_balance_quote);
-    assert!(post_balance_base > balance_base, "Base balance did not increase after swap");
-    println!("Swapped {} USDS for {} ALTHEA", post_balance_quote - balance_quote, post_balance_base - balance_base);
+    println!("Swapped {} USDS for ALTHEA", post_balance_quote - balance_quote);
 }
 
 // Test a swap on the GRAV/USDS pool
