@@ -43,12 +43,12 @@ pub async fn handle_config_subcommand(web30: &Web3, args: &Args, command_args: &
         // ConfigSubcommand::Config2(config_args) => config2(web30, args, config_args).await,
         // ConfigSubcommand::Config3(config_args) => config3(web30, args, config_args).await,
         // ConfigSubcommand::Config4(config_args) => config4(web30, args, config_args).await,
-        ConfigSubcommand::Config5(config_args) => config5(web30, args, config_args).await,
+        // ConfigSubcommand::Config5(config_args) => config5(web30, args, config_args).await,
         // ConfigSubcommand::Config6(config_args) => config6(web30, args, config_args).await,
         // ConfigSubcommand::Config7(config_args) => config7(web30, args, config_args).await,
-        ConfigSubcommand::Config8(config_args) => config8(web30, args, config_args).await,
-        ConfigSubcommand::Config9(config_args) => config9(web30, args, config_args).await,
-        ConfigSubcommand::Config10(config_args) => config10(web30, args, config_args).await,
+        // ConfigSubcommand::Config8(config_args) => config8(web30, args, config_args).await,
+        // ConfigSubcommand::Config9(config_args) => config9(web30, args, config_args).await,
+        // ConfigSubcommand::Config10(config_args) => config10(web30, args, config_args).await,
         ConfigSubcommand::Config11(config_args) => config11(web30, args, config_args).await,
         ConfigSubcommand::Config12(config_args) => config12(web30, args, config_args).await,
         ConfigSubcommand::Config13(config_args) => config13(web30, args, config_args).await,
@@ -345,7 +345,7 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let pool_index = VOLATILESWAP_TEMPLATE.to_string();
     let base = ALTHEA; // 18 decimals
     let quote = USDS; // 18 decimals
-    let qty = (one_eth() * 8u32.into()).to_string(); // 8 USDS
+    let qty = (one_eth() * 4u32.into()).to_string(); // 4 ALTHEA
 
     let init_pool_args = DEXMintAmbientQtyArgs {
         dex_contract,
@@ -353,7 +353,7 @@ pub async fn config11(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
         pool_index,
         base,
         quote,
-        input_is_base: false, // Use USDS instead of ALTHEA as the input
+        input_is_base: true, // Use USDS instead of ALTHEA as the input
         qty,
         limit_lower: None,
         limit_upper: None,
