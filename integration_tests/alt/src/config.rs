@@ -55,7 +55,7 @@ pub async fn handle_config_subcommand(web30: &Web3, args: &Args, command_args: &
         // ConfigSubcommand::Config14(config_args) => config14(web30, args, config_args).await,
         // ConfigSubcommand::Config15(config_args) => config15(web30, args, config_args).await,
         // ConfigSubcommand::Config16(config_args) => config16(web30, args, config_args).await,
-        // ConfigSubcommand::Config17(config_args) => config17(web30, args, config_args).await,
+        ConfigSubcommand::Config17(config_args) => config17(web30, args, config_args).await,
         ConfigSubcommand::Config18(config_args) => config18(web30, args, config_args).await,
         _args => {
             panic!("Config subcommand not supported");
@@ -551,7 +551,6 @@ pub async fn config16(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
 }
 
 // Test a swap on the GRAV/USDS pool
-#[allow(dead_code)]
 pub async fn config17(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let CommonArgs{dex_contract, GRAV, USDS, ..} = common_args();
     let wallet = cmd_args.wallet;
@@ -585,7 +584,7 @@ pub async fn config17(web30: &Web3, args: &Args, cmd_args: &ConfigArgs) {
     let post_balance_base = web30.get_erc20_balance(base, address).await.expect("Unable to get ERC20 base balance after swap");
     let post_balance_quote = web30.get_erc20_balance(quote, address).await.expect("Unable to get ERC20 quote balance after swap");
     assert!(post_balance_quote < balance_quote, "Quote balance did not decrease after swap");
-    assert!(balance_quote - post_balance_quote == 1_000_000u64.into(), "Incorrect balance change after swap ({} -> {})", balance_quote, post_balance_quote);
+    assert!(balance_quote - post_balance_quote == one_eth(), "Incorrect balance change after swap ({} -> {})", balance_quote, post_balance_quote);
     assert!(post_balance_base > balance_base, "Base balance did not increase after swap");
     println!("Swapped {} USDS for {} GRAV", post_balance_quote - balance_quote, post_balance_base - balance_base);
 }
