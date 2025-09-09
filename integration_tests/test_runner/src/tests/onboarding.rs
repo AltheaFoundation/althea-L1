@@ -28,7 +28,10 @@ use web30::client::Web3;
 use crate::ibc_utils::{get_hash_for_denom_trace, send_ibc_transfer};
 use crate::type_urls::MSG_CONVERT_ERC20_TYPE_URL;
 use crate::utils::{
-    ADDRESS_PREFIX, ETH_NODE, EthermintUserKey, IBC_ADDRESS_PREFIX, IBC_NODE_GRPC, IBC_STAKING_TOKEN, OPERATION_TIMEOUT, STAKING_TOKEN, ValidatorKeys, get_chain_id, get_fee, one_atom, one_eth, one_hundred_atom, one_hundred_eth, send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute
+    get_chain_id, get_fee, one_atom, one_eth, one_hundred_atom, one_hundred_eth, send_funds_bulk,
+    vote_yes_on_proposals, wait_for_proposals_to_execute, EthermintUserKey, ValidatorKeys,
+    ADDRESS_PREFIX, ETH_NODE, IBC_ADDRESS_PREFIX, IBC_NODE_GRPC, IBC_STAKING_TOKEN,
+    OPERATION_TIMEOUT, STAKING_TOKEN,
 };
 use crate::{
     ibc_utils::get_channel,
@@ -647,7 +650,14 @@ pub async fn convert_erc20(
     };
     let msg = Msg::new(MSG_CONVERT_ERC20_TYPE_URL, msg_convert_erc20);
     althea_contact
-        .send_message(&[msg], None, &[get_fee(None)], Some(OPERATION_TIMEOUT), None, sender)
+        .send_message(
+            &[msg],
+            None,
+            &[get_fee(None)],
+            Some(OPERATION_TIMEOUT),
+            None,
+            sender,
+        )
         .await
 }
 

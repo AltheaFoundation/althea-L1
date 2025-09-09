@@ -24,7 +24,9 @@ use tokio::time::sleep;
 use tonic::transport::Channel;
 
 use crate::utils::{
-    ADDRESS_PREFIX, IBC_ADDRESS_PREFIX, IBC_STAKING_TOKEN, OPERATION_TIMEOUT, STAKING_TOKEN, TOTAL_TIMEOUT, ValidatorKeys, encode_any, footoken_metadata, get_fee, get_fee_option, one_atom, vote_yes_on_proposals, wait_for_proposals_to_execute
+    encode_any, footoken_metadata, get_fee, get_fee_option, one_atom, vote_yes_on_proposals,
+    wait_for_proposals_to_execute, ValidatorKeys, ADDRESS_PREFIX, IBC_ADDRESS_PREFIX,
+    IBC_STAKING_TOKEN, OPERATION_TIMEOUT, STAKING_TOKEN, TOTAL_TIMEOUT,
 };
 use crate::{
     ibc_utils::get_channel,

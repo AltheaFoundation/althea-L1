@@ -8,10 +8,7 @@ use crate::type_urls::{
     MSG_SEND_ERC20_TO_COSMOS_AND_IBC_TRANSFER_TYPE_URL, MSG_SEND_ERC20_TO_COSMOS_TYPE_URL,
 };
 use crate::utils::{
-    execute_register_coin_proposal, footoken_metadata, get_fee, get_ibc_chain_id, get_user_key,
-    one_atom, vote_yes_on_proposals, wait_for_proposals_to_execute, RegisterCoinProposalParams,
-    ValidatorKeys, COSMOS_NODE_GRPC, IBC_ADDRESS_PREFIX, IBC_NODE_GRPC, OPERATION_TIMEOUT,
-    STAKING_TOKEN, TOTAL_TIMEOUT,
+    COSMOS_NODE_GRPC, IBC_ADDRESS_PREFIX, IBC_NODE_GRPC, OPERATION_TIMEOUT, RegisterCoinProposalParams, STAKING_TOKEN, TOTAL_TIMEOUT, ValidatorKeys, execute_register_coin_proposal, footoken_metadata, get_fee, get_fee_option, get_ibc_chain_id, get_user_key, one_atom, vote_yes_on_proposals, wait_for_proposals_to_execute
 };
 use althea_proto::althea::erc20::v1::query_client::QueryClient as Erc20QueryClient;
 use althea_proto::althea::erc20::v1::{
@@ -197,10 +194,7 @@ pub async fn gasfree_send_coin_to_evm_test(
                 amount: send_total + fee_total,
                 denom: registered_denom.clone(),
             },
-            Some(Coin {
-                amount: 0u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }),
+            get_fee_option(None),
             user.ethermint_address,
             Some(OPERATION_TIMEOUT),
             validator_keys.last().unwrap().validator_key,
@@ -222,11 +216,7 @@ pub async fn gasfree_send_coin_to_evm_test(
         .send_message(
             &[msg],
             None,
-            &[Coin {
-                // fee coin
-                amount: 100u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             user.ethermint_key,
@@ -486,10 +476,7 @@ async fn configure_gasfree_params_if_not_configured(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
+    let fee = get_fee(None);
     let res = contact
         .submit_parameter_change_proposal(
             proposal,
@@ -618,10 +605,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
                 amount: send_total + fee_total,
                 denom: registered_denom.clone(),
             },
-            Some(Coin {
-                amount: 0u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }),
+            get_fee_option(None),
             user.ethermint_address,
             Some(OPERATION_TIMEOUT),
             validator_keys.last().unwrap().validator_key,
@@ -664,11 +648,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
         .send_message(
             &[msg],
             None,
-            &[Coin {
-                // fee coin
-                amount: 100u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }],
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             user.ethermint_key,
@@ -946,10 +926,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
                 amount: amount_total + fee_total,
                 denom: registered_denom.clone(),
             },
-            Some(Coin {
-                amount: 0u8.into(),
-                denom: STAKING_TOKEN.clone(),
-            }),
+            get_fee_option(None),
             user.ethermint_address,
             Some(OPERATION_TIMEOUT),
             validator_keys.last().unwrap().validator_key,
@@ -971,7 +948,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
         .send_message(
             &[cosmos_msg],
             None,
-            &[get_fee(None)], // no fee coin intentionally
+            &[get_fee(None)],
             Some(OPERATION_TIMEOUT),
             None,
             user.ethermint_key,
@@ -1202,7 +1179,7 @@ pub async fn gasfree_send_coin_to_evm_insufficient_balance_test(
                 amount: one_atom(),
                 denom: STAKING_TOKEN.clone(),
             },
-            None,
+            get_fee_option(None),
             user.ethermint_address,
             Some(OPERATION_TIMEOUT),
             validator_keys.last().unwrap().validator_key,
@@ -1331,7 +1308,7 @@ pub async fn gasfree_send_erc20_to_cosmos_insufficient_balance_test(
                 amount: one_atom(),
                 denom: STAKING_TOKEN.clone(),
             },
-            None,
+            get_fee_option(None),
             user.ethermint_address,
             Some(OPERATION_TIMEOUT),
             validator_keys.last().unwrap().validator_key,
@@ -1396,10 +1373,7 @@ pub async fn gasfree_send_erc20_to_cosmos_insufficient_balance_test(
                     amount: one_atom(),
                     denom: registered_denom.clone(),
                 },
-                Some(Coin {
-                    amount: 0u8.into(),
-                    denom: STAKING_TOKEN.clone(),
-                }),
+                get_fee_option(None),
                 user.ethermint_address,
                 Some(OPERATION_TIMEOUT),
                 validator_keys.last().unwrap().validator_key,
@@ -1513,7 +1487,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_insufficient_balance_
                 amount: one_atom(),
                 denom: STAKING_TOKEN.clone(),
             },
-            None,
+            get_fee_option(None),
             user.ethermint_address,
             Some(OPERATION_TIMEOUT),
             validator_keys.last().unwrap().validator_key,

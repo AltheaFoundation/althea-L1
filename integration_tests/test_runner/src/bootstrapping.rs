@@ -1,6 +1,8 @@
 use crate::ibc_utils::get_channel;
 use crate::utils::{
-    get_chain_id, get_deposit, get_fee_option, get_ibc_chain_id, parse_contracts_root, parse_dex_contracts_root, ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC, HERMES_CONFIG, IBC_RELAYER_ADDRESS, IBC_STAKING_TOKEN, OPERATION_TIMEOUT, RELAYER_MNEMONIC_FILE
+    get_chain_id, get_deposit, get_fee_option, get_ibc_chain_id, parse_contracts_root,
+    parse_dex_contracts_root, ALTHEA_RELAYER_ADDRESS, COSMOS_NODE_GRPC, HERMES_CONFIG,
+    IBC_RELAYER_ADDRESS, IBC_STAKING_TOKEN, OPERATION_TIMEOUT, RELAYER_MNEMONIC_FILE,
 };
 use crate::utils::{
     send_erc20_bulk, EthermintUserKey, ValidatorKeys, ETH_NODE, MINER_PRIVATE_KEY, TOTAL_TIMEOUT,

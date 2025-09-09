@@ -4,7 +4,9 @@ use std::str::FromStr;
 
 use crate::type_urls::{MSG_CONVERT_COIN_TYPE_URL, MSG_CONVERT_ERC20_TYPE_URL};
 use crate::utils::{
-    EthermintUserKey, OPERATION_TIMEOUT, RegisterCoinProposalParams, RegisterErc20ProposalParams, STAKING_TOKEN, TOTAL_TIMEOUT, ValidatorKeys, execute_register_coin_proposal, execute_register_erc20_proposal, footoken_metadata, get_fee, get_fee_option, one_atom, one_eth
+    execute_register_coin_proposal, execute_register_erc20_proposal, footoken_metadata, get_fee,
+    get_fee_option, one_atom, one_eth, EthermintUserKey, RegisterCoinProposalParams,
+    RegisterErc20ProposalParams, ValidatorKeys, OPERATION_TIMEOUT, STAKING_TOKEN, TOTAL_TIMEOUT,
 };
 use althea_proto::althea::erc20::v1::query_client::QueryClient as Erc20QueryClient;
 use althea_proto::althea::erc20::v1::{MsgConvertCoin, MsgConvertErc20, QueryTokenPairRequest};

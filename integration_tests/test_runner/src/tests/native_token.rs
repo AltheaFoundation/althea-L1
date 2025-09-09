@@ -2,7 +2,8 @@ use deep_space::{Coin, Contact, PrivateKey};
 use web30::client::Web3;
 
 use crate::utils::{
-    ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN, ValidatorKeys, get_ethermint_key, get_fee_option, one_eth
+    get_ethermint_key, get_fee_option, one_eth, ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT,
+    STAKING_TOKEN,
 };
 
 /// A simple test to assert the EVM is correctly configured with the STAKING_TOKEN (aalthea) as the EVM denom.

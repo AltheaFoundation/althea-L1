@@ -1,6 +1,7 @@
 use crate::type_urls::MSG_MICROTX_TYPE_URL;
 use crate::utils::{
-    ADDRESS_PREFIX, EthermintUserKey, OPERATION_TIMEOUT, ValidatorKeys, bulk_get_user_keys, get_convertible_coin, get_fee, one_atom_128, send_funds_bulk
+    bulk_get_user_keys, get_convertible_coin, get_fee, one_atom_128, send_funds_bulk,
+    EthermintUserKey, ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT,
 };
 use althea_proto::althea::microtx::v1::MsgMicrotx;
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;

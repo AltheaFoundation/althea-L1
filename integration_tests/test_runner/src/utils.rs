@@ -21,7 +21,7 @@ use deep_space::private_key::{CosmosPrivateKey, PrivateKey};
 use deep_space::{Contact, EthermintPrivateKey};
 use futures::future::join_all;
 use prost::{DecodeError, Message};
-use prost_types::{Any};
+use prost_types::Any;
 use rand::{rngs::ThreadRng, Rng};
 use std::{convert::TryInto, env};
 use std::{
@@ -806,13 +806,7 @@ pub async fn send_funds_bulk(
     let fee = get_fee_option(None);
     for dest in receivers {
         contact
-            .send_coins(
-                amount.clone(),
-                fee.clone(),
-                *dest,
-                timeout,
-                sender.clone(),
-            )
+            .send_coins(amount.clone(), fee.clone(), *dest, timeout, sender.clone())
             .await?;
     }
 

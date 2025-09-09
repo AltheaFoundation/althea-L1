@@ -17,9 +17,7 @@ use crate::type_urls::{
     TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL, UPGRADE_PROXY_PROPOSAL_TYPE_URL,
 };
 use crate::utils::{
-    encode_any, one_atom, one_eth, vote_yes_on_proposals, wait_for_proposals_to_execute,
-    EthermintUserKey, ValidatorKeys, MINER_ETH_ADDRESS, MINER_PRIVATE_KEY, OPERATION_TIMEOUT,
-    STAKING_TOKEN,
+    EthermintUserKey, MINER_ETH_ADDRESS, MINER_PRIVATE_KEY, OPERATION_TIMEOUT, STAKING_TOKEN, ValidatorKeys, encode_any, get_fee, one_atom, one_eth, vote_yes_on_proposals, wait_for_proposals_to_execute
 };
 use althea_proto::althea::nativedex::v1::{
     CollectTreasuryMetadata, CollectTreasuryProposal, HotPathOpenMetadata, HotPathOpenProposal,
@@ -1211,10 +1209,6 @@ pub async fn submit_and_pass_upgrade_proxy_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
 
     let proposal = UpgradeProxyProposal {
         title: "Upgrade Proposal".to_string(),
@@ -1229,7 +1223,7 @@ pub async fn submit_and_pass_upgrade_proxy_proposal(
         .create_legacy_gov_proposal(
             any,
             deposit,
-            fee,
+            get_fee(None),
             keys.first().unwrap().validator_key,
             Some(OPERATION_TIMEOUT),
         )
@@ -1249,10 +1243,6 @@ pub async fn submit_and_pass_collect_treasury_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
 
     let proposal = CollectTreasuryProposal {
         title: "Collect Treasury Proposal".to_string(),
@@ -1267,7 +1257,7 @@ pub async fn submit_and_pass_collect_treasury_proposal(
         .create_legacy_gov_proposal(
             any,
             deposit,
-            fee,
+            get_fee(None),
             keys.first().unwrap().validator_key,
             Some(OPERATION_TIMEOUT),
         )
@@ -1287,10 +1277,6 @@ pub async fn submit_and_pass_set_treasury_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
 
     let proposal = SetTreasuryProposal {
         title: "Set Treasury Proposal".to_string(),
@@ -1305,7 +1291,7 @@ pub async fn submit_and_pass_set_treasury_proposal(
         .create_legacy_gov_proposal(
             any,
             deposit,
-            fee,
+            get_fee(None),
             keys.first().unwrap().validator_key,
             Some(OPERATION_TIMEOUT),
         )
@@ -1325,10 +1311,6 @@ pub async fn submit_and_pass_hot_path_open_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
 
     let proposal = HotPathOpenProposal {
         title: "Hot Path Open Proposal".to_string(),
@@ -1343,7 +1325,7 @@ pub async fn submit_and_pass_hot_path_open_proposal(
         .create_legacy_gov_proposal(
             any,
             deposit,
-            fee,
+            get_fee(None),
             keys.first().unwrap().validator_key,
             Some(OPERATION_TIMEOUT),
         )
@@ -1363,10 +1345,6 @@ pub async fn submit_and_pass_safe_mode_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
 
     let proposal = SetSafeModeProposal {
         title: "Set safe mode".to_string(),
@@ -1379,7 +1357,7 @@ pub async fn submit_and_pass_safe_mode_proposal(
         .create_legacy_gov_proposal(
             any,
             deposit,
-            fee,
+            get_fee(None),
             keys.first().unwrap().validator_key,
             Some(OPERATION_TIMEOUT),
         )
@@ -1399,10 +1377,6 @@ pub async fn submit_and_pass_transfer_governance_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
 
     let proposal = TransferGovernanceProposal {
         title: "Transfer Governance Proposal".to_string(),
@@ -1417,7 +1391,7 @@ pub async fn submit_and_pass_transfer_governance_proposal(
         .create_legacy_gov_proposal(
             any,
             deposit,
-            fee,
+            get_fee(None),
             keys.first().unwrap().validator_key,
             Some(OPERATION_TIMEOUT),
         )
@@ -1467,10 +1441,6 @@ pub async fn submit_and_pass_nativedex_ops_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
 
     let proposal = OpsProposal {
         title: "Ops Proposal".to_string(),
@@ -1485,7 +1455,7 @@ pub async fn submit_and_pass_nativedex_ops_proposal(
         .create_legacy_gov_proposal(
             any,
             deposit,
-            fee,
+            get_fee(None),
             keys.first().unwrap().validator_key,
             Some(OPERATION_TIMEOUT),
         )

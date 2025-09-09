@@ -10,7 +10,7 @@ use num::{ToPrimitive, Zero};
 use web30::{
     client::Web3,
     jsonrpc::error::Web3Error,
-    types::{TransactionRequest, TransactionResponse},
+    types::{SendTxOption, TransactionRequest, TransactionResponse},
 };
 
 use crate::utils::OPERATION_TIMEOUT;
@@ -901,7 +901,7 @@ pub async fn dex_user_cmd(
     let txhash = web30
         .send_prepared_transaction(
             web30
-                .prepare_transaction(dex_contract, payload, native_in, wallet, vec![])
+                .prepare_transaction(dex_contract, payload, native_in, wallet, vec![SendTxOption::GasPriceMultiplier(2.0)])
                 .await?,
         )
         .await?;

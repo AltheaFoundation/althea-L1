@@ -1,7 +1,9 @@
 use std::time::Duration;
 
 use crate::utils::{
-    create_parameter_change_proposal, get_fee, one_atom, vote_yes_on_proposals, wait_for_proposals_to_execute, EthermintUserKey, ValidatorKeys, OPERATION_TIMEOUT, STAKING_TOKEN
+    create_parameter_change_proposal, get_fee, one_atom, vote_yes_on_proposals,
+    wait_for_proposals_to_execute, EthermintUserKey, ValidatorKeys, OPERATION_TIMEOUT,
+    STAKING_TOKEN,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::DecCoin;
 use althea_proto::cosmos_sdk_proto::cosmos::distribution::v1beta1::{
@@ -116,7 +118,8 @@ pub async fn set_inflation_to_zero(contact: &Contact, validator_keys: &[Validato
     ];
 
     let proposer = validator_keys.first().unwrap();
-    create_parameter_change_proposal(contact, proposer.validator_key, to_change, get_fee(None)).await;
+    create_parameter_change_proposal(contact, proposer.validator_key, to_change, get_fee(None))
+        .await;
 
     vote_yes_on_proposals(contact, validator_keys, Some(OPERATION_TIMEOUT)).await;
     wait_for_proposals_to_execute(contact).await;
