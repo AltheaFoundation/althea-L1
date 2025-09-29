@@ -94,7 +94,7 @@ pub struct ERC20BasicArgs {
 pub struct ERC20ApproveArgs {
     // The ERC20 to query
     #[clap(parse(try_from_str))]
-    pub erc20: Option<EthAddress>,
+    pub erc20: EthAddress,
     /// Ethereum 0x... PrivateKey owning the tokens you would like to approve for spending
     #[clap(short, long, parse(try_from_str))]
     pub owner_key: EthPrivateKey,
@@ -111,7 +111,7 @@ pub struct ERC20ApproveArgs {
 pub struct ERC20TransferArgs {
     // The ERC20 to query
     #[clap(parse(try_from_str))]
-    pub erc20: Option<EthAddress>,
+    pub erc20: EthAddress,
     /// Ethereum 0x... PrivateKey containing the tokens you would like to send
     #[clap(short, long, parse(try_from_str))]
     pub owner_key: EthPrivateKey,
@@ -367,6 +367,15 @@ pub struct DEXQueryPositionArgs {
     /// (Optional) The upper tick if querying a ranged position
     #[clap(parse(try_from_str), allow_hyphen_values(true))]
     pub upper_tick: Option<String>,
+    /// (Optional) The creation block if querying a knockout position
+    #[clap(long, parse(try_from_str))]
+    pub knockout_creation_block: Option<String>,
+    /// (Optional) The creation time if querying a knockout position (use seconds since the unix epoch)
+    #[clap(long, parse(try_from_str))]
+    pub knockout_creation_time: Option<String>,
+    /// (Optional) If querying a knockout position, whether it is a bid (true, base for quote) or an ask (false, quote for base)
+    #[clap(long, parse(try_from_str))]
+    pub knockout_is_bid: Option<bool>,
 }
 
 #[derive(Parser)]
@@ -443,15 +452,15 @@ pub struct DEXSwapArgs {
     /// The wallet performing the swap
     #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
-    /// The index of the pool's template
-    #[clap(parse(try_from_str))]
-    pub pool_index: String,
     /// The input token (0x0 if using the native token)
     #[clap(parse(try_from_str))]
     pub input: EthAddress,
     /// The output token (0x0 if using the native token)
     #[clap(parse(try_from_str))]
     pub output: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
     /// (Optional) The input amount (only use input_amount OR output_amount, not both)
     #[clap(short, long, parse(try_from_str))]
     pub input_amount: Option<String>,
@@ -517,15 +526,15 @@ pub struct DEXMintAmbientQtyArgs {
     /// The wallet performing the swap
     #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
-    /// The index of the pool's template
-    #[clap(parse(try_from_str))]
-    pub pool_index: String,
     /// The base token (0x0 if using the native token)
     #[clap(parse(try_from_str))]
     pub base: EthAddress,
     /// The quote token
     #[clap(parse(try_from_str))]
     pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
     /// True to use the base token as the input token, false to use quote
     #[clap(short = 'b', long, parse(try_from_str), default_value = "true")]
     pub input_is_base: bool,
@@ -594,15 +603,15 @@ pub struct DEXMintConcentratedQtyArgs {
     /// The wallet performing the swap
     #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
-    /// The index of the pool's template
-    #[clap(parse(try_from_str))]
-    pub pool_index: String,
     /// The base token (0x0 if using the native token)
     #[clap(parse(try_from_str))]
     pub base: EthAddress,
     /// The quote token
     #[clap(parse(try_from_str))]
     pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
     /// True to use the base token as the input token, false to use quote
     #[clap(short = 'b', long, parse(try_from_str), default_value = "true")]
     pub input_is_base: bool,
@@ -637,15 +646,15 @@ pub struct DEXMintKnockoutArgs {
     /// The wallet performing the swap
     #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
-    /// The index of the pool's template
-    #[clap(parse(try_from_str))]
-    pub pool_index: String,
     /// The base token (0x0 if using the native token)
     #[clap(parse(try_from_str))]
     pub base: EthAddress,
     /// The quote token
     #[clap(parse(try_from_str))]
     pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
     /// The amount of input tokens to provide to the position
     #[clap(parse(try_from_str))]
     pub qty: String,
@@ -674,15 +683,15 @@ pub struct DEXBurnKnockoutArgs {
     /// The wallet performing the swap
     #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
-    /// The index of the pool's template
-    #[clap(parse(try_from_str))]
-    pub pool_index: String,
     /// The base token (0x0 if using the native token)
     #[clap(parse(try_from_str))]
     pub base: EthAddress,
     /// The quote token
     #[clap(parse(try_from_str))]
     pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
     /// The amount of input tokens to remove from the position (or sqrt(X * Y) liquidity units if in-liq-qty is true)
     #[clap(parse(try_from_str))]
     pub qty: String,
@@ -714,15 +723,15 @@ pub struct DEXRecoverKnockoutArgs {
     /// The wallet performing the swap
     #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
-    /// The index of the pool's template
-    #[clap(parse(try_from_str))]
-    pub pool_index: String,
     /// The base token (0x0 if using the native token)
     #[clap(parse(try_from_str))]
     pub base: EthAddress,
     /// The quote token
     #[clap(parse(try_from_str))]
     pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
     /// a lower tick limit for the knockout position
     #[clap(parse(try_from_str), allow_hyphen_values(true))]
     pub tick_lower: String,
@@ -743,14 +752,14 @@ pub struct DEXRecoverKnockoutArgs {
 #[derive(Parser)]
 pub struct DEXInstallCallpathArgs {
     /// The DEX address
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub dex_contract: EthAddress,
+    /// The wallet performing the swap
+    #[clap(parse(try_from_str))]
+    pub wallet: EthPrivateKey,
     /// The Callpath contract address to install on the DEX
     #[clap(long,parse(try_from_str))]
     pub callpath_contract: EthAddress,
-    /// The wallet performing the swap
-    #[clap(short,long,parse(try_from_str))]
-    pub wallet: EthPrivateKey,
     /// The numerical index of the callpath to install at
     #[clap(long, parse(try_from_str))]
     pub callpath_index: u16,
@@ -759,28 +768,28 @@ pub struct DEXInstallCallpathArgs {
 #[derive(Parser)]
 pub struct DEXSetPoolTemplateArgs {
     /// The DEX address
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub dex_contract: EthAddress,
     /// The wallet performing the swap
-    #[clap(short, long,parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
     /// The index of the pool's template to set
-    #[clap(long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub pool_index: String,
     /// The fee rate of the pool, given in basis points
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub fee_rate_basis_points: u32,
     /// The tick size of the pool (must be a power of 2)
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub tick_size: u32,
     /// The minimum time to live of a concentrated liquidity position (must be a multiple of 10)
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub jit_thresh: u32,
     // The exact required width of knockout positions in pools using this template (must be a power of 2)
-    #[clap(long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub knockout_width: u32,
     // If true, knockout positions must respect the tick size of the pool and be placed "on grid"
-    #[clap(long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub knockout_on_grid: bool,
     /// The place type can either disable knockouts entirely, or restrict what the valid lower and upper ticks are given the current price
     /// Recommended values are either 0 to disable, or 3
@@ -796,37 +805,38 @@ pub struct DEXSetPoolTemplateArgs {
     /// Background: a bid swaps base tokens for quote tokens, and will fill when the price moves equal to or lower than the lower tick (expects other users to perform quote -> base swaps)
     /// while an ask swaps quote for base tokens, and will fill when the price moves equal to or higher than the upper tick (expects other users to perform base -> quote swaps)
     /// Restricting users to making new knockout positions which do not contain the current price prevents users from being required to supply both tokens to mint a knockout
+    #[clap(parse(try_from_str))]
     pub knockout_place_type: u8,
 }
 
 #[derive(Parser)]
 pub struct DEXTransferDEXAuthorityArgs {
     /// The CrocPolicy contract address
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub dex_contract: EthAddress,
     /// The wallet performing the action
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
     /// The new authority address (Should probably be the CrocPolicy contract address)
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub new_authority: EthAddress,
 }
 
 #[derive(Parser)]
 pub struct DEXTransferCrocPolicyArgs {
     /// The CrocPolicy contract address
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub croc_policy: EthAddress,
     /// The wallet performing the action
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
     /// The new Operations role address
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub ops_address: EthAddress,
     /// The new Emergency role address
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub emergency_address: EthAddress,
     /// The new Treasury role address
-    #[clap(short, long, parse(try_from_str))]
+    #[clap(parse(try_from_str))]
     pub treasury_address: EthAddress,
 }

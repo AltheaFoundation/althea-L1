@@ -95,7 +95,7 @@ pub async fn erc20_supply(web30: &Web3, args: &ERC20BasicArgs) {
 }
 
 pub async fn erc20_approve(web30: &Web3, alt_args: &Args, args: &ERC20ApproveArgs) {
-    let erc20: EthAddress = args.erc20.expect("Invalid ERC20 contract address");
+    let erc20: EthAddress = args.erc20;
     let owner: EthPrivateKey = args.owner_key;
     let spender: EthAddress = args.spender;
     let amount: Uint256 = args
@@ -118,7 +118,7 @@ pub async fn erc20_approve(web30: &Web3, alt_args: &Args, args: &ERC20ApproveArg
 }
 
 pub async fn erc20_transfer(web30: &Web3, alt_args: &Args, args: &ERC20TransferArgs) {
-    let erc20: EthAddress = args.erc20.expect("Invalid ERC20 contract address");
+    let erc20: EthAddress = args.erc20;
     let owner: EthPrivateKey = args.owner_key;
     let receiver: EthAddress = args.receiver;
     let amount: Uint256 = args.amount.parse().expect("Invalid transfer amount");

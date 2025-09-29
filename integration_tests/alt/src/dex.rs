@@ -12,8 +12,9 @@ use clarity::{
 };
 
 use num256::{Int256, Uint256};
+use num_traits::ToPrimitive;
 use test_runner::dex_utils::{
-    croc_policy_transfer_governance, croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick, croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price, croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs, UserCmdArgs, BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE, WARM_PATH
+    BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE, ProtocolCmdArgs, SwapArgs, UserCmdArgs, WARM_PATH, croc_policy_transfer_governance, croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick, croc_query_knockout_pivot, croc_query_knockout_tokens, croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price, croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd
 };
 use web30::client::Web3;
 
@@ -168,12 +169,33 @@ pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPosit
         .upper_tick
         .clone()
         .map(|s| s.parse().expect("Unable to parse upper tick"));
-    match (lower_tick, upper_tick) {
-        (Some(lower), Some(upper)) => {
+    let creation_block: Option<Uint256> = cmd_args
+        .knockout_creation_block
+        .clone()
+        .map(|s| s.parse().expect("Unable to parse creation block"));
+    let creation_time: Option<Uint256> = cmd_args
+        .knockout_creation_time
+        .clone()
+        .map(|s| s.parse().expect("Unable to parse creation time"));
+    match (lower_tick, upper_tick, creation_block, creation_time) {
+        (Some(lower), Some(upper), Some(creation_block), None) => {
+            let is_bid = cmd_args.knockout_is_bid.expect("Must provide whether knockout is bid or ask when querying knockout position");
+            let block = web30.eth_get_block_by_number(creation_block).await.expect("Failed to get block");
+            let block_time = block.timestamp.to_u128().expect("Failed to convert block timestamp") as u32; // The dex specifically uses this approach, saying it will work for quite a few decades
+            let position = croc_query_knockout_tokens(web30, cmd_args.query_contract, cmd_args.caller, cmd_args.owner, cmd_args.base, cmd_args.quote, pool_index, block_time, lower, upper, is_bid).await.expect("Failed to query knockout position");
+            println!("{:?}", position);
+        }
+        (Some(lower), Some(upper), None, Some(creation_time)) => {
+            let is_bid = cmd_args.knockout_is_bid.expect("Must provide whether knockout is bid or ask when querying knockout position");
+            let block_time = creation_time.to_u128().expect("Failed to convert creation time to u128") as u32;
+            let position = croc_query_knockout_tokens(web30, cmd_args.query_contract, cmd_args.caller, cmd_args.owner, cmd_args.base, cmd_args.quote, pool_index, block_time, lower, upper, is_bid).await.expect("Failed to query knockout position");
+            println!("{:?}", position);
+        }
+        (Some(lower), Some(upper), None, None) => {
             let position = croc_query_range_position(
                 web30,
                 cmd_args.query_contract,
-                None,
+                cmd_args.caller,
                 cmd_args.owner,
                 cmd_args.base,
                 cmd_args.quote,
@@ -185,7 +207,7 @@ pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPosit
             .expect("Failed to query position");
             println!("{:?}", position);
         }
-        (None, None) => {
+        (None, None, None, None) => {
             let position = croc_query_ambient_position(
                 web30,
                 cmd_args.query_contract,
@@ -199,7 +221,7 @@ pub async fn query_position(web30: &Web3, _args: &Args, cmd_args: &DEXQueryPosit
             .expect("Failed to query position");
             println!("{:?}", position);
         }
-        (_, _) => println!("ERROR: Provide both lower and upper ticks for ranged positions or neither for ambient positions"),
+        (_, _, _, _) => println!("ERROR: Provide both lower and upper ticks for ranged positions or neither for ambient positions"),
     }
 }
 
