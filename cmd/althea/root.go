@@ -135,10 +135,11 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 			}
 
 			altheaAppTemplate, altheaAppConfig := initAppConfig()
+			altheaTMConfig := initTendermintConfig()
 
 			// Takes all these configurations and applies them, additionally configuring Tendermint
 			// to adhere to these desires
-			return server.InterceptConfigsPreRunHandler(cmd, altheaAppTemplate, altheaAppConfig, initTendermintConfig())
+			return server.InterceptConfigsPreRunHandler(cmd, altheaAppTemplate, altheaAppConfig, altheaTMConfig)
 		},
 	}
 
@@ -378,9 +379,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetAuxToFeeCommand(),
 	)
 
-	// Add overriden Tx commands from ModuleBasics
-	AddOverrideTxCommands(cmd, althea.ModuleBasics)
-
+	althea.ModuleBasics.AddTxCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd

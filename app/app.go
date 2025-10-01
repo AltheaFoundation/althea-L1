@@ -149,7 +149,6 @@ import (
 	microtxkeeper "github.com/AltheaFoundation/althea-L1/x/microtx/keeper"
 	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 	"github.com/AltheaFoundation/althea-L1/x/nativedex"
-	nativedexclient "github.com/AltheaFoundation/althea-L1/x/nativedex/client"
 	nativedexkeeper "github.com/AltheaFoundation/althea-L1/x/nativedex/keeper"
 	nativedextypes "github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 	"github.com/AltheaFoundation/althea-L1/x/onboarding"
@@ -205,13 +204,6 @@ var (
 				erc20client.RegisterCoinProposalHandler,
 				erc20client.RegisterERC20ProposalHandler,
 				erc20client.ToggleTokenConversionProposalHandler,
-				nativedexclient.UpgradeProxyHandler,
-				nativedexclient.CollectTreasuryHandler,
-				nativedexclient.SetTreasuryHandler,
-				nativedexclient.AuthorityTransferHandler,
-				nativedexclient.HotPathOpenHandler,
-				nativedexclient.SetSafeModeHandler,
-				nativedexclient.TransferGovernanceHandler,
 			},
 		),
 		params.AppModuleBasic{},

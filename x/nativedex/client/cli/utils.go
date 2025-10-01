@@ -10,6 +10,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -82,6 +83,7 @@ func GenericProposalCmdBroadcast(cmd *cobra.Command, clientCtx client.Context, c
 }
 
 func AddGenericProposalCommandFlags(cmd *cobra.Command) {
+	cmd.Flags().String(flags.FlagHome, "", "The application home directory")
 	// nolint: staticcheck
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
 	// nolint: staticcheck
