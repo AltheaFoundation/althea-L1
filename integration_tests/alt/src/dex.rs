@@ -7,7 +7,7 @@ use crate::{
         DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs,
         DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXQueryTemplateArgs, DEXRecoverKnockoutArgs,
         DEXSafeModeArgs, DEXSetPoolTemplateArgs, DEXSubcommand, DEXSwapArgs,
-        DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs,
+        DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs, DEXQueryLevelArgs,
     },
     utils::approve_erc20s,
 };
@@ -25,7 +25,7 @@ use test_runner::dex_utils::{
     croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd,
     dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs,
     UserCmdArgs, BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE,
-    WARM_PATH,
+    WARM_PATH, croc_query_level,
 };
 use web30::client::Web3;
 
@@ -43,6 +43,7 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         DEXSubcommand::Position(cmd_args) => query_position(web30, args, cmd_args).await,
         DEXSubcommand::Rewards(cmd_args) => query_rewards(web30, args, cmd_args).await,
         DEXSubcommand::Nonce(cmd_args) => query_nonce(web30, args, cmd_args).await,
+        DEXSubcommand::Level(cmd_args) => query_level(web30, args, cmd_args).await,
 
         // Transactions
         DEXSubcommand::InitPool(cmd_args) => init_pool(web30, args, cmd_args).await,
@@ -277,9 +278,25 @@ pub async fn query_nonce(web30: &Web3, _args: &Args, cmd_args: &DEXQueryNonceArg
         salt_bytes,
     )
     .await
-    .expect("Failed to query rewards");
+    .expect("Failed to query nonce");
     println!("{:?}", nonce_res);
 }
+
+pub async fn query_level(web30: &Web3, _args: &Args, cmd_args: &DEXQueryLevelArgs) {
+    let level_res = croc_query_level(
+        web30,
+        cmd_args.query_contract,
+        cmd_args.caller,
+        cmd_args.base,
+        cmd_args.quote,
+        cmd_args.pool_index.parse().expect("Invalid pool index"),
+        cmd_args.tick.parse().expect("Invalid tick"),
+    )
+    .await
+    .expect("Failed to query level");
+    println!("{:?}", level_res);
+}
+
 
 pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");

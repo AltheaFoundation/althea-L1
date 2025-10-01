@@ -766,6 +766,52 @@ pub async fn croc_query_nonce(
         agent_calls_left,
     })
 }
+
+#[derive(Debug, Clone)]
+pub struct LiquidityCurveLevel {
+    pub bid_lots: Uint256,
+    pub ask_lots: Uint256,
+    pub odometer: Uint256,
+}
+#[allow(clippy::too_many_arguments)]
+pub async fn croc_query_level(
+    web30: &Web3,
+    croc_query_contract: EthAddress,
+    caller: EthAddress,
+    base: EthAddress,
+    quote: EthAddress,
+    pool_idx: Uint256,
+    tick: Int256,
+) -> Result<LiquidityCurveLevel, Web3Error> {
+    // ABI: queryLevel (address base, address quote, uint256 poolIdx, int24 tick)
+    // returns (uint96 bidLots, uint96 askLots, uint64 odometer)
+    let payload = clarity::abi::encode_call(
+        "queryLevel(address,address,uint256,int24)",
+        &[base.into(), quote.into(), pool_idx.into(), tick.into()],
+    )?;
+
+    let query_res = web30
+        .simulate_transaction(
+            TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            None,
+        )
+        .await?;
+
+    let mut i: usize = 0;
+    let bid_lots = Uint256::from_be_bytes(query_res[i..i + 32].try_into().unwrap());
+    i += 32;
+    let ask_lots = Uint256::from_be_bytes(query_res[i..i + 32].try_into().unwrap());
+    i += 32;
+    let odometer = Uint256::from_be_bytes(query_res[i..i + 32].try_into().unwrap());
+
+    Ok(LiquidityCurveLevel {
+        bid_lots,
+        ask_lots,
+        odometer,
+    })
+}
+
+
 /// Specifies a swap() call on the DEX contract
 #[derive(Debug, Clone)]
 pub struct SwapArgs {

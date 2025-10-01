@@ -257,6 +257,8 @@ pub enum DEXSubcommand {
     Rewards(DEXQueryRewardsArgs),
     /// Use CrocQuery to fetch the nonce set for a user performing gasless transactions
     Nonce(DEXQueryNonceArgs),
+    /// Use CrocQuery to fetch a level of a pool's liquidity curve
+    Level(DEXQueryLevelArgs),
 
     /// Creates a new pool
     InitPool(DEXInitPoolArgs),
@@ -419,6 +421,28 @@ pub struct DEXQueryNonceArgs {
     /// The salt value used for a gasless transaction
     #[clap(parse(try_from_str))]
     pub salt: String,
+}
+
+#[derive(Parser)]
+pub struct DEXQueryLevelArgs {
+    /// The CrocQuery address
+    #[clap(parse(try_from_str))]
+    pub query_contract: EthAddress,
+    /// The address to simulate the transaction through
+    #[clap(parse(try_from_str))]
+    pub caller: EthAddress,
+    /// The base token (0x0 if using the native token)
+    #[clap(parse(try_from_str))]
+    pub base: EthAddress,
+    /// The quote token
+    #[clap(parse(try_from_str))]
+    pub quote: EthAddress,
+    /// The index of the pool's template
+    #[clap(parse(try_from_str))]
+    pub pool_index: String,
+    /// The tick level to query
+    #[clap(parse(try_from_str), allow_hyphen_values(true))]
+    pub tick: String,
 }
 
 #[derive(Parser)]
