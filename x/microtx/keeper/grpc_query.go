@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerror "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/ethereum/go-ethereum/common"
+
+	altheacommon "github.com/AltheaFoundation/althea-L1/x/common"
 )
 
 // nolint: exhaustruct
@@ -33,7 +36,7 @@ func (k Keeper) MicrotxFee(c context.Context, req *types.QueryMicrotxFeeRequest)
 	if err != nil {
 		return nil, err
 	}
-	fee := k.getMicrotxFeeForAmount(sdk.NewIntFromUint64(req.Amount), microtxFeeBasisPoints)
+	fee := altheacommon.CalculateBasisPointFee(sdk.NewIntFromUint64(req.Amount), microtxFeeBasisPoints)
 	return &types.QueryMicrotxFeeResponse{FeeAmount: fee.Uint64()}, nil
 }
 

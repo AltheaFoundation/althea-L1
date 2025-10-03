@@ -4,19 +4,15 @@ import (
 	"context"
 
 	errorsmod "cosmossdk.io/errors"
-	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	sdkante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/AltheaFoundation/althea-L1/config"
+	altheacommon "github.com/AltheaFoundation/althea-L1/x/common"
 	"github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
-
-// BasisPointDivisor used in calculating the MsgMicrotx fee amount to deduct
-const BasisPointDivisor uint64 = 10000
 
 type msgServer struct {
 	Keeper
@@ -152,41 +148,14 @@ func (k Keeper) DeductMicrotxFee(ctx sdk.Context, sender sdk.AccAddress, sendAmo
 	if err != nil {
 		microtxFeeBasisPoints = 0
 	}
-	microtxFee := k.getMicrotxFeeForAmount(sendAmount.Amount, microtxFeeBasisPoints)
-	microtxFeeCoin := sdk.NewCoin(sendAmount.Denom, microtxFee)
 
-	// Require that the minimum has been met
-	if !microtxFee.IsZero() { // Ignore fees too low to collect
-		balance := k.bankKeeper.GetBalance(ctx, sender, microtxFeeCoin.Denom)
-		if balance.IsLT(microtxFeeCoin) {
-			err := errorsmod.Wrapf(
-				sdkerrors.ErrInsufficientFee,
-				"balance is insufficient to pay the fee (%v < %v)",
-				balance.Amount,
-				microtxFee,
-			)
-			return nil, err
-		}
-
-		// Finally, collect the necessary fee
-		senderAcc := k.accountKeeper.GetAccount(ctx, sender)
-
-		err = sdkante.DeductFees(k.bankKeeper, ctx, senderAcc, sdk.NewCoins(microtxFeeCoin))
-		if err != nil {
-			ctx.Logger().Error("Could not deduct MsgMicrotx fee!", "error", err, "account", senderAcc, "fee", microtxFee)
-			return nil, err
-		}
+	collectedFee, err := altheacommon.DeductBasisPointFee(ctx, k.accountKeeper, k.bankKeeper, microtxFeeBasisPoints, sendAmount, sender)
+	if err != nil {
+		ctx.Logger().Error("Could not deduct MsgMicrotx fee!", "error", err, "account", sender, "fee-basis-points", microtxFeeBasisPoints, "send-amount", sendAmount)
+		return nil, err
 	}
 
-	return &microtxFeeCoin, nil
-}
-
-// getMicrotxFeeForAmount Computes the fee a user must pay for any input `amount`, given the current `basisPoints`
-func (k Keeper) getMicrotxFeeForAmount(amount sdkmath.Int, basisPoints uint64) sdkmath.Int {
-	return sdk.NewDecFromInt(amount).
-		MulInt64(int64(basisPoints)).
-		QuoInt64(int64(BasisPointDivisor)).
-		TruncateInt()
+	return &collectedFee, nil
 }
 
 // ========================================================================================================

@@ -19,6 +19,28 @@ service Msg {
   rpc ConvertERC20(MsgConvertERC20) returns (MsgConvertERC20Response) {
     option (google.api.http).get = "/althea/erc20/v1/tx/convert_erc20";
   };
+  // SendCoinToEVM is a simplified version of ConvertCoin, meant for use by
+  // machine accounts and the gasfree module. It sends Cosmos coins
+  // to the EVM layer where they become ERC20s. It only works for certain
+  // whitelisted tokens and will claim a fee separately from the standard tx
+  // fee deduction, much like the MsgMicrotx from the microtx module.
+  rpc SendCoinToEVM(MsgSendCoinToEVM) returns (MsgSendCoinToEVMResponse) {
+    option (google.api.http).get = "/althea/erc20/v1/tx/send_coin_to_evm";
+  };
+  // SendERC20ToCosmos is a simplified version of ConvertERC20, meant for use by
+  // machine accounts and the gasfree module. It sends ERC20 tokens to
+  // the Cosmos layer where they become Coins. It only works for certain
+  // whitelisted tokens and will claim a fee separately from the standard tx
+  // fee deduction, much like the MsgMicrotx from the microtx module.
+  rpc SendERC20ToCosmos(MsgSendERC20ToCosmos) returns (MsgSendERC20ToCosmosResponse) {
+    option (google.api.http).get = "/althea/erc20/v1/tx/send_erc20_to_cosmos";
+  };
+  // SendERC20ToCosmosAndIBCTransfer is just like UnwrapERC20, but also queues an
+  // IBC MsgTransfer to send to another chain. This is also intended for
+  // use with the gasfree module and claims fees like MsgMicrotx.
+  rpc SendERC20ToCosmosAndIBCTransfer(MsgSendERC20ToCosmosAndIBCTransfer) returns (MsgSendERC20ToCosmosAndIBCTransferResponse) {
+    option (google.api.http).get = "/althea/erc20/v1/tx/send_erc20_to_cosmos_and_ibc_transfer";
+  };
 }
 
 // MsgConvertCoin defines a Msg to convert a native Cosmos coin to a ERC20 token
@@ -53,3 +75,66 @@ message MsgConvertERC20 {
 
 // MsgConvertERC20Response returns no fields
 message MsgConvertERC20Response {}
+
+// MsgSendCoinToEVM will send a whitelisted Cosmos coin to the EVM layer, where it
+// becomes an ERC20. This message is meant for use with machine accounts, and so
+// ordinary fees will not be collected for this tx, instead charging a fee in the
+// Msg handler. You most likely want to use MsgConvertCoin instead. The receiving
+// address on the EVM side will be converted from the sender address.
+message MsgSendCoinToEVM {
+  // The amount and denomination of the Cosmos layer coins to send to the EVM.
+  // The denom must be whitelisted and registered in a token pair for this to work.
+  cosmos.base.v1beta1.Coin coin = 1 [ (gogoproto.nullable) = false ];
+  // Cosmos bech32 address of the sender, who must own the coins being sent and sign the message.
+  string sender = 2;
+}
+
+message MsgSendCoinToEVMResponse {}
+
+// MsgSendERC20ToCosmos will send a whitelisted ERC20 to the Cosmos layer, where it
+// becomes a Cosmos coin. This message is meant for use with machine accounts, and so
+// ordinary fees will not be collected for this tx, instead charging a fee in the
+// Msg handler. You most likely want to use MsgConvertERC20 instead. The receiving
+// address on the Cosmos side will be converted from the sender address.
+message MsgSendERC20ToCosmos {
+  // The contract address of the ERC20 token to convert to Cosmos coins. This
+  // contract must be whitelisted and registered in a token pair for this to work.
+  string erc20 = 1;
+  // The amount of the ERC20 token to convert to Cosmos coins.
+  string amount = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  // The hex address of the sender, who must own the ERC20 tokens being converted and sign the message.
+  string sender = 3;
+}
+
+message MsgSendERC20ToCosmosResponse {}
+
+// MsgSendERC20ToCosmosAndIBCTransfer will send a whitelisted ERC20 to the Cosmos layer and also
+// queue an IBC transfer to the specified destination. This message is meant for use with machine accounts, and so
+// ordinary fees will not be collected for this tx, instead charging a fee in the
+// Msg handler. You most likely want to use MsgConvertERC20 + MsgTransfer instead. The receiving
+// address on the Cosmos side will be converted from the sender address.
+// WARNING: This message MAY cause a loss of tokens if the IBC transfer is to a chain which does not
+// support Ethermint-style private keys. Use with caution.
+message MsgSendERC20ToCosmosAndIBCTransfer {
+  // The contract address of the ERC20 token to convert to Cosmos coins. This
+  // contract must be whitelisted and registered in a token pair for this to work.
+  string erc20 = 1;
+  // The amount of the ERC20 token to convert to Cosmos coins.
+  string amount = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  // The hex address of the sender, who must own the ERC20 tokens being converted and sign the message.
+  string sender = 3;
+  // The IBC destination port
+  string destination_port = 4;
+  // The IBC destination channel
+  string destination_channel = 5;
+  // The IBC destination receiver bech32 address, with the destination chain's bech32 prefix
+  string destination_receiver = 6;
+}
+
+message MsgSendERC20ToCosmosAndIBCTransferResponse {}

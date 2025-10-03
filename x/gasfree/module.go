@@ -18,9 +18,9 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	"github.com/AltheaFoundation/althea-L1/x/gasfree/client/cli"
 	"github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 	"github.com/AltheaFoundation/althea-L1/x/gasfree/types"
-	"github.com/AltheaFoundation/althea-L1/x/microtx/client/cli"
 )
 
 // type check to ensure the interface is properly implemented
@@ -137,6 +137,7 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // InitGenesis initializes the genesis state for this module and implements app module.

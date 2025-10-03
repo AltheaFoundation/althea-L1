@@ -13,14 +13,20 @@ const (
 	EventTypeMint                  = "mint"
 	EventTypeConvertCoin           = "convert_coin"
 	EventTypeConvertERC20          = "convert_erc20"
+	EventTypeSendCoinToEVM         = "send_coin_to_evm"
+	EventTypeSendERC20ToCosmos     = "send_erc20_to_cosmos"
+	EventTypeSendERC20IBCTransfer  = "send_erc20_to_cosmos_and_ibc_transfer"
 	EventTypeBurn                  = "burn"
 	EventTypeRegisterCoin          = "register_coin"
 	EventTypeRegisterERC20         = "register_erc20"
 	EventTypeToggleTokenConversion = "toggle_token_conversion" // #nosec
 
-	AttributeKeyCosmosCoin = "cosmos_coin"
-	AttributeKeyERC20Token = "erc20_token" // #nosec
-	AttributeKeyReceiver   = "receiver"
+	AttributeKeyCosmosCoin    = "cosmos_coin"
+	AttributeKeyERC20Token    = "erc20_token" // #nosec
+	AttributeKeyReceiver      = "receiver"
+	AttributeKeyPort          = "port"
+	AttributeKeyChannel       = "channel"
+	AttributeKeyFeesCollected = "fees_collected"
 
 	ERC20EventTransfer = "Transfer"
 )

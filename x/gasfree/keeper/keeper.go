@@ -130,7 +130,37 @@ func (k Keeper) IsGasFreeMsgType(ctx sdk.Context, msgType string) bool {
 	return false
 }
 
+// GetGasfreeErc20InteropFeeBasisPoints returns the current fee basis points for ERC20 interop operations.
+// If the param is not set yet (e.g. during early chain init), it falls back to the default param value.
+func (k Keeper) GetGasfreeErc20InteropFeeBasisPoints(ctx sdk.Context) (uint64, error) {
+	// Attempt to load all params safely; if not set, use defaults for missing keys
+	params, err := k.GetParamsIfSet(ctx)
+	if err != nil {
+		// Fallback: use DefaultParams value if chain not fully initialized
+		return 0, err
+	}
+	return params.GasFreeErc20InteropFeeBasisPoints, nil
+}
+
+func (k Keeper) SetGasfreeErc20InteropFeeBasisPoints(ctx sdk.Context, feeBasisPoints uint64) {
+	k.paramSpace.Set(ctx, types.GasFreeErc20InteropFeeBasisPointsKey, &feeBasisPoints)
+}
+
+// GetGasfreeErc20InteropTokens returns the configured list of ERC20 token denoms subject to interop fee logic.
+// Returns default (empty slice) if params not yet initialized.
+func (k Keeper) GetGasfreeErc20InteropTokens(ctx sdk.Context) ([]string, error) {
+	params, err := k.GetParamsIfSet(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return params.GasFreeErc20InteropTokens, nil
+}
+
 func inSet(set map[string]struct{}, key string) bool {
 	_, present := set[key]
 	return present
+}
+
+func (k Keeper) SetGasfreeErc20InteropTokens(ctx sdk.Context, tokens []string) {
+	k.paramSpace.Set(ctx, types.GasFreeErc20InteropTokensKey, &tokens)
 }

@@ -3,6 +3,8 @@ package types
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -24,6 +26,8 @@ func DefaultParams() *Params {
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}),
 		},
+		GasFreeErc20InteropTokens:         []string{},
+		GasFreeErc20InteropFeeBasisPoints: 100, // 1%
 	}
 }
 
@@ -46,6 +50,37 @@ func ValidateGasFreeMessageTypes(i interface{}) error {
 	return nil
 }
 
+func ValidateGasFreeErc20InteropTokens(i interface{}) error {
+	_, ok := i.([]string)
+	if !ok {
+		return fmt.Errorf("invalid gas free erc20 interop tokens type: %T", i)
+	}
+
+	for _, entry := range i.([]string) {
+		if entry == "" {
+			return fmt.Errorf("erc20 interop token cannot be empty string")
+		}
+		denomErr := sdk.ValidateDenom(entry)
+		erc20Ok := common.IsHexAddress(entry)
+		if denomErr != nil && !erc20Ok {
+			return fmt.Errorf("erc20 interop token must be a valid cosmos denom or erc20 address: %s", entry)
+		}
+	}
+
+	return nil
+}
+
+func ValidateGasFreeErc20InteropFeeBasisPoints(i interface{}) error {
+	basisPoints, ok := i.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid gas free erc20 interop fee basis points type (expect uint64): %T", i)
+	}
+	if basisPoints > 10000 {
+		return fmt.Errorf("erc20 interop fee basis points cannot be greater than 10000 (100%%), got %d", basisPoints)
+	}
+	return nil
+}
+
 // ParamKeyTable for auth module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{
@@ -56,5 +91,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(GasFreeMessageTypesKey, &p.GasFreeMessageTypes, ValidateGasFreeMessageTypes),
+		paramtypes.NewParamSetPair(GasFreeErc20InteropTokensKey, &p.GasFreeErc20InteropTokens, ValidateGasFreeErc20InteropTokens),
+		paramtypes.NewParamSetPair(GasFreeErc20InteropFeeBasisPointsKey, &p.GasFreeErc20InteropFeeBasisPoints, ValidateGasFreeErc20InteropFeeBasisPoints),
 	}
 }

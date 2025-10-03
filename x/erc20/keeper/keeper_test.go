@@ -41,7 +41,6 @@ import (
 	"github.com/evmos/ethermint/tests"
 	"github.com/evmos/ethermint/x/evm/statedb"
 	evm "github.com/evmos/ethermint/x/evm/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	"github.com/AltheaFoundation/althea-L1/contracts"
@@ -169,7 +168,7 @@ func (suite *KeeperTestSuite) StateDB() *statedb.StateDB {
 func (suite *KeeperTestSuite) MintFeeBurner(coins sdk.Coins) {
 	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
 	suite.Require().NoError(err)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, types.ModuleName, evmtypes.FeeBurner, coins)
+	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, types.ModuleName, evm.FeeBurner, coins)
 	suite.Require().NoError(err)
 }
 
@@ -452,9 +451,9 @@ type MockEVMKeeper struct {
 	mock.Mock
 }
 
-func (m *MockEVMKeeper) GetParams(ctx sdk.Context) evmtypes.Params {
+func (m *MockEVMKeeper) GetParams(ctx sdk.Context) evm.Params {
 	args := m.Called(mock.Anything)
-	return args.Get(0).(evmtypes.Params)
+	return args.Get(0).(evm.Params)
 }
 
 func (m *MockEVMKeeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Address) *statedb.Account {
@@ -465,21 +464,21 @@ func (m *MockEVMKeeper) GetAccountWithoutBalance(ctx sdk.Context, addr common.Ad
 	return args.Get(0).(*statedb.Account)
 }
 
-func (m *MockEVMKeeper) EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*evmtypes.EstimateGasResponse, error) {
+func (m *MockEVMKeeper) EstimateGas(c context.Context, req *evm.EthCallRequest) (*evm.EstimateGasResponse, error) {
 	args := m.Called(mock.Anything, mock.Anything)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*evmtypes.EstimateGasResponse), args.Error(1)
+	return args.Get(0).(*evm.EstimateGasResponse), args.Error(1)
 }
 
-func (m *MockEVMKeeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
+func (m *MockEVMKeeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*evm.MsgEthereumTxResponse, error) {
 	args := m.Called(mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*evmtypes.MsgEthereumTxResponse), args.Error(1)
+	return args.Get(0).(*evm.MsgEthereumTxResponse), args.Error(1)
 }
 
 // nolint: exhaustruct
@@ -487,6 +486,11 @@ var _ types.BankKeeper = &MockBankKeeper{}
 
 type MockBankKeeper struct {
 	mock.Mock
+}
+
+func (b *MockBankKeeper) SendCoins(ctx sdk.Context, senderAddr sdk.AccAddress, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	args := b.Called(mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	return args.Error(0)
 }
 
 func (b *MockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {

@@ -8,6 +8,17 @@ message Params {
   // Messages with one of these types will not be charged gas fees in the
   // AnteHandler, but will later be charged some form of fee in the Msg handler
   repeated string                    gas_free_message_types = 1;
+  // Tokens usable with the gasfree erc20 module messages
+  // these may be cosmos coins or ERC20 tokens which have been registered
+  // with the erc20 module
+  // The gasfree erc20 module messages are: MsgSendCoinToEVM, MsgSendERC20ToCosmos, and MsgSendERC20ToCosmosAndIBCTransfer
+  repeated string                    gas_free_erc20_interop_tokens = 2;
+  // The fee in basis points (hundredths of a percent) charged on the gasfree erc20
+  // module messages. This fee is charged to pay for the gas costs of executing
+  // the message on chain. For example, a value of 100 basis points means a
+  // fee of 1% for each gasfree erc20 transaction.
+  // The gasfree erc20 module messages are: MsgSendCoinToEVM, MsgSendERC20ToCosmos, and MsgSendERC20ToCosmosAndIBCTransfer
+  uint64                             gas_free_erc20_interop_fee_basis_points = 3;
 }
 
 message GenesisState {

@@ -3,18 +3,23 @@ package keeper
 import (
 	"context"
 	"math/big"
+	"strings"
+	"time"
 
 	"github.com/armon/go-metrics"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/ethereum/go-ethereum/common"
+	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
 	"github.com/AltheaFoundation/althea-L1/contracts"
-
+	altheacommon "github.com/AltheaFoundation/althea-L1/x/common"
 	"github.com/AltheaFoundation/althea-L1/x/erc20/types"
 )
 
@@ -527,4 +532,272 @@ func (k Keeper) convertCoinNativeERC20(
 	)
 
 	return &types.MsgConvertCoinResponse{}, nil
+}
+
+// SendCoinToEVM handles the conversion from Cosmos coin to EVM ERC20 and collects a fee
+// This is only possible for whitelisted coin denoms that also have a registered ERC20 token
+func (k Keeper) SendCoinToEVM(goCtx context.Context, msg *types.MsgSendCoinToEVM) (*types.MsgSendCoinToEVMResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	// Validate that denom or its ERC20 address is present on gasfree interop list; fail early if not.
+	if err := k.validateGasfreeInteropToken(ctx, msg.Coin.Denom); err != nil {
+		return nil, err
+	}
+
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
+	receiver := common.Address(sender.Bytes())
+
+	_, err := k.ConvertCoin(goCtx, &types.MsgConvertCoin{
+		Sender:   msg.Sender,
+		Receiver: receiver.Hex(),
+		Coin:     msg.Coin,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	feesCollected, err := k.DeductGasfreeErc20Fee(ctx, sender, msg.Coin)
+	if err != nil {
+		err = errorsmod.Wrap(err, "unable to collect gasfree fees")
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{sdk.NewEvent(
+		types.EventTypeSendCoinToEVM,
+		sdk.NewAttribute(sdk.AttributeKeySender, msg.Sender),
+		sdk.NewAttribute(types.AttributeKeyReceiver, receiver.Hex()),
+		sdk.NewAttribute(types.AttributeKeyCosmosCoin, msg.Coin.Denom),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Coin.Amount.String()),
+		sdk.NewAttribute(types.AttributeKeyFeesCollected, feesCollected.String()),
+	)})
+	k.Logger(ctx).Info("SendCoinToEVM executed",
+		"sender", msg.Sender,
+		"evm_receiver", receiver.Hex(),
+		"denom", msg.Coin.Denom,
+		"amount", msg.Coin.Amount.String(),
+	)
+	return &types.MsgSendCoinToEVMResponse{}, nil
+}
+
+// SendERC20ToCosmos handles the conversion from EVM ERC20 to Cosmos coin and collects a fee
+// This is only possible for whitelisted ERC20s that also have a registered Cosmos coin
+func (k Keeper) SendERC20ToCosmos(goCtx context.Context, msg *types.MsgSendERC20ToCosmos) (*types.MsgSendERC20ToCosmosResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	// Validate that denom or its ERC20 address is present on gasfree interop list; fail early if not.
+	if err := k.validateGasfreeInteropToken(ctx, msg.Erc20); err != nil {
+		return nil, err
+	}
+
+	senderEthAddress := common.HexToAddress(msg.Sender)
+	senderAccAddress := sdk.AccAddress(senderEthAddress.Bytes())
+	if err := sdk.VerifyAddressFormat(senderAccAddress); err != nil {
+		return nil, errorsmod.Wrap(err, "invalid converted sender address from eip55")
+	}
+
+	feeBasisPoints, err := k.gasfreeKeeper.GetGasfreeErc20InteropFeeBasisPoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	feeAmount := altheacommon.CalculateBasisPointFee(msg.Amount, feeBasisPoints)
+	totalAmount := msg.Amount.Add(feeAmount)
+
+	_, err = k.ConvertERC20(goCtx, &types.MsgConvertERC20{
+		Sender:          msg.Sender,
+		Receiver:        senderAccAddress.String(),
+		ContractAddress: msg.Erc20,
+		Amount:          totalAmount,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	pair, ok := k.GetTokenPair(ctx, k.GetTokenPairID(ctx, msg.Erc20))
+	if !ok {
+		return nil, errorsmod.Wrapf(types.ErrTokenPairNotFound, "no token pair for ERC20 %s, this should be impossible since the token was already converted", msg.Erc20)
+	}
+	coin := sdk.NewCoin(pair.Denom, msg.Amount)
+	feesCollected, err := k.DeductGasfreeErc20Fee(ctx, senderAccAddress, coin)
+	if err != nil {
+		err = errorsmod.Wrap(err, "unable to collect gasfree fees")
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{sdk.NewEvent(
+		types.EventTypeSendERC20ToCosmos,
+		sdk.NewAttribute(sdk.AttributeKeySender, msg.Sender),
+		sdk.NewAttribute(types.AttributeKeyERC20Token, msg.Erc20),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
+		sdk.NewAttribute(types.AttributeKeyFeesCollected, feesCollected.String()),
+	)})
+	k.Logger(ctx).Info("SendERC20ToCosmos executed",
+		"sender", msg.Sender,
+		"erc20", msg.Erc20,
+		"amount", msg.Amount.String(),
+		"cosmos_receiver", senderAccAddress.String(),
+		"fees_collected", feesCollected.String(),
+	)
+	return &types.MsgSendERC20ToCosmosResponse{}, nil
+}
+
+// SendERC20ToCosmos handles the conversion from EVM ERC20 to Cosmos coin, queues an IBC transfer, and collects a fee
+// This is only possible for whitelisted ERC20s that also have a registered Cosmos coin
+func (k Keeper) SendERC20ToCosmosAndIBCTransfer(goCtx context.Context, msg *types.MsgSendERC20ToCosmosAndIBCTransfer) (*types.MsgSendERC20ToCosmosAndIBCTransferResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	// Validate that denom or its ERC20 address is present on gasfree interop list; fail early if not.
+	if err := k.validateGasfreeInteropToken(ctx, msg.Erc20); err != nil {
+		return nil, err
+	}
+
+	senderEthAddress := common.HexToAddress(msg.Sender)
+	senderAccAddress := sdk.AccAddress(senderEthAddress.Bytes())
+	if err := sdk.VerifyAddressFormat(senderAccAddress); err != nil {
+		return nil, errorsmod.Wrap(err, "invalid converted sender address from eip55")
+	}
+
+	feeBasisPoints, err := k.gasfreeKeeper.GetGasfreeErc20InteropFeeBasisPoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	feeAmount := altheacommon.CalculateBasisPointFee(msg.Amount, feeBasisPoints)
+	totalAmount := msg.Amount.Add(feeAmount)
+
+	_, err = k.ConvertERC20(goCtx, &types.MsgConvertERC20{
+		Sender:          msg.Sender,
+		Receiver:        senderAccAddress.String(),
+		ContractAddress: msg.Erc20,
+		Amount:          totalAmount,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// After successful conversion, perform an IBC transfer of the newly minted Cosmos coin
+	sequence, err := k.initiateIBCTransfer(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	pair, ok := k.GetTokenPair(ctx, k.GetTokenPairID(ctx, msg.Erc20))
+	if !ok {
+		return nil, errorsmod.Wrapf(types.ErrTokenPairNotFound, "no token pair for ERC20 %s, this should be impossible since the token was already converted", msg.Erc20)
+	}
+	coin := sdk.NewCoin(pair.Denom, msg.Amount)
+	feesCollected, err := k.DeductGasfreeErc20Fee(ctx, senderAccAddress, coin)
+	if err != nil {
+		err = errorsmod.Wrap(err, "unable to collect gasfree fees")
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{sdk.NewEvent(
+		types.EventTypeSendERC20IBCTransfer,
+		sdk.NewAttribute(sdk.AttributeKeySender, msg.Sender),
+		sdk.NewAttribute(types.AttributeKeyERC20Token, msg.Erc20),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
+		sdk.NewAttribute(types.AttributeKeyPort, msg.DestinationPort),
+		sdk.NewAttribute(types.AttributeKeyChannel, msg.DestinationChannel),
+		sdk.NewAttribute(types.AttributeKeyReceiver, msg.DestinationReceiver),
+		sdk.NewAttribute(types.AttributeKeyFeesCollected, feesCollected.String()),
+	)})
+	k.Logger(ctx).Info("SendERC20ToCosmosAndIBCTransfer executed",
+		"sender", msg.Sender,
+		"erc20", msg.Erc20,
+		"amount", msg.Amount.String(),
+		"port", msg.DestinationPort,
+		"channel", msg.DestinationChannel,
+		"dest_receiver", msg.DestinationReceiver,
+		"ibc_sequence", sequence,
+		"fees_collected", feesCollected.String(),
+	)
+
+	return &types.MsgSendERC20ToCosmosAndIBCTransferResponse{}, nil
+}
+
+func (k Keeper) initiateIBCTransfer(ctx sdk.Context, msg *types.MsgSendERC20ToCosmosAndIBCTransfer) (uint64, error) {
+	// Resolve sender (who received the converted coins)
+	senderEth := common.HexToAddress(msg.Sender)
+	senderAcc := sdk.AccAddress(senderEth.Bytes())
+
+	// Validate port/channel
+	if msg.DestinationPort == "" || msg.DestinationChannel == "" {
+		return 0, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "destination port or channel cannot be empty")
+	}
+
+	// Re-derive the coin denom from the ERC20 address
+	pair, ok := k.GetTokenPair(ctx, k.GetTokenPairID(ctx, msg.Erc20))
+	if !ok {
+		return 0, errorsmod.Wrapf(types.ErrTokenPairNotFound, "no token pair for ERC20 %s, this should be impossible since the token was already converted", msg.Erc20)
+	}
+	coin := sdk.NewCoin(pair.Denom, msg.Amount)
+	if !coin.Amount.IsPositive() {
+		return 0, errorsmod.Wrap(sdkerrors.ErrInvalidCoins, "amount must be positive for IBC transfer")
+	}
+
+	// Timeout (30 days)
+	timeoutTimestamp := uint64(ctx.BlockTime().Add(30 * 24 * time.Hour).UnixNano())
+	zeroHeight := ibcclienttypes.ZeroHeight()
+
+	transferMsg := ibctransfertypes.NewMsgTransfer(
+		msg.DestinationPort,
+		msg.DestinationChannel,
+		coin,
+		senderAcc.String(),      // sender on this chain
+		msg.DestinationReceiver, // receiver on the foreign chain
+		zeroHeight,              // no timeout height
+		timeoutTimestamp,        // timeout timestamp
+		"Sent via MsgSendERC20ToCosmosAndIBCTransfer", // memo
+	)
+
+	resp, ibcErr := k.ibcTransferKeeper.Transfer(ctx, transferMsg)
+	if ibcErr != nil {
+		return 0, ibcErr
+	}
+	return resp.Sequence, nil
+}
+
+// DeductGasfreeErc20Fee will check and deduct the fee for the given sendAmount, based on the gasfree module's GasfreeErc20InteropFeeBasisPoints param value
+// If the amount is insufficient for a fee to be collected (and feeBasisPoints > 0), an error is returned
+func (k Keeper) DeductGasfreeErc20Fee(ctx sdk.Context, sender sdk.AccAddress, sendAmount sdk.Coin) (feeCollected *sdk.Coin, err error) {
+	// Compute the minimum fees which must be paid
+	feeBasisPoints, err := k.gasfreeKeeper.GetGasfreeErc20InteropFeeBasisPoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	collectedFee, err := altheacommon.DeductBasisPointFee(ctx, k.accountKeeper, k.bankKeeper, feeBasisPoints, sendAmount, sender)
+	if err != nil {
+		return nil, err
+	}
+
+	if collectedFee.IsZero() && feeBasisPoints > 0 {
+		return nil, types.ErrInsufficientAmount
+	}
+
+	return &collectedFee, nil
+}
+
+// validateGasfreeInteropToken ensures either the denom or the mapped ERC20 address is present
+// in the gasfree module's interop token list. Returns error if neither is found.
+func (k Keeper) validateGasfreeInteropToken(ctx sdk.Context, token string) error {
+	// Resolve token pair via denom
+	pair, ok := k.GetTokenPair(ctx, k.GetTokenPairID(ctx, token))
+	if !ok {
+		return errorsmod.Wrapf(types.ErrTokenPairNotFound, "no token pair for denom %s", token)
+	}
+	list, err := k.gasfreeKeeper.GetGasfreeErc20InteropTokens(ctx)
+	if err != nil {
+		return err
+	}
+	allowed := false
+	for _, entry := range list {
+		lowercaseEntry, lowercaseDenom, lowercaseERC20 := strings.ToLower(entry), strings.ToLower(pair.Denom), strings.ToLower(pair.Erc20Address)
+		if lowercaseEntry == lowercaseDenom {
+			allowed = true
+			break
+		}
+		if lowercaseEntry == lowercaseERC20 {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return errorsmod.Wrapf(types.ErrGasfreeTokenNotAllowed, "token not on gasfree interop list: denom=%s erc20=%s", token, pair.Erc20Address)
+	}
+	return nil
 }

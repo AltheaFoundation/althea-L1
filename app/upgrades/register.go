@@ -7,6 +7,7 @@ import (
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 
+	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 	nativedexkeeper "github.com/AltheaFoundation/althea-L1/x/nativedex/keeper"
 
 	"github.com/AltheaFoundation/althea-L1/app/upgrades/example"
@@ -19,7 +20,7 @@ import (
 func RegisterUpgradeHandlers(
 	mm *module.Manager, configurator *module.Configurator, upgradeKeeper *upgradekeeper.Keeper,
 	crisisKeeper *crisiskeeper.Keeper, distrKeeper *distrkeeper.Keeper, accountKeeper authkeeper.AccountKeeper,
-	nativedexKeeper nativedexkeeper.Keeper,
+	nativedexKeeper nativedexkeeper.Keeper, gasfreeKeeper gasfreekeeper.Keeper,
 ) {
 	if mm == nil || configurator == nil || crisisKeeper == nil || upgradeKeeper == nil || distrKeeper == nil {
 		panic("Nil argument to RegisterUpgradeHandlers()!")
@@ -32,7 +33,7 @@ func RegisterUpgradeHandlers(
 	)
 	// EXAMPLE upgrade
 	upgradeKeeper.SetUpgradeHandler(
-		example.PlanName,
-		example.GetExampleUpgradeHandler(mm, configurator, crisisKeeper, distrKeeper, accountKeeper, nativedexKeeper),
+		example.TethysToExamplePlanName,
+		example.GetExampleUpgradeHandler(mm, configurator, crisisKeeper, distrKeeper, accountKeeper, nativedexKeeper, gasfreeKeeper),
 	)
 }

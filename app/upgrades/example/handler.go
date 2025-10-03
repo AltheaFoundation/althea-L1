@@ -12,15 +12,24 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/AltheaFoundation/althea-L1/contracts"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
+	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 	nativedexkeeper "github.com/AltheaFoundation/althea-L1/x/nativedex/keeper"
 	nativedextypes "github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
-var PlanName = "example"
+// TethysToExamplePlanName is the on-chain upgrade plan name this handler is written for.
+// It should match the name supplied in the governance upgrade proposal.
+var TethysToExamplePlanName = "example"
 
+// GetExampleUpgradeHandler returns the upgrade handler for the Example upgrade. It:
+//  1. Ensures the NativeDex module account exists (needed for nativdex proposals to execute).
+//  2. Fixes the iFi DEX stablecoin pair pool template (36000) to prevent future issues on new stablecoin pair pools.
+//  3. Fixes the stablecoin pair pools (USDC-USDS, USDS-sUSDS, USDS-USDT) to match the updated template.
+//  4. Updates gasfree module parameters to include additional message types.
 func GetExampleUpgradeHandler(
 	mm *module.Manager, configurator *module.Configurator, crisisKeeper *crisiskeeper.Keeper, distrKeeper *distrkeeper.Keeper,
-	accountKeeper authkeeper.AccountKeeper, nativedexKeeper nativedexkeeper.Keeper,
+	accountKeeper authkeeper.AccountKeeper, nativedexKeeper nativedexkeeper.Keeper, gasfreeKeeper gasfreekeeper.Keeper,
 ) func(
 	ctx sdk.Context, plan upgradetypes.Plan, vmap module.VersionMap,
 ) (module.VersionMap, error) {
@@ -46,6 +55,8 @@ func GetExampleUpgradeHandler(
 		fixDexPool(ctx, nativedexKeeper, usds, sUsds, 36000)
 		fixDexPool(ctx, nativedexKeeper, usds, usdt, 36000)
 
+		updateGasfreeParams(ctx, gasfreeKeeper)
+
 		ctx.Logger().Info("Asserting invariants after upgrade")
 		crisisKeeper.AssertInvariants(ctx)
 
@@ -54,6 +65,8 @@ func GetExampleUpgradeHandler(
 	}
 }
 
+// initModuleAccount creates the nativedex module account, which is needed for
+// governance proposals to be able to execute successfully.
 func initModuleAccount(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper) {
 	modAcc := accountKeeper.GetModuleAccount(ctx, nativedextypes.ModuleName)
 	if modAcc.GetName() != nativedextypes.ModuleName {
@@ -61,8 +74,10 @@ func initModuleAccount(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper) 
 	}
 }
 
+// fixDexTemplate updates the 36000 pool template (used for stablecoin pairs) to ensure
+// concentrated position creation works on new pools using this template.
 func fixDexTemplate(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper) {
-	callpath := 3 // ColdPath contract
+	callpath := 3 // ColdPath callpath
 	setTemplateCode := uint8(110)
 	templateIndexU64 := uint64(36000)
 	templateIndex := big.NewInt(0).SetUint64(templateIndexU64)
@@ -71,15 +86,27 @@ func fixDexTemplate(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper) {
 	jitThresh := uint8(6)
 	knockout := uint8(182)
 	oracleFlags := uint8(0)
-	// Encode the cmd argument for CrocPolicy's opsResolution function, which will eventually be used in ColdPath's setTemplate function.
-	// The arguments are (uint8 code, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout, uint8 oracleFlags)
+
+	// Encode arguments for the setTemplate command.
 	argumentTypeNames := []string{"uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8"}
 	argumentValues := []interface{}{setTemplateCode, templateIndex, feeRate, tickSize, jitThresh, knockout, oracleFlags}
 	cmdArgs, err := contracts.EncodeTypes(argumentTypeNames, argumentValues)
 	if err != nil {
 		panic("Could not encode cmd args for fixing dex template: " + err.Error())
 	}
-	_, err = nativedexKeeper.EVMKeeper.CallEVM(ctx, contracts.CrocPolicyContract.ABI, nativedextypes.ModuleEVMAddress, nativedexKeeper.GetVerifiedCrocPolicyAddress(ctx), true, "opsResolution", nativedexKeeper.GetNativeDexAddress(ctx), callpath, cmdArgs)
+
+	// Dispatch via opsResolution -> ColdPath.protocolCmd -> setTemplate
+	_, err = nativedexKeeper.EVMKeeper.CallEVM(
+		ctx,
+		contracts.CrocPolicyContract.ABI,
+		nativedextypes.ModuleEVMAddress,
+		nativedexKeeper.GetVerifiedCrocPolicyAddress(ctx),
+		true, // static? privileged path
+		"opsResolution",
+		nativedexKeeper.GetNativeDexAddress(ctx),
+		callpath,
+		cmdArgs,
+	)
 	if err != nil {
 		panic("Could not call opsResolution to fix dex template: " + err.Error())
 	}
@@ -87,27 +114,19 @@ func fixDexTemplate(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper) {
 }
 
 // fixDexPool revises parameters for an existing pool (base, quote, poolIdx) to the
-// same values used in fixDexTemplate's template settings. This constructs a protocol
-// command targeting ColdPath.revisePool via ProtocolCmd.POOL_REVISE_CODE (111) and
-// dispatches it through CrocPolicy.opsResolution.
-//
-// Solidity signature of revisePool decoding path in ColdPath:
-//
-//	(uint8 code, address base, address quote, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout)
-//
-// Go side encoding must mirror that layout exactly.
+// same values used in fixDexTemplate's template settings. This fixes the concentrated position
+// creation issue for existing pools using the 36000 template.
 func fixDexPool(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper, base common.Address, quote common.Address, poolIdx uint64) {
-	callpath := uint16(3)        // ColdPath contract
-	revisePoolCode := uint8(111) // ProtocolCmd.POOL_REVISE_CODE
+	callpath := uint16(3) // ColdPath callpath
+	revisePoolCode := uint8(111)
 
-	// Reuse the same parameter values as template
+	// Desired parameter values (mirroring template)
 	feeRate := uint16(5000)
 	tickSize := uint16(1)
 	jitThresh := uint8(6)
 	knockout := uint8(182)
 
-	// Encode arguments for (uint8, address, address, uint256, uint16, uint16, uint8, uint8)
-	// Note: uint256 poolIdx must be a *big.Int
+	// Encode arguments matching revisePool decoding layout.
 	poolIdxBig := big.NewInt(0).SetUint64(poolIdx)
 	argTypes := []string{"uint8", "address", "address", "uint256", "uint16", "uint16", "uint8", "uint8"}
 	argValues := []interface{}{revisePoolCode, base, quote, poolIdxBig, feeRate, tickSize, jitThresh, knockout}
@@ -116,12 +135,30 @@ func fixDexPool(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper, base co
 		panic("Could not encode cmd args for fixing dex pool: " + err.Error())
 	}
 
-	_, err = nativedexKeeper.EVMKeeper.CallEVM(ctx, contracts.CrocPolicyContract.ABI, nativedextypes.ModuleEVMAddress, nativedexKeeper.GetVerifiedCrocPolicyAddress(ctx), true, "opsResolution", nativedexKeeper.GetNativeDexAddress(ctx), callpath, cmdArgs)
+	_, err = nativedexKeeper.EVMKeeper.CallEVM(
+		ctx,
+		contracts.CrocPolicyContract.ABI,
+		nativedextypes.ModuleEVMAddress,
+		nativedexKeeper.GetVerifiedCrocPolicyAddress(ctx),
+		true,
+		"opsResolution",
+		nativedexKeeper.GetNativeDexAddress(ctx),
+		callpath,
+		cmdArgs,
+	)
 	if err != nil {
 		panic("Could not call opsResolution to revise pool: " + err.Error())
 	}
 	ctx.Logger().Info("Successfully revised dex pool", "base", base.Hex(), "quote", quote.Hex(), "poolIdx", poolIdx)
 }
 
-// avoid unused warning if not yet wired into upgrade logic
-var _ = fixDexPool
+// updateGasfreeParams adds new messages to the gasfree module params so that machine accounts are able to
+// move stablecoins out of the EVM layer without needing to hold the native token for gas.
+// The messages themselves will handle fee deduction instead.
+func updateGasfreeParams(ctx sdk.Context, gasfreeKeeper gasfreekeeper.Keeper) {
+	gasfreeMessages := gasfreeKeeper.GetGasFreeMessageTypes(ctx)
+	// TODO: DO NOT USE MsgConvertCoin, use the new messages created for machine accounts.
+	gasfreeMessages = append(gasfreeMessages, erc20types.TypeMsgConvertCoin)
+	gasfreeKeeper.SetGasFreeMessageTypes(ctx, gasfreeMessages)
+	ctx.Logger().Info("Successfully updated gasfree message types", "gasfreeMessages", gasfreeMessages)
+}

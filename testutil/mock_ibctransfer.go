@@ -1,6 +1,8 @@
-package keeper_test
+package testutil
 
 import (
+	"context"
+
 	"github.com/stretchr/testify/mock"
 
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
@@ -11,11 +13,13 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
-	"github.com/AltheaFoundation/althea-L1/x/onboarding/types"
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
+	onboardingtypes "github.com/AltheaFoundation/althea-L1/x/onboarding/types"
 )
 
 // nolint: exhaustruct
-var _ types.TransferKeeper = &MockTransferKeeper{}
+var _ onboardingtypes.TransferKeeper = &MockTransferKeeper{}
+var _ erc20types.IBCTransferKeeper = &MockTransferKeeper{}
 
 // MockTransferKeeper defines a mocked object that implements the TransferKeeper
 // interface. It's used on tests to abstract the complexity of IBC transfers.
@@ -24,6 +28,7 @@ var _ types.TransferKeeper = &MockTransferKeeper{}
 type MockTransferKeeper struct {
 	mock.Mock
 	bankkeeper.Keeper
+	Sequences map[string]uint64
 }
 
 func (m *MockTransferKeeper) GetDenomTrace(ctx sdk.Context, denomTraceHash tmbytes.HexBytes) (transfertypes.DenomTrace, bool) {
@@ -49,4 +54,13 @@ func (m *MockTransferKeeper) SendTransfer(
 	}
 
 	return args.Error(0)
+}
+
+// Transfer implements types.IBCTransferKeeper.
+func (m *MockTransferKeeper) Transfer(goCtx context.Context, msg *transfertypes.MsgTransfer) (*transfertypes.MsgTransferResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
+	sequence := m.Sequences[msg.SourceChannel+msg.SourcePort] + 1
+	m.Sequences[msg.SourceChannel+msg.SourcePort] = sequence
+	return &transfertypes.MsgTransferResponse{Sequence: sequence}, m.SendTransfer(ctx, msg.SourcePort, msg.SourceChannel, msg.Token, sender, msg.Receiver, msg.TimeoutHeight, msg.TimeoutTimestamp)
 }

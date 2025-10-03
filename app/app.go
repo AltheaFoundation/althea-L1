@@ -225,6 +225,7 @@ var (
 		feemarket.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		groupmodule.AppModuleBasic{},
+		gasfree.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -387,6 +388,8 @@ func (app AltheaApp) ValidateMembers() {
 	if app.Erc20Keeper == nil {
 		panic("Nil Erc20Keeper!")
 	}
+	// Ensure the IBC transfer keeper is set on the ERC20 keeper
+	app.Erc20Keeper.ValidateDependencies()
 	if app.FeemarketKeeper == nil {
 		panic("Nil FeemarketKeeper!")
 	}
@@ -644,6 +647,11 @@ func NewAltheaApp(
 		ethtypes.ProtoAccountWithAddress,
 	)
 
+	// Gasfree allows for gasless transactions by bypassing the gas charging ante handlers for specific txs consisting of
+	// governance controlled message types. These txs are charged fees out-of-band in a separate ante handler
+	gasfreeKeeper := gasfreekeeper.NewKeeper(appCodec, keys[gasfreetypes.StoreKey], app.GetSubspace(gasfreetypes.ModuleName))
+	app.GasfreeKeeper = &gasfreeKeeper
+
 	// ERC20 provides translation between Cosmos-style tokens and Ethereum ERC20 contracts so that things like IBC work
 	erc20Keeper := erc20keeper.NewKeeper(
 		keys[erc20types.StoreKey],
@@ -652,6 +660,7 @@ func NewAltheaApp(
 		accountKeeper,
 		bankKeeper,
 		&evmKeeper,
+		&gasfreeKeeper,
 	)
 	app.Erc20Keeper = &erc20Keeper
 
@@ -673,6 +682,7 @@ func NewAltheaApp(
 		accountKeeper, bankKeeper, scopedTransferKeeper,
 	)
 	app.IbcTransferKeeper = &ibcTransferKeeper
+	erc20Keeper.SetIBCTransferKeeper(ibcTransferKeeper)
 	ibcTransferAppModule := transfer.NewAppModule(ibcTransferKeeper)
 
 	icaHostKeeper := icahostkeeper.NewKeeper(
@@ -774,11 +784,6 @@ func NewAltheaApp(
 		appCodec, keys[lockuptypes.StoreKey], app.GetSubspace(lockuptypes.ModuleName),
 	)
 	app.LockupKeeper = &lockupKeeper
-
-	// Gasfree allows for gasless transactions by bypassing the gas charging ante handlers for specific txs consisting of
-	// governance controlled message types. These txs are charged fees out-of-band in a separate ante handler
-	gasfreeKeeper := gasfreekeeper.NewKeeper(appCodec, keys[gasfreetypes.StoreKey], app.GetSubspace(gasfreetypes.ModuleName))
-	app.GasfreeKeeper = &gasfreeKeeper
 
 	// Microtx enables peer-to-peer automated microtransactions to form the payment layer for Althea-based networks
 	microtxKeeper := microtxkeeper.NewKeeper(
@@ -1294,7 +1299,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 func (app *AltheaApp) registerUpgradeHandlers() {
 	upgrades.RegisterUpgradeHandlers(
 		app.MM, app.Configurator, app.UpgradeKeeper, app.CrisisKeeper, app.DistrKeeper,
-		*app.AccountKeeper, *app.NativedexKeeper,
+		*app.AccountKeeper, *app.NativedexKeeper, *app.GasfreeKeeper,
 	)
 }
 
@@ -1324,7 +1329,7 @@ func (app *AltheaApp) registerStoreLoaders() {
 
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
-	if upgradeInfo.Name == example.PlanName {
+	if upgradeInfo.Name == example.TethysToExamplePlanName {
 		// Register the Group and Feegrant modules as new modules that need new stores allocated
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added:   []string{nativedextypes.StoreKey},

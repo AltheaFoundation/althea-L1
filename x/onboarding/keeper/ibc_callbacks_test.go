@@ -23,6 +23,7 @@ import (
 	ibcmock "github.com/cosmos/ibc-go/v6/testing/mock"
 
 	"github.com/AltheaFoundation/althea-L1/contracts"
+	"github.com/AltheaFoundation/althea-L1/testutil"
 	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
 
 	"github.com/AltheaFoundation/althea-L1/x/onboarding/keeper"
@@ -274,7 +275,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			// method requires a successfull handshake with the counterparty chain.
 			// This, however, exceeds the requirements of the unit tests.
 			// nolint: exhaustruct
-			mockTransferKeeper := &MockTransferKeeper{
+			mockTransferKeeper := &testutil.MockTransferKeeper{
 				Keeper: suite.app.BankKeeper,
 			}
 
