@@ -38,7 +38,6 @@ func NewKeeper(
 	}
 
 	return Keeper{
-
 		cdc:        cdc,
 		storeKey:   storeKey,
 		paramSpace: ps,

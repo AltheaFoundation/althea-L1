@@ -133,6 +133,7 @@ import (
 	"github.com/AltheaFoundation/althea-L1/app/ante"
 	altheaappparams "github.com/AltheaFoundation/althea-L1/app/params"
 	"github.com/AltheaFoundation/althea-L1/app/upgrades"
+	"github.com/AltheaFoundation/althea-L1/app/upgrades/example"
 	"github.com/AltheaFoundation/althea-L1/app/upgrades/tethys"
 	altheacfg "github.com/AltheaFoundation/althea-L1/config"
 	"github.com/AltheaFoundation/althea-L1/x/erc20"
@@ -1293,6 +1294,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 func (app *AltheaApp) registerUpgradeHandlers() {
 	upgrades.RegisterUpgradeHandlers(
 		app.MM, app.Configurator, app.UpgradeKeeper, app.CrisisKeeper, app.DistrKeeper,
+		*app.AccountKeeper, *app.NativedexKeeper,
 	)
 }
 
@@ -1316,6 +1318,16 @@ func (app *AltheaApp) registerStoreLoaders() {
 		// Register the Group and Feegrant modules as new modules that need new stores allocated
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added:   []string{group.StoreKey, feegrant.StoreKey},
+			Renamed: nil,
+			Deleted: nil,
+		}
+
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
+	if upgradeInfo.Name == example.PlanName {
+		// Register the Group and Feegrant modules as new modules that need new stores allocated
+		storeUpgrades := storetypes.StoreUpgrades{
+			Added:   []string{nativedextypes.StoreKey},
 			Renamed: nil,
 			Deleted: nil,
 		}
