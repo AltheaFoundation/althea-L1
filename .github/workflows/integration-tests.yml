@@ -68,6 +68,18 @@ jobs:
           cache-on-failure: true
       - name: Test the erc20 module's token conversion functionality
         run: tests/all-up-test-ci.sh ERC20_CONVERSION
+  gasfree_erc20_interop:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: integration_tests/
+          cache-on-failure: true
+      - name: Test the erc20 module's gasfree token conversion (+ IBC) functionality
+        run: tests/all-up-test-ci.sh GASFREE_ERC20_INTEROP
   liquid_accounts:
     needs: native_token
     runs-on: ubuntu-latest

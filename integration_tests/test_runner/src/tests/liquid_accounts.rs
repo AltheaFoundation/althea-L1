@@ -15,8 +15,8 @@ use althea_proto::althea::microtx::v1::query_client::QueryClient as MicrotxQuery
 use althea_proto::althea::microtx::v1::{
     LiquidInfrastructureAccount, MsgLiquify, QueryLiquidAccountRequest,
 };
-use althea_proto::canto::erc20::v1::query_client::QueryClient as Erc20QueryClient;
-use althea_proto::canto::erc20::v1::QueryTokenPairRequest;
+use althea_proto::althea::erc20::v1::query_client::QueryClient as Erc20QueryClient;
+use althea_proto::althea::erc20::v1::QueryTokenPairRequest;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::query_client::QueryClient as BankQueryClient;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::QueryDenomMetadataRequest;
 use clarity::{Address as EthAddress, Uint256};

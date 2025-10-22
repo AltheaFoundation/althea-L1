@@ -1226,7 +1226,7 @@ pub async fn submit_and_pass_upgrade_proxy_proposal(
     };
     let any = encode_any(proposal, UPGRADE_PROXY_PROPOSAL_TYPE_URL.to_string());
     let res = contact
-        .create_gov_proposal(
+        .create_legacy_gov_proposal(
             any,
             deposit,
             fee,
@@ -1264,7 +1264,7 @@ pub async fn submit_and_pass_collect_treasury_proposal(
     };
     let any = encode_any(proposal, COLLECT_TREASURY_PROPOSAL_TYPE_URL.to_string());
     let res = contact
-        .create_gov_proposal(
+        .create_legacy_gov_proposal(
             any,
             deposit,
             fee,
@@ -1302,7 +1302,7 @@ pub async fn submit_and_pass_set_treasury_proposal(
     };
     let any = encode_any(proposal, SET_TREASURY_PROPOSAL_TYPE_URL.to_string());
     let res = contact
-        .create_gov_proposal(
+        .create_legacy_gov_proposal(
             any,
             deposit,
             fee,
@@ -1340,7 +1340,7 @@ pub async fn submit_and_pass_hot_path_open_proposal(
     };
     let any = encode_any(proposal, HOT_PATH_OPEN_PROPOSAL_TYPE_URL.to_string());
     let res = contact
-        .create_gov_proposal(
+        .create_legacy_gov_proposal(
             any,
             deposit,
             fee,
@@ -1376,7 +1376,7 @@ pub async fn submit_and_pass_safe_mode_proposal(
     };
     let any = encode_any(proposal, SET_SAFE_MODE_PROPOSAL_TYPE_URL.to_string());
     let res = contact
-        .create_gov_proposal(
+        .create_legacy_gov_proposal(
             any,
             deposit,
             fee,
@@ -1414,7 +1414,7 @@ pub async fn submit_and_pass_transfer_governance_proposal(
     };
     let any = encode_any(proposal, TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL.to_string());
     let res = contact
-        .create_gov_proposal(
+        .create_legacy_gov_proposal(
             any,
             deposit,
             fee,
@@ -1482,7 +1482,7 @@ pub async fn submit_and_pass_nativedex_ops_proposal(
     };
     let any = encode_any(proposal, OPS_PROPOSAL_TYPE_URL.to_string());
     let res = contact
-        .create_gov_proposal(
+        .create_legacy_gov_proposal(
             any,
             deposit,
             fee,

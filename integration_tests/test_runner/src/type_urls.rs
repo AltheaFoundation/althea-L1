@@ -44,8 +44,12 @@ pub const MSG_ETHEREUM_TX_TYPE_URL: &str = "/ethermint.evm.v1.MsgEthereumTx";
 pub const EIP1559_TRANSACTION_DATA_TYPE_URL: &str = "/ethermint.evm.v1.DynamicFeeTx";
 
 // canto
-pub const MSG_CONVERT_ERC20_TYPE_URL: &str = "/canto.erc20.v1.MsgConvertERC20";
-pub const MSG_CONVERT_COIN_TYPE_URL: &str = "/canto.erc20.v1.MsgConvertCoin";
+pub const MSG_CONVERT_ERC20_TYPE_URL: &str = "/althea.erc20.v1.MsgConvertERC20";
+pub const MSG_CONVERT_COIN_TYPE_URL: &str = "/althea.erc20.v1.MsgConvertCoin";
+// gasfree erc20 simplified msgs (Althea)
+pub const MSG_SEND_COIN_TO_EVM_TYPE_URL: &str = "/althea.erc20.v1.MsgSendCoinToEVM";
+pub const MSG_SEND_ERC20_TO_COSMOS_TYPE_URL: &str = "/althea.erc20.v1.MsgSendERC20ToCosmos";
+pub const MSG_SEND_ERC20_TO_COSMOS_AND_IBC_TRANSFER_TYPE_URL: &str = "/althea.erc20.v1.MsgSendERC20ToCosmosAndIBCTransfer";
 
-pub const REGISTER_COIN_PROPOSAL_TYPE_URL: &str = "/canto.erc20.v1.RegisterCoinProposal";
-pub const REGISTER_ERC20_PROPOSAL_TYPE_URL: &str = "/canto.erc20.v1.RegisterERC20Proposal";
+pub const REGISTER_COIN_PROPOSAL_TYPE_URL: &str = "/althea.erc20.v1.RegisterCoinProposal";
+pub const REGISTER_ERC20_PROPOSAL_TYPE_URL: &str = "/althea.erc20.v1.RegisterERC20Proposal";

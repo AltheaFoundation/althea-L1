@@ -8,8 +8,8 @@ use crate::utils::{
     one_eth, EthermintUserKey, RegisterCoinProposalParams, RegisterErc20ProposalParams,
     ValidatorKeys, OPERATION_TIMEOUT, STAKING_TOKEN, TOTAL_TIMEOUT,
 };
-use althea_proto::canto::erc20::v1::query_client::QueryClient as Erc20QueryClient;
-use althea_proto::canto::erc20::v1::{MsgConvertCoin, MsgConvertErc20, QueryTokenPairRequest};
+use althea_proto::althea::erc20::v1::query_client::QueryClient as Erc20QueryClient;
+use althea_proto::althea::erc20::v1::{MsgConvertCoin, MsgConvertErc20, QueryTokenPairRequest};
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::Metadata;
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use clarity::{Address as EthAddress, Uint256};

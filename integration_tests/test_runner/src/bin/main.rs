@@ -23,6 +23,7 @@ use test_runner::tests::dex::dex_swap_many;
 use test_runner::tests::dex::dex_upgrade_test;
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
 use test_runner::tests::evm_fee_burning::evm_fee_burning_test;
+use test_runner::tests::gasfree_erc20::gasfree_erc20_interop_test;
 use test_runner::tests::ica_host::ica_host_happy_path;
 use test_runner::tests::liquid_accounts::liquid_accounts_test;
 use test_runner::tests::lockup::lockup_test;
@@ -132,6 +133,18 @@ pub async fn main() {
         } else if test_type == "ERC20_CONVERSION" {
             erc20_conversion_test(
                 &contact,
+                &web30,
+                keys,
+                EVM_USER_KEYS.clone(),
+                erc20_addresses,
+            )
+            .await;
+            return;
+        } else if test_type == "GASFREE_ERC20_INTEROP" {
+            start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
+            gasfree_erc20_interop_test(
+                &contact,
+                &ibc_contact,
                 &web30,
                 keys,
                 EVM_USER_KEYS.clone(),

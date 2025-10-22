@@ -1,6 +1,6 @@
 use althea_proto::{
-    canto::erc20::v1::{query_client::QueryClient as Erc20QueryClient, QueryTokenPairRequest},
-    canto::erc20::v1::{RegisterCoinProposal, RegisterErc20Proposal},
+    althea::erc20::v1::{query_client::QueryClient as Erc20QueryClient, QueryTokenPairRequest},
+    althea::erc20::v1::{RegisterCoinProposal, RegisterErc20Proposal},
     cosmos_sdk_proto::cosmos::{
         bank::v1beta1::Metadata,
         bank::v1beta1::{query_client::QueryClient as BankQueryClient, QueryDenomMetadataRequest},
@@ -567,6 +567,7 @@ pub async fn vote_yes_with_retry(
         .vote_on_gov_proposal(
             proposal_id,
             VoteOption::Yes,
+            String::new(),
             get_fee(None),
             key.clone(),
             Some(timeout),
@@ -578,6 +579,7 @@ pub async fn vote_yes_with_retry(
             .vote_on_gov_proposal(
                 proposal_id,
                 VoteOption::Yes,
+            String::new(),
                 get_fee(None),
                 key.clone(),
                 Some(timeout),
