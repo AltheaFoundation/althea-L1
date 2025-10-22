@@ -10,3 +10,4 @@ lint:
     - gogoproto
     - canto
     - ethermint
+    - gogoproto

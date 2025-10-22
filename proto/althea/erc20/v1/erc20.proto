@@ -59,7 +59,7 @@ message RegisterERC20Proposal {
 message ToggleTokenConversionProposal {
   option (gogoproto.equal) = true;
   // title of the proposal
-  string Title = 1;
+  string title = 1;
   // proposal description
   string description = 2;
   // token identifier can be either the hex contract address of the ERC20 or the

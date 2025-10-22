@@ -36,3 +36,4 @@ lint:
     - gogoproto
     - google
     - tendermint
+    - third_party
