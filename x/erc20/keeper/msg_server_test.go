@@ -1903,6 +1903,7 @@ func (suite *KeeperTestSuite) TestSendERC20ToCosmosAndIBCTransfer() {
 
 				runOne := func(label string, tokens []string, expectError bool) {
 					mockGasfree := MockGasfreeKeeper{bp: tc.feeBP, tokens: tokens}
+					// nolint: exhaustruct
 					mockTransferKeeper := &testutil.MockTransferKeeper{Keeper: suite.app.BankKeeper, Sequences: make(map[string]uint64)}
 					mockTransferKeeper.On("GetDenomTrace", mock.Anything, mock.Anything).Return(denomTrace, true)
 					mockTransferKeeper.On("SendTransfer", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -2062,6 +2063,7 @@ func (suite *KeeperTestSuite) TestInsufficientGasfreeFees() {
 			Path:      path,
 			BaseDenom: cosmosDenom,
 		}
+		// nolint: exhaustruct
 		mockTransferKeeper := &testutil.MockTransferKeeper{Keeper: suite.app.BankKeeper, Sequences: make(map[string]uint64)}
 		mockTransferKeeper.On("GetDenomTrace", mock.Anything, mock.Anything).Return(denomTrace, true)
 		mockTransferKeeper.On("SendTransfer", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)

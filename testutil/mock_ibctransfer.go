@@ -19,6 +19,8 @@ import (
 
 // nolint: exhaustruct
 var _ onboardingtypes.TransferKeeper = &MockTransferKeeper{}
+
+// nolint: exhaustruct
 var _ erc20types.IBCTransferKeeper = &MockTransferKeeper{}
 
 // MockTransferKeeper defines a mocked object that implements the TransferKeeper

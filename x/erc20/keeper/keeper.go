@@ -53,13 +53,14 @@ func NewKeeper(
 		panic("gasfree keeper is nil")
 	}
 	return Keeper{
-		storeKey:      storeKey,
-		cdc:           cdc,
-		paramstore:    ps,
-		accountKeeper: ak,
-		bankKeeper:    bk,
-		evmKeeper:     evmKeeper,
-		gasfreeKeeper: gasfreeKeeper,
+		storeKey:          storeKey,
+		cdc:               cdc,
+		paramstore:        ps,
+		accountKeeper:     ak,
+		bankKeeper:        bk,
+		evmKeeper:         evmKeeper,
+		gasfreeKeeper:     gasfreeKeeper,
+		ibcTransferKeeper: nil, // to be set later via SetIBCTransferKeeper
 	}
 }
 

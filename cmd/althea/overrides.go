@@ -27,8 +27,7 @@ func AddOverrideTxCommands(commands *cobra.Command, moduleBasics module.BasicMan
 
 	for _, command := range tempCmd.Commands() {
 		// nolint: go-staticcheck
-		var overwrite *cobra.Command
-		overwrite = OverrideGroupModuleTxCommand(*command)
+		overwrite := OverrideGroupModuleTxCommand(*command)
 		commands.AddCommand(overwrite)
 	}
 }
@@ -215,9 +214,6 @@ Parameters:
 				Option:     voteOption,
 				Metadata:   args[3],
 				Exec:       execFromString(execStr),
-			}
-			if err != nil {
-				return err
 			}
 
 			if err = msg.ValidateBasic(); err != nil {

@@ -84,7 +84,9 @@ func ValidateGasFreeErc20InteropFeeBasisPoints(i interface{}) error {
 // ParamKeyTable for auth module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{
-		GasFreeMessageTypes: []string{},
+		GasFreeMessageTypes:               []string{},
+		GasFreeErc20InteropTokens:         []string{},
+		GasFreeErc20InteropFeeBasisPoints: 100,
 	})
 }
 
