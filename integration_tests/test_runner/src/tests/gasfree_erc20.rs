@@ -180,7 +180,7 @@ pub async fn gasfree_send_coin_to_evm_test(
 
     if !SKIP_GOV {
         configure_gasfree_params_if_not_configured(
-            &contact,
+            contact,
             &[registered_denom.clone(), registered_erc20.clone()],
             fee_basis_points,
             validator_keys,
@@ -388,7 +388,7 @@ async fn register_coin_if_not_registered(
         );
         execute_register_coin_proposal(
             contact,
-            &validator_keys,
+            validator_keys,
             Some(TOTAL_TIMEOUT),
             RegisterCoinProposalParams {
                 coin_metadata: footoken_meta.clone(),
@@ -504,7 +504,7 @@ async fn configure_gasfree_params_if_not_configured(
         "Submitted gasfree param change proposal: {:?}",
         res.raw_log()
     );
-    vote_yes_on_proposals(contact, &validator_keys, None).await;
+    vote_yes_on_proposals(contact, validator_keys, None).await;
     wait_for_proposals_to_execute(contact).await;
 }
 
@@ -601,7 +601,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
 
     if !SKIP_GOV {
         configure_gasfree_params_if_not_configured(
-            &contact,
+            contact,
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
@@ -894,7 +894,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
         submit_and_pass_token_proposal(
             althea_contact,
             althea_erc20_qc.clone(),
-            &validator_keys,
+            validator_keys,
             registered_erc20.to_string(),
             true,
         )
@@ -926,7 +926,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
 
     if !SKIP_GOV {
         configure_gasfree_params_if_not_configured(
-            &althea_contact,
+            althea_contact,
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
@@ -937,7 +937,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
     }
 
     let user = evm_user_keys.first().expect("No EVM users provided");
-    let ibc_address = user.ethermint_key.to_address(&*IBC_ADDRESS_PREFIX).unwrap();
+    let ibc_address = user.ethermint_key.to_address(&IBC_ADDRESS_PREFIX).unwrap();
 
     // Fund the user with the cosmos coin to pay fees and send over IBC
     althea_contact
@@ -1234,7 +1234,7 @@ pub async fn gasfree_send_coin_to_evm_insufficient_balance_test(
     if !SKIP_GOV {
         // Match the other gasfree params so this test does not trigger a gov proposal
         configure_gasfree_params_if_not_configured(
-            &contact,
+            contact,
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
@@ -1373,7 +1373,7 @@ pub async fn gasfree_send_erc20_to_cosmos_insufficient_balance_test(
     if !SKIP_GOV {
         // Match the other gasfree params so this test does not trigger a gov proposal
         configure_gasfree_params_if_not_configured(
-            &contact,
+            contact,
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
@@ -1495,7 +1495,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_insufficient_balance_
 
     let funder = evm_user_keys.first().expect("No EVM users provided");
     let user = get_user_key(None);
-    let ibc_address = user.ethermint_key.to_address(&*IBC_ADDRESS_PREFIX).unwrap();
+    let ibc_address = user.ethermint_key.to_address(&IBC_ADDRESS_PREFIX).unwrap();
     web30
         .erc20_send(
             one_atom(),
@@ -1555,7 +1555,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_insufficient_balance_
     if !SKIP_GOV {
         // Match the other gasfree params so this test does not trigger a gov proposal
         configure_gasfree_params_if_not_configured(
-            &contact,
+            contact,
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,

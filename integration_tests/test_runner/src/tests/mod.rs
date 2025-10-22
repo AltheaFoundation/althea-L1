@@ -1,7 +1,7 @@
 pub mod dex;
 pub mod erc20_conversion;
-pub mod gasfree_erc20;
 pub mod evm_fee_burning;
+pub mod gasfree_erc20;
 pub mod ica_host;
 pub mod liquid_accounts;
 pub mod lockup;

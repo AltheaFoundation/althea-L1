@@ -279,7 +279,7 @@ pub async fn fail_to_send(
     .unwrap();
     let res = contact
         .send_message(
-            &[authz_send.clone()],
+            std::slice::from_ref(&authz_send),
             None,
             &[],
             Some(OPERATION_TIMEOUT),
@@ -299,7 +299,7 @@ pub async fn fail_to_send(
     .unwrap();
     let res = contact
         .send_message(
-            &[double_authz_send.clone()],
+            std::slice::from_ref(&double_authz_send),
             None,
             &[],
             Some(OPERATION_TIMEOUT),
@@ -322,7 +322,7 @@ pub async fn fail_to_send(
     .unwrap();
     let res = contact
         .send_message(
-            &[authz_multi_send.clone()],
+            std::slice::from_ref(&authz_multi_send),
             None,
             &[],
             Some(OPERATION_TIMEOUT),
@@ -343,7 +343,7 @@ pub async fn fail_to_send(
     .unwrap();
     let res = contact
         .send_message(
-            &[authz_msg_microtx.clone()],
+            std::slice::from_ref(&authz_msg_microtx),
             None,
             &[],
             Some(OPERATION_TIMEOUT),

@@ -340,7 +340,6 @@ pub struct DEXQueryTemplateArgs {
     pub pool_index: String,
 }
 
-
 #[derive(Parser)]
 pub struct DEXQueryPositionArgs {
     /// The CrocQuery address
@@ -758,7 +757,7 @@ pub struct DEXInstallCallpathArgs {
     #[clap(parse(try_from_str))]
     pub wallet: EthPrivateKey,
     /// The Callpath contract address to install on the DEX
-    #[clap(long,parse(try_from_str))]
+    #[clap(long, parse(try_from_str))]
     pub callpath_contract: EthAddress,
     /// The numerical index of the callpath to install at
     #[clap(long, parse(try_from_str))]
@@ -793,15 +792,15 @@ pub struct DEXSetPoolTemplateArgs {
     pub knockout_on_grid: bool,
     /// The place type can either disable knockouts entirely, or restrict what the valid lower and upper ticks are given the current price
     /// Recommended values are either 0 to disable, or 3
-    /// 
+    ///
     /// A value of 0 means that all knockout positions are disabled
     /// A value of 1 means that bids must be placed with the upper tick below the current price | asks must be placed with the lower tick above the current price
     /// A value of 2 means that bids must be placed with the lower tick below the current price | asks must be placed with the upper tick above the current price
     /// A value of 3 means that bids must have both ticks below the current price | asks must have both ticks above the current price
-    /// 
+    ///
     /// Value 1 seems to be equivalent to value 3, but implicitly so because bid upper ticks must be higher than their lower tick, and ask lower ticks must be below their upper tick
     /// Value 2 can lead to strange situations where the knockout position can be created straddling the current price, and will take in a mix of both tokens to create.
-    /// 
+    ///
     /// Background: a bid swaps base tokens for quote tokens, and will fill when the price moves equal to or lower than the lower tick (expects other users to perform quote -> base swaps)
     /// while an ask swaps quote for base tokens, and will fill when the price moves equal to or higher than the upper tick (expects other users to perform base -> quote swaps)
     /// Restricting users to making new knockout positions which do not contain the current price prevents users from being required to supply both tokens to mint a knockout

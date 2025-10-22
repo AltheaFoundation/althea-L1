@@ -579,7 +579,7 @@ pub async fn vote_yes_with_retry(
             .vote_on_gov_proposal(
                 proposal_id,
                 VoteOption::Yes,
-            String::new(),
+                String::new(),
                 get_fee(None),
                 key.clone(),
                 Some(timeout),

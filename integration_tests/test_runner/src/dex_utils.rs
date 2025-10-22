@@ -1597,11 +1597,7 @@ pub fn size_concentrated_liq(
         bid_price = recip_q64(bid_price);
         ask_price = recip_q64(ask_price);
     }
-    let price_delta = if bid_price > ask_price {
-        bid_price - ask_price
-    } else {
-        ask_price - bid_price
-    };
+    let price_delta = bid_price.abs_diff(ask_price);
     let liq = liquidity_supported(buffered, price_delta, in_base);
 
     if is_add {
@@ -1615,11 +1611,7 @@ pub fn buffer_collateral(collateral: u128, is_add: bool) -> u128 {
     const BUFFER: u128 = 4;
 
     if is_add {
-        if collateral < BUFFER {
-            0
-        } else {
-            collateral - BUFFER
-        }
+        collateral.saturating_sub(BUFFER)
     } else {
         #[allow(clippy::collapsible_if)]
         if collateral > u128::MAX - BUFFER {

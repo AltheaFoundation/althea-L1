@@ -1,12 +1,12 @@
 use std::thread::sleep;
 use std::time::Duration;
 
-use althea_proto::althea::onboarding::v1::query_client::QueryClient as OnboardingQueryClient;
-use althea_proto::althea::onboarding::v1::QueryParamsRequest;
 use althea_proto::althea::erc20::v1::{
     query_client::QueryClient as Erc20QueryClient, RegisterCoinProposal, RegisterErc20Proposal,
 };
 use althea_proto::althea::erc20::v1::{MsgConvertErc20, QueryTokenPairRequest, TokenPair};
+use althea_proto::althea::onboarding::v1::query_client::QueryClient as OnboardingQueryClient;
+use althea_proto::althea::onboarding::v1::QueryParamsRequest;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{DenomUnit, Metadata};
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
     ParamChange, ParameterChangeProposal,

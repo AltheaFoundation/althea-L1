@@ -49,7 +49,8 @@ pub const MSG_CONVERT_COIN_TYPE_URL: &str = "/althea.erc20.v1.MsgConvertCoin";
 // gasfree erc20 simplified msgs (Althea)
 pub const MSG_SEND_COIN_TO_EVM_TYPE_URL: &str = "/althea.erc20.v1.MsgSendCoinToEVM";
 pub const MSG_SEND_ERC20_TO_COSMOS_TYPE_URL: &str = "/althea.erc20.v1.MsgSendERC20ToCosmos";
-pub const MSG_SEND_ERC20_TO_COSMOS_AND_IBC_TRANSFER_TYPE_URL: &str = "/althea.erc20.v1.MsgSendERC20ToCosmosAndIBCTransfer";
+pub const MSG_SEND_ERC20_TO_COSMOS_AND_IBC_TRANSFER_TYPE_URL: &str =
+    "/althea.erc20.v1.MsgSendERC20ToCosmosAndIBCTransfer";
 
 pub const REGISTER_COIN_PROPOSAL_TYPE_URL: &str = "/althea.erc20.v1.RegisterCoinProposal";
 pub const REGISTER_ERC20_PROPOSAL_TYPE_URL: &str = "/althea.erc20.v1.RegisterERC20Proposal";

@@ -2,7 +2,12 @@ use std::time::Duration;
 
 use crate::{
     args::{
-        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXInstallCallpathArgs, DEXMintAmbientArgs, DEXMintAmbientQtyArgs, DEXMintConcentratedArgs, DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs, DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXQueryTemplateArgs, DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSetPoolTemplateArgs, DEXSubcommand, DEXSwapArgs, DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs
+        Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXInstallCallpathArgs,
+        DEXMintAmbientArgs, DEXMintAmbientQtyArgs, DEXMintConcentratedArgs,
+        DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs,
+        DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXQueryTemplateArgs, DEXRecoverKnockoutArgs,
+        DEXSafeModeArgs, DEXSetPoolTemplateArgs, DEXSubcommand, DEXSwapArgs,
+        DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs,
     },
     utils::approve_erc20s,
 };
@@ -14,7 +19,13 @@ use clarity::{
 use num256::{Int256, Uint256};
 use num_traits::ToPrimitive;
 use test_runner::dex_utils::{
-    BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE, ProtocolCmdArgs, SwapArgs, UserCmdArgs, WARM_PATH, croc_policy_transfer_governance, croc_query_ambient_position, croc_query_conc_rewards, croc_query_curve, croc_query_curve_tick, croc_query_knockout_pivot, croc_query_knockout_tokens, croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price, croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd, dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd
+    croc_policy_transfer_governance, croc_query_ambient_position, croc_query_conc_rewards,
+    croc_query_curve, croc_query_curve_tick, croc_query_knockout_tokens, croc_query_liquidity,
+    croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price,
+    croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd,
+    dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs,
+    UserCmdArgs, BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE,
+    WARM_PATH,
 };
 use web30::client::Web3;
 
@@ -49,8 +60,12 @@ pub async fn handle_dex_subcommand(web30: &Web3, args: &Args, dex_args: &DexArgs
         // DEX Configuration
         DEXSubcommand::InstallCallpath(cmd_args) => install_callpath(web30, args, cmd_args).await,
         DEXSubcommand::SetPoolTemplate(cmd_args) => set_pool_template(web30, args, cmd_args).await,
-        DEXSubcommand::TransferDEXAuthority(cmd_args) => transfer_dex_authority(web30, args, cmd_args).await,
-        DEXSubcommand::TransferCrocPolicy(cmd_args) => transfer_croc_policy(web30, args, cmd_args).await,
+        DEXSubcommand::TransferDEXAuthority(cmd_args) => {
+            transfer_dex_authority(web30, args, cmd_args).await
+        }
+        DEXSubcommand::TransferCrocPolicy(cmd_args) => {
+            transfer_croc_policy(web30, args, cmd_args).await
+        }
     }
 }
 
@@ -893,12 +908,12 @@ pub async fn recover_knockout(web30: &Web3, args: &Args, cmd_args: &DEXRecoverKn
     println!("Transaction result: {:?}", res);
 }
 
-pub async fn install_callpath(
-    web30: &Web3,
-    args: &Args,
-    cmd_args: &DEXInstallCallpathArgs,
-) {
-    let cmd = vec![21u16.into(), cmd_args.callpath_contract.into(), cmd_args.callpath_index.into()];
+pub async fn install_callpath(web30: &Web3, args: &Args, cmd_args: &DEXInstallCallpathArgs) {
+    let cmd = vec![
+        21u16.into(),
+        cmd_args.callpath_contract.into(),
+        cmd_args.callpath_index.into(),
+    ];
 
     let protocol_args = ProtocolCmdArgs {
         callpath: BOOT_PATH,
@@ -906,7 +921,15 @@ pub async fn install_callpath(
         sudo: true,
     };
 
-    let result = dex_direct_protocol_cmd(web30, cmd_args.dex_contract, cmd_args.wallet, protocol_args, None, Some(Duration::from_secs(args.timeout))).await;
+    let result = dex_direct_protocol_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        protocol_args,
+        None,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await;
     match result {
         Ok(r) => {
             let hash = match r {
@@ -915,16 +938,12 @@ pub async fn install_callpath(
                 web30::types::TransactionResponse::Legacy { hash, .. } => hash,
             };
             println!("Successful Transaction result: {hash:?}");
-        },
+        }
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
 }
 
-pub async fn set_pool_template(
-    web30: &Web3,
-    args: &Args,
-    cmd_args: &DEXSetPoolTemplateArgs,
-) {
+pub async fn set_pool_template(web30: &Web3, args: &Args, cmd_args: &DEXSetPoolTemplateArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");
     if !cmd_args.tick_size.is_power_of_two() {
         panic!("Tick size must be a power of two");
@@ -932,7 +951,7 @@ pub async fn set_pool_template(
     if !cmd_args.knockout_width.is_power_of_two() {
         panic!("Knockout width must be a power of two");
     }
-    if cmd_args.jit_thresh % 10 != 0 {
+    if !cmd_args.jit_thresh.is_multiple_of(10) {
         panic!("JIT threshold must be a multiple of 10");
     }
     let tick_size = cmd_args.tick_size.ilog2();
@@ -942,14 +961,30 @@ pub async fn set_pool_template(
     let knockout_bits = knockout_width | knockout_place_type;
     let jit_thresh = cmd_args.jit_thresh / 10;
     // u16 code, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout, uint8 oracleFlags)
-    let cmd = vec![110u16.into(), pool_index.into(), fee_rate.into(), tick_size.into(), jit_thresh.into(), knockout_bits.into(), 0u8.into()];
+    let cmd = vec![
+        110u16.into(),
+        pool_index.into(),
+        fee_rate.into(),
+        tick_size.into(),
+        jit_thresh.into(),
+        knockout_bits.into(),
+        0u8.into(),
+    ];
     let protocol_args = ProtocolCmdArgs {
         callpath: COLD_PATH,
         cmd,
         sudo: false,
     };
 
-    let result = dex_direct_protocol_cmd(web30, cmd_args.dex_contract, cmd_args.wallet, protocol_args, None, Some(Duration::from_secs(args.timeout))).await;
+    let result = dex_direct_protocol_cmd(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.wallet,
+        protocol_args,
+        None,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await;
     match result {
         Ok(r) => {
             let hash = match r {
@@ -958,10 +993,9 @@ pub async fn set_pool_template(
                 web30::types::TransactionResponse::Legacy { hash, .. } => hash,
             };
             println!("Successful Transaction result: {hash:?}");
-        },
+        }
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
-
 }
 
 pub async fn transfer_dex_authority(
@@ -969,7 +1003,14 @@ pub async fn transfer_dex_authority(
     args: &Args,
     cmd_args: &DEXTransferDEXAuthorityArgs,
 ) {
-    let result = dex_authority_transfer(web30, cmd_args.dex_contract, cmd_args.new_authority, cmd_args.wallet, Some(Duration::from_secs(args.timeout))).await;
+    let result = dex_authority_transfer(
+        web30,
+        cmd_args.dex_contract,
+        cmd_args.new_authority,
+        cmd_args.wallet,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await;
     match result {
         Ok(r) => {
             let hash = match r {
@@ -978,18 +1019,22 @@ pub async fn transfer_dex_authority(
                 web30::types::TransactionResponse::Legacy { hash, .. } => hash,
             };
             println!("Successful Transaction result: {hash:?}");
-        },
+        }
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
-
 }
 
-pub async fn transfer_croc_policy(
-    web30: &Web3,
-    args: &Args,
-    cmd_args: &DEXTransferCrocPolicyArgs,
-) {
-    let result = croc_policy_transfer_governance(web30, cmd_args.croc_policy, cmd_args.wallet, cmd_args.ops_address, cmd_args.treasury_address, cmd_args.emergency_address, Some(Duration::from_secs(args.timeout))).await;
+pub async fn transfer_croc_policy(web30: &Web3, args: &Args, cmd_args: &DEXTransferCrocPolicyArgs) {
+    let result = croc_policy_transfer_governance(
+        web30,
+        cmd_args.croc_policy,
+        cmd_args.wallet,
+        cmd_args.ops_address,
+        cmd_args.treasury_address,
+        cmd_args.emergency_address,
+        Some(Duration::from_secs(args.timeout)),
+    )
+    .await;
     match result {
         Ok(r) => {
             let hash = match r {
@@ -998,8 +1043,7 @@ pub async fn transfer_croc_policy(
                 web30::types::TransactionResponse::Legacy { hash, .. } => hash,
             };
             println!("Successful Transaction result: {hash:?}");
-        },
+        }
         Err(e) => println!("Failed Transaction result: {e:?}"),
     }
-
 }

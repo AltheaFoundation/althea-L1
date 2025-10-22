@@ -175,9 +175,9 @@ pub async fn exec_and_check(
     {
         let res = contact
             .send_message(
-                &[msg.clone()],
+                std::slice::from_ref(msg),
                 None,
-                &[zero_fee.clone()],
+                std::slice::from_ref(&zero_fee),
                 Some(OPERATION_TIMEOUT),
                 None,
                 sender.ethermint_key,
