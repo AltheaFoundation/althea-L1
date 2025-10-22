@@ -2,6 +2,7 @@
 extern crate log;
 
 mod args;
+mod cosmos;
 mod dex;
 mod erc20;
 mod erc721;
@@ -17,6 +18,8 @@ use erc721::handle_erc721_subcommand;
 use num256::Uint256;
 use std::time::Duration;
 use web30::client::Web3;
+
+use crate::cosmos::handle_cosmos_subcommand;
 
 #[actix_rt::main]
 async fn main() {
@@ -38,11 +41,12 @@ async fn main() {
     let ethereum_rpc = args.ethereum_rpc.clone();
     let web30 = Web3::new(&ethereum_rpc, timeout);
     let cosmos_grpc = args.cosmos_grpc.clone();
-    let _contact = Contact::new(&cosmos_grpc, timeout, &args.cosmos_prefix)
+    let contact = Contact::new(&cosmos_grpc, timeout, &args.cosmos_prefix)
         .expect("Unable to connect to Cosmos gRPC");
 
     // control flow for the command structure
     match &args.subcmd {
+        SubCommand::Cosmos(cosmos_args) => handle_cosmos_subcommand(&contact, &args, cosmos_args).await,
         SubCommand::Erc20(erc20_args) => handle_erc20_subcommand(&web30, &args, erc20_args).await,
         SubCommand::Erc721(erc721_args) => {
             handle_erc721_subcommand(&web30, &args, erc721_args).await

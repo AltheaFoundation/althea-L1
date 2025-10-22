@@ -1,5 +1,6 @@
 use clap::Parser;
 use clarity::{Address as EthAddress, PrivateKey as EthPrivateKey};
+use deep_space::Address as CosmosAddress;
 
 /// The Althea L1 Tool for interacting with the Althea L1 blockchain
 #[derive(Parser)]
@@ -26,9 +27,33 @@ pub struct Args {
 
 #[derive(Parser)]
 pub enum SubCommand {
+    Cosmos(CosmosArgs),
     Erc20(Erc20Args),
     Erc721(Erc721Args),
     Dex(DexArgs),
+}
+
+/// Interact with ERC20 tokens
+#[derive(Parser)]
+pub struct CosmosArgs {
+    #[clap(subcommand)]
+    pub subcmd: CosmosSubcommand,
+}
+
+#[derive(Parser)]
+pub enum CosmosSubcommand {
+    SpendableBalance(CosmosSpendableBalanceArgs),
+}
+
+// Query the spendable balance of `denom` held by `address`
+#[derive(Parser)]
+pub struct CosmosSpendableBalanceArgs {
+    // The token to query
+    #[clap(parse(try_from_str))]
+    pub denom: String,
+    /// The Ethereum address to check the balance of
+    #[clap(parse(try_from_str))]
+    pub address: CosmosAddress,
 }
 
 /// Interact with ERC20 tokens
