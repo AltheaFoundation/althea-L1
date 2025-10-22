@@ -133,7 +133,6 @@ import (
 	"github.com/AltheaFoundation/althea-L1/app/ante"
 	altheaappparams "github.com/AltheaFoundation/althea-L1/app/params"
 	"github.com/AltheaFoundation/althea-L1/app/upgrades"
-	"github.com/AltheaFoundation/althea-L1/app/upgrades/example"
 	"github.com/AltheaFoundation/althea-L1/app/upgrades/tethys"
 	altheacfg "github.com/AltheaFoundation/althea-L1/config"
 	"github.com/AltheaFoundation/althea-L1/x/erc20"
@@ -1322,21 +1321,11 @@ func (app *AltheaApp) registerStoreLoaders() {
 	// Renamed: []storetypes.StoreRename{{"foo", "bar"}}, example foo to bar rename
 	// Deleted: []string{"bazmodule"}, example deleted bazmodule
 
-	// <name> Group module store loader setup
+	// Tethys
 	if upgradeInfo.Name == tethys.PlanName {
 		// Register the Group and Feegrant modules as new modules that need new stores allocated
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added:   []string{group.StoreKey, feegrant.StoreKey},
-			Renamed: nil,
-			Deleted: nil,
-		}
-
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
-	}
-	if upgradeInfo.Name == example.TethysToExamplePlanName {
-		// Register the nativedex module as a new module, since it was missed in an earlier upgrade
-		storeUpgrades := storetypes.StoreUpgrades{
-			Added:   []string{nativedextypes.StoreKey},
 			Renamed: nil,
 			Deleted: nil,
 		}

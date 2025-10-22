@@ -1,4 +1,4 @@
-package example
+package cardinal
 
 import (
 	"math/big"
@@ -18,49 +18,47 @@ import (
 	nativedextypes "github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
-// TethysToExamplePlanName is the on-chain upgrade plan name this handler is written for.
+// TethysToCardinalPlanName is the on-chain upgrade plan name this handler is written for.
 // It should match the name supplied in the governance upgrade proposal.
-var TethysToExamplePlanName = "example"
+var TethysToCardinalPlanName = "cardinal"
 
-// GetExampleUpgradeHandler returns the upgrade handler for the Example upgrade. It:
+// GetCardinalUpgradeHandler returns the upgrade handler for the Cardinal upgrade. It:
 //  1. Ensures the NativeDex module account exists (needed for nativdex proposals to execute).
 //  2. Fixes the iFi DEX stablecoin pair pool template (36000) to prevent future issues on new stablecoin pair pools.
 //  3. Fixes the stablecoin pair pools (USDC-USDS, USDS-sUSDS, USDS-USDT) to match the updated template.
 //  4. Updates gasfree module parameters to include additional message types.
-func GetExampleUpgradeHandler(
+func GetCardinalUpgradeHandler(
 	mm *module.Manager, configurator *module.Configurator, crisisKeeper *crisiskeeper.Keeper, distrKeeper *distrkeeper.Keeper,
 	accountKeeper authkeeper.AccountKeeper, nativedexKeeper nativedexkeeper.Keeper, gasfreeKeeper gasfreekeeper.Keeper,
 ) func(
 	ctx sdk.Context, plan upgradetypes.Plan, vmap module.VersionMap,
 ) (module.VersionMap, error) {
 	if mm == nil {
-		panic("Nil argument to GetExampleUpgradeHandler")
+		panic("Nil argument to GetCardinalUpgradeHandler")
 	}
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vmap module.VersionMap) (module.VersionMap, error) {
 		ctx.Logger().Info("Module Consensus Version Map", "vmap", vmap)
 
-		ctx.Logger().Info("Example Upgrade: Running any configured module migrations")
+		ctx.Logger().Info("Cardinal Upgrade: Running any configured module migrations")
 		out, outErr := mm.RunMigrations(ctx, *configurator, vmap)
-
-		// TODO: Make sure the store exists - if the params are set somewhere this should be true but not quite sure here
 
 		initModuleAccount(ctx, accountKeeper)
 
 		fixDexTemplate(ctx, nativedexKeeper)
-		usdc := common.HexToAddress("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
-		usds := common.HexToAddress("0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
-		sUsds := common.HexToAddress("0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
-		usdt := common.HexToAddress("0xdAC17F958A7d8bD7cFfC4fE88D12eFbA6C172B0")
+		usdc := common.HexToAddress("0x80b5a32E4F032B2a058b4F29EC95EEfEEB87aDcd")
+		sUsds := common.HexToAddress("0x5FD55A1B9FC24967C4dB09C513C3BA0DFa7FF687")
+		usds := common.HexToAddress("0xd567B3d7B8FE3C79a1AD8dA978812cfC4Fa05e75")
+		usdt := common.HexToAddress("0xecEEEfCEE421D8062EF8d6b4D814efe4dc898265")
 		fixDexPool(ctx, nativedexKeeper, usdc, usds, 36000)
-		fixDexPool(ctx, nativedexKeeper, usds, sUsds, 36000)
+		fixDexPool(ctx, nativedexKeeper, sUsds, usds, 36000)
 		fixDexPool(ctx, nativedexKeeper, usds, usdt, 36000)
 
-		updateGasfreeParams(ctx, gasfreeKeeper)
+		updateGasfreeParams(ctx, gasfreeKeeper, []common.Address{usdc, usds, sUsds, usdt})
 
 		ctx.Logger().Info("Asserting invariants after upgrade")
 		crisisKeeper.AssertInvariants(ctx)
 
-		ctx.Logger().Info("Example Upgrade Successful")
+		ctx.Logger().Info("Cardinal Upgrade Successful")
 		return out, outErr
 	}
 }
@@ -77,7 +75,7 @@ func initModuleAccount(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper) 
 // fixDexTemplate updates the 36000 pool template (used for stablecoin pairs) to ensure
 // concentrated position creation works on new pools using this template.
 func fixDexTemplate(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper) {
-	callpath := 3 // ColdPath callpath
+	callpath := uint16(3) // ColdPath callpath
 	setTemplateCode := uint8(110)
 	templateIndexU64 := uint64(36000)
 	templateIndex := big.NewInt(0).SetUint64(templateIndexU64)
@@ -155,7 +153,9 @@ func fixDexPool(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper, base co
 // updateGasfreeParams adds new messages to the gasfree module params so that machine accounts are able to
 // move stablecoins out of the EVM layer without needing to hold the native token for gas.
 // The messages themselves will handle fee deduction instead.
-func updateGasfreeParams(ctx sdk.Context, gasfreeKeeper gasfreekeeper.Keeper) {
+func updateGasfreeParams(ctx sdk.Context, gasfreeKeeper gasfreekeeper.Keeper, gasfreeErc20InteropTokens []common.Address) {
+	gasfreeFeeBasisPoints := uint64(100)
+	gasfreeKeeper.SetGasfreeErc20InteropFeeBasisPoints(ctx, gasfreeFeeBasisPoints)
 	gasfreeMessages := gasfreeKeeper.GetGasFreeMessageTypes(ctx)
 	gasfreeMessages = append(
 		gasfreeMessages,
@@ -168,4 +168,11 @@ func updateGasfreeParams(ctx sdk.Context, gasfreeKeeper gasfreekeeper.Keeper) {
 	)
 	gasfreeKeeper.SetGasFreeMessageTypes(ctx, gasfreeMessages)
 	ctx.Logger().Info("Successfully updated gasfree message types", "gasfreeMessages", gasfreeMessages)
+
+	stringAddresses := make([]string, len(gasfreeErc20InteropTokens))
+	for i, addr := range gasfreeErc20InteropTokens {
+		stringAddresses[i] = addr.Hex()
+	}
+	gasfreeKeeper.SetGasfreeErc20InteropTokens(ctx, stringAddresses)
+	ctx.Logger().Info("Successfully updated gasfree ERC20 interop tokens", "gasfreeErc20InteropTokens", stringAddresses)
 }

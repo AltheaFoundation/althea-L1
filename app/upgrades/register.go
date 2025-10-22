@@ -10,7 +10,7 @@ import (
 	gasfreekeeper "github.com/AltheaFoundation/althea-L1/x/gasfree/keeper"
 	nativedexkeeper "github.com/AltheaFoundation/althea-L1/x/nativedex/keeper"
 
-	"github.com/AltheaFoundation/althea-L1/app/upgrades/example"
+	"github.com/AltheaFoundation/althea-L1/app/upgrades/cardinal"
 	"github.com/AltheaFoundation/althea-L1/app/upgrades/tethys"
 )
 
@@ -31,9 +31,9 @@ func RegisterUpgradeHandlers(
 		tethys.PlanName,
 		tethys.GetTethysUpgradeHandler(mm, configurator, crisisKeeper, distrKeeper),
 	)
-	// EXAMPLE upgrade
+	// Cardinal upgrade
 	upgradeKeeper.SetUpgradeHandler(
-		example.TethysToExamplePlanName,
-		example.GetExampleUpgradeHandler(mm, configurator, crisisKeeper, distrKeeper, accountKeeper, nativedexKeeper, gasfreeKeeper),
+		cardinal.TethysToCardinalPlanName,
+		cardinal.GetCardinalUpgradeHandler(mm, configurator, crisisKeeper, distrKeeper, accountKeeper, nativedexKeeper, gasfreeKeeper),
 	)
 }
