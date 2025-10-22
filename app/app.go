@@ -1330,7 +1330,7 @@ func (app *AltheaApp) registerStoreLoaders() {
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
 	if upgradeInfo.Name == example.TethysToExamplePlanName {
-		// Register the Group and Feegrant modules as new modules that need new stores allocated
+		// Register the nativedex module as a new module, since it was missed in an earlier upgrade
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added:   []string{nativedextypes.StoreKey},
 			Renamed: nil,

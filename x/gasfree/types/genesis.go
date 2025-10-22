@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
+	erc20types "github.com/AltheaFoundation/althea-L1/x/erc20/types"
 	microtxtypes "github.com/AltheaFoundation/althea-L1/x/microtx/types"
 )
 
@@ -25,6 +26,12 @@ func DefaultParams() *Params {
 		GasFreeMessageTypes: []string{
 			// nolint: exhaustruct
 			sdk.MsgTypeURL(&microtxtypes.MsgMicrotx{}),
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&erc20types.MsgSendCoinToEVM{}),
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&erc20types.MsgSendERC20ToCosmos{}),
+			// nolint: exhaustruct
+			sdk.MsgTypeURL(&erc20types.MsgSendERC20ToCosmosAndIBCTransfer{}),
 		},
 		GasFreeErc20InteropTokens:         []string{},
 		GasFreeErc20InteropFeeBasisPoints: 100, // 1%

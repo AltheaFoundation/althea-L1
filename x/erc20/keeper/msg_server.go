@@ -607,7 +607,7 @@ func (k Keeper) SendERC20ToCosmos(goCtx context.Context, msg *types.MsgSendERC20
 		Amount:          totalAmount,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errorsmod.Wrapf(err, "insufficient balance to cover amount plus gasfree fees (amount: %s, fee: %s, total: %s)", msg.Amount.String(), feeAmount.String(), totalAmount.String())
 	}
 
 	pair, ok := k.GetTokenPair(ctx, k.GetTokenPairID(ctx, msg.Erc20))
@@ -624,6 +624,7 @@ func (k Keeper) SendERC20ToCosmos(goCtx context.Context, msg *types.MsgSendERC20
 	ctx.EventManager().EmitEvents(sdk.Events{sdk.NewEvent(
 		types.EventTypeSendERC20ToCosmos,
 		sdk.NewAttribute(sdk.AttributeKeySender, msg.Sender),
+		sdk.NewAttribute(types.AttributeKeyReceiver, senderAccAddress.String()),
 		sdk.NewAttribute(types.AttributeKeyERC20Token, msg.Erc20),
 		sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
 		sdk.NewAttribute(types.AttributeKeyFeesCollected, feesCollected.String()),
@@ -667,7 +668,7 @@ func (k Keeper) SendERC20ToCosmosAndIBCTransfer(goCtx context.Context, msg *type
 		Amount:          totalAmount,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errorsmod.Wrapf(err, "insufficient balance to cover amount plus gasfree fees (amount: %s, fee: %s, total: %s)", msg.Amount.String(), feeAmount.String(), totalAmount.String())
 	}
 
 	// After successful conversion, perform an IBC transfer of the newly minted Cosmos coin

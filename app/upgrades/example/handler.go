@@ -157,8 +157,12 @@ func fixDexPool(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper, base co
 // The messages themselves will handle fee deduction instead.
 func updateGasfreeParams(ctx sdk.Context, gasfreeKeeper gasfreekeeper.Keeper) {
 	gasfreeMessages := gasfreeKeeper.GetGasFreeMessageTypes(ctx)
-	// TODO: DO NOT USE MsgConvertCoin, use the new messages created for machine accounts.
-	gasfreeMessages = append(gasfreeMessages, erc20types.TypeMsgConvertCoin)
+	gasfreeMessages = append(
+		gasfreeMessages,
+		sdk.MsgTypeURL(&erc20types.MsgSendCoinToEVM{}),
+		sdk.MsgTypeURL(&erc20types.MsgSendERC20ToCosmos{}),
+		sdk.MsgTypeURL(&erc20types.MsgSendERC20ToCosmosAndIBCTransfer{}),
+	)
 	gasfreeKeeper.SetGasFreeMessageTypes(ctx, gasfreeMessages)
 	ctx.Logger().Info("Successfully updated gasfree message types", "gasfreeMessages", gasfreeMessages)
 }
