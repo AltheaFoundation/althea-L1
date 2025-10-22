@@ -17,7 +17,11 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 // ExportGenesis exports all the state needed to restart the chain
 // from the current state of the chain
 func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
+	params, err := k.GetParamsIfSet(ctx)
+	if err != nil {
+		panic(err)
+	}
 	return types.GenesisState{
-		Params: types.DefaultParams(),
+		Params: &params,
 	}
 }
