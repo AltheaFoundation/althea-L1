@@ -1,0 +1,23 @@
+# Protect the /.github/ folder from modifications - including the CODEOWNERS file
+/.github @jkilpatr @ChristianBorst
+
+# Protect the Makefile in the root dir
+/Makefile @jkilpatr @ChristianBorst
+
+# Protect all the compilation scripts
+/scripts/ @jkilpatr @ChristianBorst
+
+# Protect the contracts used by the chain
+/contracts/ @jkilpatr @ChristianBorst
+
+# Protect the contract definitions
+/solidity @jkilpatr @ChristianBorst
+/solidity-dex @jkilpatr @ChristianBorst
+
+# Protect all compiled protobuf files
+*.pb.go @jkilpatr @ChristianBorst
+*.pb.gw.go @jkilpatr @ChristianBorst
+
+# Protect the go.mod + go.sum files
+/go.mod @jkilpatr @ChristianBorst
+/go.sum @jkilpatr @ChristianBorst
