@@ -592,7 +592,9 @@ func buildAndBroadcastOpsProposal(cmd *cobra.Command, title string, description 
 }
 
 // ops-disable-template: Disable a pool template (poolIdx)
+// nolint: dupl
 func NewOpsDisableTemplateCmd() *cobra.Command { //nolint: exhaustruct
+	// nolint: exhaustruct
 	c := &cobra.Command{
 		Use:   "ops-disable-template [initial-deposit] [title] [description] [poolIdx]",
 		Short: "Submit Ops proposal: disable pool template",
@@ -623,6 +625,7 @@ func NewOpsDisableTemplateCmd() *cobra.Command { //nolint: exhaustruct
 }
 
 // ops-set-template: Set pool template params
+// nolint: dupl
 func NewOpsSetTemplateCmd() *cobra.Command { //nolint: exhaustruct
 	// nolint: exhaustruct
 	c := &cobra.Command{
@@ -684,7 +687,9 @@ func NewOpsSetTemplateCmd() *cobra.Command { //nolint: exhaustruct
 }
 
 // ops-revise-pool: Revise an existing pool specs
+// nolint: dupl
 func NewOpsRevisePoolCmd() *cobra.Command { //nolint: exhaustruct
+	// nolint: exhaustruct
 	c := &cobra.Command{
 		Use:   "ops-revise-pool [initial-deposit] [title] [description] [baseAddr] [quoteAddr] [poolIdx] [feeRate] [tickSize] [jitThresh] [knockout] [oracleFlags]",
 		Short: "Submit Ops proposal: revise existing pool parameters",
@@ -743,7 +748,9 @@ func NewOpsRevisePoolCmd() *cobra.Command { //nolint: exhaustruct
 }
 
 // ops-set-take-rate: set protocol take rate
+// nolint: dupl
 func NewOpsSetTakeRateCmd() *cobra.Command { //nolint: exhaustruct
+	// nolint: exhaustruct
 	c := &cobra.Command{Use: "ops-set-take-rate [initial-deposit] [title] [description] [takeRate]", Short: "Submit Ops proposal: set protocol take rate", Args: cobra.ExactArgs(4), RunE: func(cmd *cobra.Command, args []string) error {
 		initialDeposit, err := sdk.ParseCoinsNormalized(args[0])
 		if err != nil {
@@ -769,7 +776,9 @@ func NewOpsSetTakeRateCmd() *cobra.Command { //nolint: exhaustruct
 }
 
 // ops-set-relayer-take-rate: set relayer take rate
+// nolint: dupl
 func NewOpsSetRelayerTakeRateCmd() *cobra.Command { //nolint: exhaustruct
+	// nolint: exhaustruct
 	c := &cobra.Command{Use: "ops-set-relayer-take-rate [initial-deposit] [title] [description] [takeRate]", Short: "Submit Ops proposal: set relayer take rate", Args: cobra.ExactArgs(4), RunE: func(cmd *cobra.Command, args []string) error {
 		initialDeposit, err := sdk.ParseCoinsNormalized(args[0])
 		if err != nil {
@@ -795,7 +804,9 @@ func NewOpsSetRelayerTakeRateCmd() *cobra.Command { //nolint: exhaustruct
 }
 
 // ops-resync-take-rate: resync protocol take rate on an existing pool
+// nolint: dupl
 func NewOpsResyncTakeRateCmd() *cobra.Command { //nolint: exhaustruct
+	// nolint: exhaustruct
 	c := &cobra.Command{Use: "ops-resync-take-rate [initial-deposit] [title] [description] [baseAddr] [quoteAddr] [poolIdx]", Short: "Submit Ops proposal: resync take rate for pool", Args: cobra.ExactArgs(6), RunE: func(cmd *cobra.Command, args []string) error {
 		initialDeposit, err := sdk.ParseCoinsNormalized(args[0])
 		if err != nil {
@@ -829,7 +840,9 @@ func NewOpsResyncTakeRateCmd() *cobra.Command { //nolint: exhaustruct
 }
 
 // ops-set-new-pool-liq: set initial pool liquidity burn quantity
+// nolint: dupl
 func NewOpsSetNewPoolLiqCmd() *cobra.Command { //nolint: exhaustruct
+	// nolint: exhaustruct
 	c := &cobra.Command{Use: "ops-set-new-pool-liq [initial-deposit] [title] [description] [liq]", Short: "Submit Ops proposal: set initial pool liquidity burn quantity", Args: cobra.ExactArgs(4), RunE: func(cmd *cobra.Command, args []string) error {
 		initialDeposit, err := sdk.ParseCoinsNormalized(args[0])
 		if err != nil {
@@ -856,7 +869,9 @@ func NewOpsSetNewPoolLiqCmd() *cobra.Command { //nolint: exhaustruct
 }
 
 // ops-peg-price-improve: set off-grid price improvement thresholds
+// nolint: dupl
 func NewOpsPegPriceImproveCmd() *cobra.Command { //nolint: exhaustruct
+	// nolint: exhaustruct
 	c := &cobra.Command{Use: "ops-peg-price-improve [initial-deposit] [title] [description] [tokenAddr] [unitTickCollateral] [awayTickTol]", Short: "Submit Ops proposal: set off-grid price improvement thresholds", Args: cobra.ExactArgs(6), RunE: func(cmd *cobra.Command, args []string) error {
 		initialDeposit, err := sdk.ParseCoinsNormalized(args[0])
 		if err != nil {
