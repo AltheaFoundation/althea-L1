@@ -157,8 +157,11 @@ func updateGasfreeParams(ctx sdk.Context, gasfreeKeeper gasfreekeeper.Keeper, ga
 	gasfreeMessages := gasfreeKeeper.GetGasFreeMessageTypes(ctx)
 	gasfreeMessages = append(
 		gasfreeMessages,
+		// nolint: exhaustruct
 		sdk.MsgTypeURL(&erc20types.MsgSendCoinToEVM{}),
+		// nolint: exhaustruct
 		sdk.MsgTypeURL(&erc20types.MsgSendERC20ToCosmos{}),
+		// nolint: exhaustruct
 		sdk.MsgTypeURL(&erc20types.MsgSendERC20ToCosmosAndIBCTransfer{}),
 	)
 	gasfreeKeeper.SetGasFreeMessageTypes(ctx, gasfreeMessages)
