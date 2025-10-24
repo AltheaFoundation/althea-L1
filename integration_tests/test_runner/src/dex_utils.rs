@@ -901,7 +901,7 @@ pub async fn dex_user_cmd(
     let txhash = web30
         .send_prepared_transaction(
             web30
-                .prepare_transaction(dex_contract, payload, native_in, wallet, vec![SendTxOption::GasPriceMultiplier(2.0)])
+                .prepare_transaction(dex_contract, payload, native_in, wallet, vec![])
                 .await?,
         )
         .await?;

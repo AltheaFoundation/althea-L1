@@ -403,7 +403,7 @@ async fn configure_gasfree_params_if_not_configured(
     let fee_bps_value = format!("\"{}\"", fee_basis_points);
     // Add gas free message type list including the new message type (append or overwrite)
     // We include microtx existing default plus MsgSendCoinToEvm
-    let gas_free_message_types = vec![MSG_MICROTX_TYPE_URL, MSG_SEND_COIN_TO_EVM_TYPE_URL];
+    let gas_free_message_types = vec![MSG_MICROTX_TYPE_URL, MSG_SEND_COIN_TO_EVM_TYPE_URL, MSG_SEND_ERC20_TO_COSMOS_TYPE_URL, MSG_SEND_ERC20_TO_COSMOS_AND_IBC_TRANSFER_TYPE_URL];
     let gas_free_message_types_value = serde_json::to_string(&gas_free_message_types).unwrap();
 
     let mut gasfree_qc = GasfreeQueryClient::connect(contact.get_url())

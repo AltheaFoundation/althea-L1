@@ -1164,10 +1164,6 @@ pub async fn submit_and_pass_nativedex_config_proposal(
         amount: one_atom() * 100u8.into(),
         denom: STAKING_TOKEN.clone(),
     };
-    let fee = Coin {
-        amount: 0u8.into(),
-        denom: STAKING_TOKEN.clone(),
-    };
     let res = contact
         .submit_parameter_change_proposal(
             ParameterChangeProposal {
@@ -1189,7 +1185,7 @@ pub async fn submit_and_pass_nativedex_config_proposal(
                 ],
             },
             deposit,
-            fee,
+            get_fee(None),
             keys[0].validator_key,
             Some(OPERATION_TIMEOUT),
         )
