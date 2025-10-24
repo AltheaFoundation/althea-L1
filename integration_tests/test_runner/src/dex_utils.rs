@@ -811,7 +811,6 @@ pub async fn croc_query_level(
     })
 }
 
-
 /// Specifies a swap() call on the DEX contract
 #[derive(Debug, Clone)]
 pub struct SwapArgs {

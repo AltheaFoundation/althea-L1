@@ -149,6 +149,7 @@ pub async fn main() {
                 keys,
                 EVM_USER_KEYS.clone(),
                 erc20_addresses,
+                false,
             )
             .await;
             return;

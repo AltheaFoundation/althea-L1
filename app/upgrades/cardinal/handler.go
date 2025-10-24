@@ -1,4 +1,4 @@
-package example
+package cardinal
 
 import (
 	"math/big"
@@ -18,49 +18,47 @@ import (
 	nativedextypes "github.com/AltheaFoundation/althea-L1/x/nativedex/types"
 )
 
-// TethysToExamplePlanName is the on-chain upgrade plan name this handler is written for.
+// TethysToCardinalPlanName is the on-chain upgrade plan name this handler is written for.
 // It should match the name supplied in the governance upgrade proposal.
-var TethysToExamplePlanName = "example"
+var TethysToCardinalPlanName = "cardinal"
 
-// GetExampleUpgradeHandler returns the upgrade handler for the Example upgrade. It:
+// GetCardinalUpgradeHandler returns the upgrade handler for the Cardinal upgrade. It:
 //  1. Ensures the NativeDex module account exists (needed for nativdex proposals to execute).
 //  2. Fixes the iFi DEX stablecoin pair pool template (36000) to prevent future issues on new stablecoin pair pools.
 //  3. Fixes the stablecoin pair pools (USDC-USDS, USDS-sUSDS, USDS-USDT) to match the updated template.
 //  4. Updates gasfree module parameters to include additional message types.
-func GetExampleUpgradeHandler(
+func GetCardinalUpgradeHandler(
 	mm *module.Manager, configurator *module.Configurator, crisisKeeper *crisiskeeper.Keeper, distrKeeper *distrkeeper.Keeper,
 	accountKeeper authkeeper.AccountKeeper, nativedexKeeper nativedexkeeper.Keeper, gasfreeKeeper gasfreekeeper.Keeper,
 ) func(
 	ctx sdk.Context, plan upgradetypes.Plan, vmap module.VersionMap,
 ) (module.VersionMap, error) {
 	if mm == nil {
-		panic("Nil argument to GetExampleUpgradeHandler")
+		panic("Nil argument to GetCardinalUpgradeHandler")
 	}
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vmap module.VersionMap) (module.VersionMap, error) {
 		ctx.Logger().Info("Module Consensus Version Map", "vmap", vmap)
 
-		ctx.Logger().Info("Example Upgrade: Running any configured module migrations")
+		ctx.Logger().Info("Cardinal Upgrade: Running any configured module migrations")
 		out, outErr := mm.RunMigrations(ctx, *configurator, vmap)
-
-		// TODO: Make sure the store exists - if the params are set somewhere this should be true but not quite sure here
 
 		initModuleAccount(ctx, accountKeeper)
 
 		fixDexTemplate(ctx, nativedexKeeper)
-		usdc := common.HexToAddress("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
-		usds := common.HexToAddress("0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
-		sUsds := common.HexToAddress("0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
-		usdt := common.HexToAddress("0xdAC17F958A7d8bD7cFfC4fE88D12eFbA6C172B0")
+		usdc := common.HexToAddress("0x0412C7c846bb6b7DC462CF6B453f76D8440b2609")
+		usds := common.HexToAddress("0x30dA8589BFa1E509A319489E014d384b87815D89")
+		sUsds := common.HexToAddress("0x9676519d99E390A180Ab1445d5d857E3f6869065")
+		usdt := common.HexToAddress("0x7580bFE88Dd3d07947908FAE12d95872a260F2D8")
 		fixDexPool(ctx, nativedexKeeper, usdc, usds, 36000)
 		fixDexPool(ctx, nativedexKeeper, usds, sUsds, 36000)
 		fixDexPool(ctx, nativedexKeeper, usds, usdt, 36000)
 
-		updateGasfreeParams(ctx, gasfreeKeeper)
+		updateGasfreeParams(ctx, gasfreeKeeper, []common.Address{usdc, usds, sUsds, usdt})
 
 		ctx.Logger().Info("Asserting invariants after upgrade")
 		crisisKeeper.AssertInvariants(ctx)
 
-		ctx.Logger().Info("Example Upgrade Successful")
+		ctx.Logger().Info("Cardinal Upgrade Successful")
 		return out, outErr
 	}
 }
@@ -155,14 +153,24 @@ func fixDexPool(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper, base co
 // updateGasfreeParams adds new messages to the gasfree module params so that machine accounts are able to
 // move stablecoins out of the EVM layer without needing to hold the native token for gas.
 // The messages themselves will handle fee deduction instead.
-func updateGasfreeParams(ctx sdk.Context, gasfreeKeeper gasfreekeeper.Keeper) {
+func updateGasfreeParams(ctx sdk.Context, gasfreeKeeper gasfreekeeper.Keeper, gasfreeErc20InteropTokens []common.Address) {
 	gasfreeMessages := gasfreeKeeper.GetGasFreeMessageTypes(ctx)
 	gasfreeMessages = append(
 		gasfreeMessages,
+		// nolint: exhaustruct
 		sdk.MsgTypeURL(&erc20types.MsgSendCoinToEVM{}),
+		// nolint: exhaustruct
 		sdk.MsgTypeURL(&erc20types.MsgSendERC20ToCosmos{}),
+		// nolint: exhaustruct
 		sdk.MsgTypeURL(&erc20types.MsgSendERC20ToCosmosAndIBCTransfer{}),
 	)
 	gasfreeKeeper.SetGasFreeMessageTypes(ctx, gasfreeMessages)
 	ctx.Logger().Info("Successfully updated gasfree message types", "gasfreeMessages", gasfreeMessages)
+
+	stringAddresses := make([]string, len(gasfreeErc20InteropTokens))
+	for i, addr := range gasfreeErc20InteropTokens {
+		stringAddresses[i] = addr.Hex()
+	}
+	gasfreeKeeper.SetGasfreeErc20InteropTokens(ctx, stringAddresses)
+	ctx.Logger().Info("Successfully updated gasfree ERC20 interop tokens", "gasfreeErc20InteropTokens", stringAddresses)
 }
