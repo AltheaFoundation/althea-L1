@@ -222,5 +222,5 @@ jobs:
         with:
           workspaces: integration_tests/
           cache-on-failure: true
-      - name: Tests the EXAMPLE upgrade
-        run: tests/run-upgrade-test.sh v1.5.1
+      - name: Tests the CARDINAL upgrade
+        run: tests/run-upgrade-test.sh v1.5.3

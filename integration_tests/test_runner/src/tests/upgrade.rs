@@ -1,3 +1,5 @@
+use crate::tests::evm_fee_burning::evm_fee_burning_test;
+use crate::tests::ica_host::ica_host_happy_path;
 use crate::utils::{
     execute_upgrade_proposal, wait_for_block, UpgradeProposalParams, ValidatorKeys, EVM_USER_KEYS,
 };
@@ -12,7 +14,7 @@ use super::erc20_conversion::erc20_conversion_test;
 use super::microtx_fees::microtx_fees_test;
 use super::native_token::native_token_test;
 
-pub const UPGRADE_NAME: &str = "example";
+pub const UPGRADE_NAME: &str = "cardinal";
 const UPGRADE_BLOCK_DELTA: u64 = 30;
 
 /// Perform a series of integration tests to seed the system with data, then submit and pass a chain
@@ -141,10 +143,18 @@ pub async fn run_all_recoverable_tests(
         web30,
         keys.clone(),
         EVM_USER_KEYS.clone(),
-        erc20_addresses,
+        erc20_addresses.clone(),
     )
     .await;
     microtx_fees_test(contact, keys.clone()).await;
+    evm_fee_burning_test(
+        contact,
+        web30,
+        keys.clone(),
+        EVM_USER_KEYS.clone(),
+        erc20_addresses.clone(),
+    )
+    .await;
 }
 
 // These tests should fail in upgrade_part_1() but pass in upgrade_part_2()
