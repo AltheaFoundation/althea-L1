@@ -195,6 +195,29 @@ If you just want to have a fully functioning instance of Althea-L1 running local
 
 In particular, you can run any of the `DEX` tests to connect the Althea-DEX to Cosmos governance and initialize pools, with the `DEX_ADVANCED` and `DEX_SWAP_MANY` tests being convenient ways to get several pools with decent liquidity seeded for general testing.
 
+### Running upgrade tests
+
+There are two ways of running upgrade tests, and they are both manual.
+An upgrade test used to be run in CI, however it usually failed and even when preparing for an upgrade, it was not worth the effort.
+
+1. `tests/manual-upgrade-test.sh`
+
+This test sets up a testnet using the old version of the code provided as an argument to the script.
+Once the chain is up and running, it expects you to perform any operations or tests manually for the test.
+In another terminal window, you will be able to execute any desired tests by running `tests/run-tests.sh <TEST NAME>`. You may wish to run UPGRADE_PART_1, assuming that has been set up for your testing. UPGRADE_PART_1 should initiate a governance proposal to upgrade the chain, and the chain will likely be halted by the time it finishes.
+
+After performing any setup, hitting Enter in the original terminal window will progress the test to phase 2, where the new binary will be running. Again, in another terminal window you may run any tests you like using `tests/run-tests.sh <TEST NAME>` and can log into the container (using `docker exec -it`) to make any post-upgrade state changes happen.
+
+2. Mainnet state upgrade testing
+
+If you check out the tools/manual-upgrade-tester branch, some changes to the app/app.go file will be applied. These changes make it possible to run the upgrade early on a full node which is synced to the current chain state, simulating the upgrade you have prepared (but not running any blocks after the upgrade, unfortunately).
+
+It is recommended to perform a full backup of the node before running any such tests, by running `cp --reflink=always <Node home folder> <backup folder name>`.
+
+On the `tools/manual-upgrade-tester` branch you will need to change the upgrade name (look for the lines with ^v^v^v for help), then run `make test`. If you run the binary which is produced using the node's home folder and provide the ALTHEA_UPGRADE_HEIGHT env var as the last block height + 1, you should see any upgrade logic logs ocurring shortly after startup (it may take 1-5 minutes to start up, so have a little patience).
+
+It should be possible to change the state to make the chain run with a single validator and e.g. run some of the integration tests after the upgrade takes place, but the work to do this has not been done yet.
+
 # Working inside the container
 
 This provides access to a terminal inside the test container
