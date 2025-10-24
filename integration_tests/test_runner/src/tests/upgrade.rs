@@ -1,3 +1,4 @@
+use crate::bootstrapping::start_ibc_relayer;
 use crate::tests::evm_fee_burning::evm_fee_burning_test;
 use crate::tests::gasfree_erc20::gasfree_erc20_interop_test;
 use crate::utils::{
@@ -14,7 +15,7 @@ use super::erc20_conversion::erc20_conversion_test;
 use super::microtx_fees::microtx_fees_test;
 use super::native_token::native_token_test;
 
-pub const UPGRADE_NAME: &str = "example";
+pub const UPGRADE_NAME: &str = "cardinal";
 const UPGRADE_BLOCK_DELTA: u64 = 30;
 
 /// Perform a series of integration tests to seed the system with data, then submit and pass a chain
@@ -183,7 +184,14 @@ pub async fn run_all_recoverable_tests(
     )
     .await;
     microtx_fees_test(contact, keys.clone()).await;
-    evm_fee_burning_test(contact, web30, keys.clone(), EVM_USER_KEYS.clone(), erc20_addresses.clone()).await;
+    evm_fee_burning_test(
+        contact,
+        web30,
+        keys.clone(),
+        EVM_USER_KEYS.clone(),
+        erc20_addresses.clone(),
+    )
+    .await;
 }
 
 // These tests should fail in upgrade_part_1() but pass in upgrade_part_2()
@@ -193,10 +201,11 @@ pub async fn run_upgrade_specific_tests(
     althea_contact: &Contact,
     ibc_contact: &Contact,
     validator_keys: Vec<ValidatorKeys>,
-    _ibc_keys: Vec<CosmosPrivateKey>,
+    ibc_keys: Vec<CosmosPrivateKey>,
     erc20_contracts: Vec<EthAddress>,
     post_upgrade: bool,
 ) {
-    gasfree_erc20_interop_test(althea_contact, ibc_contact, web30, validator_keys, EVM_USER_KEYS.clone(), erc20_contracts).await;
+    start_ibc_relayer(althea_contact, ibc_contact, &validator_keys, &ibc_keys).await;
+    gasfree_erc20_interop_test(althea_contact, ibc_contact, web30, validator_keys, EVM_USER_KEYS.clone(), erc20_contracts, !post_upgrade).await;
 }
 

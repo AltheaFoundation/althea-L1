@@ -10,7 +10,7 @@ use num::{ToPrimitive, Zero};
 use web30::{
     client::Web3,
     jsonrpc::error::Web3Error,
-    types::{SendTxOption, TransactionRequest, TransactionResponse},
+    types::{TransactionRequest, TransactionResponse},
 };
 
 use crate::utils::OPERATION_TIMEOUT;
@@ -810,7 +810,6 @@ pub async fn croc_query_level(
         odometer,
     })
 }
-
 
 /// Specifies a swap() call on the DEX contract
 #[derive(Debug, Clone)]

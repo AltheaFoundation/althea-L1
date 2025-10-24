@@ -8,7 +8,10 @@ use crate::type_urls::{
     MSG_SEND_ERC20_TO_COSMOS_AND_IBC_TRANSFER_TYPE_URL, MSG_SEND_ERC20_TO_COSMOS_TYPE_URL,
 };
 use crate::utils::{
-    COSMOS_NODE_GRPC, IBC_ADDRESS_PREFIX, IBC_NODE_GRPC, OPERATION_TIMEOUT, RegisterCoinProposalParams, STAKING_TOKEN, TOTAL_TIMEOUT, ValidatorKeys, execute_register_coin_proposal, footoken_metadata, get_fee, get_fee_option, get_ibc_chain_id, get_user_key, one_atom, vote_yes_on_proposals, wait_for_proposals_to_execute
+    execute_register_coin_proposal, footoken_metadata, get_fee, get_fee_option, get_ibc_chain_id,
+    get_user_key, one_atom, vote_yes_on_proposals, wait_for_proposals_to_execute,
+    RegisterCoinProposalParams, ValidatorKeys, COSMOS_NODE_GRPC, IBC_ADDRESS_PREFIX, IBC_NODE_GRPC,
+    OPERATION_TIMEOUT, STAKING_TOKEN, TOTAL_TIMEOUT,
 };
 use althea_proto::althea::erc20::v1::query_client::QueryClient as Erc20QueryClient;
 use althea_proto::althea::erc20::v1::{
@@ -45,6 +48,7 @@ pub async fn gasfree_erc20_interop_test(
     validator_keys: Vec<ValidatorKeys>,
     evm_user_keys: Vec<EthermintUserKey>,
     erc20_contracts: Vec<EthAddress>,
+    expect_failure: bool,
 ) {
     gasfree_send_coin_to_evm_test(
         althea_contact,
@@ -52,6 +56,7 @@ pub async fn gasfree_erc20_interop_test(
         &validator_keys,
         &evm_user_keys,
         &erc20_contracts,
+        expect_failure,
     )
     .await;
     gasfree_send_erc20_to_cosmos_test(
@@ -60,6 +65,7 @@ pub async fn gasfree_erc20_interop_test(
         &validator_keys,
         &evm_user_keys,
         &erc20_contracts,
+        expect_failure,
     )
     .await;
     gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
@@ -69,6 +75,7 @@ pub async fn gasfree_erc20_interop_test(
         &validator_keys,
         &evm_user_keys,
         &erc20_contracts,
+        expect_failure,
     )
     .await;
 
@@ -78,6 +85,7 @@ pub async fn gasfree_erc20_interop_test(
         &validator_keys,
         &evm_user_keys,
         &erc20_contracts,
+        expect_failure,
     )
     .await;
     gasfree_send_erc20_to_cosmos_insufficient_balance_test(
@@ -86,6 +94,7 @@ pub async fn gasfree_erc20_interop_test(
         &validator_keys,
         &evm_user_keys,
         &erc20_contracts,
+        expect_failure,
     )
     .await;
     gasfree_send_erc20_to_cosmos_and_ibc_transfer_insufficient_balance_test(
@@ -94,6 +103,7 @@ pub async fn gasfree_erc20_interop_test(
         &validator_keys,
         &evm_user_keys,
         &erc20_contracts,
+        expect_failure,
     )
     .await;
 
@@ -108,6 +118,7 @@ pub async fn gasfree_send_coin_to_evm_test(
     validator_keys: &[ValidatorKeys],
     evm_user_keys: &[EthermintUserKey],
     erc20_contracts: &[EthAddress],
+    expect_failure: bool,
 ) {
     info!("Starting gasfree MsgSendCoinToEvm test");
 
@@ -181,47 +192,60 @@ pub async fn gasfree_send_coin_to_evm_test(
             &[registered_denom.clone(), registered_erc20.clone()],
             fee_basis_points,
             validator_keys,
+            expect_failure,
         )
         .await;
     } else {
         info!("Skipping gasfree parameter change governance due to SKIP_GOV");
     }
 
-    // Fund the user with the cosmos coin to be sent
-    contact
-        .send_coins(
-            Coin {
-                amount: send_total + fee_total,
-                denom: registered_denom.clone(),
-            },
-            get_fee_option(None),
-            user.ethermint_address,
-            Some(OPERATION_TIMEOUT),
-            validator_keys.last().unwrap().validator_key,
-        )
+    let begin_bank_balance = contact
+        .get_balance(user.ethermint_address, registered_denom.clone())
         .await
-        .expect("Unable to fund user with test coin");
+        .unwrap()
+        .unwrap();
+    if begin_bank_balance.amount < send_total + fee_total {
+        // Fund the user with the cosmos coin to be sent
+        contact
+            .send_coins(
+                Coin {
+                    amount: send_total + fee_total,
+                    denom: registered_denom.clone(),
+                },
+                get_fee_option(None),
+                user.ethermint_address,
+                Some(OPERATION_TIMEOUT),
+                validator_keys.last().unwrap().validator_key,
+            )
+            .await
+            .expect("Unable to fund user with test coin");
+    }
+    let begin_evm_balance = web3
+        .get_erc20_balance(denom_erc20_address, user.eth_address)
+        .await
+        .expect("Could not query starting ERC20 balance");
+    if begin_evm_balance < send_total + fee_total {
+        // Fund the user with the erc20 token's cosmos representation to be sent
+        let erc20_to_cosmos_msg = MsgConvertErc20 {
+            amount: (send_total + fee_total).to_string(),
+            contract_address: registered_erc20.to_string(),
+            receiver: user.ethermint_address.to_string(),
+            sender: user.eth_address.to_string(),
+        };
+        info!("Planning to send this MsgConvertErc20: {erc20_to_cosmos_msg:?}");
+        let msg = Msg::new(MSG_CONVERT_ERC20_TYPE_URL, erc20_to_cosmos_msg);
 
-    // Fund the user with the erc20 token's cosmos representation to be sent
-    let erc20_to_cosmos_msg = MsgConvertErc20 {
-        amount: (send_total + fee_total).to_string(),
-        contract_address: registered_erc20.to_string(),
-        receiver: user.ethermint_address.to_string(),
-        sender: user.eth_address.to_string(),
-    };
-    info!("Planning to send this MsgConvertErc20: {erc20_to_cosmos_msg:?}");
-    let msg = Msg::new(MSG_CONVERT_ERC20_TYPE_URL, erc20_to_cosmos_msg);
-
-    let _ = contact
-        .send_message(
-            &[msg],
-            None,
-            &[get_fee(None)],
-            Some(OPERATION_TIMEOUT),
-            None,
-            user.ethermint_key,
-        )
-        .await;
+        let _ = contact
+            .send_message(
+                &[msg],
+                None,
+                &[get_fee(None)],
+                Some(OPERATION_TIMEOUT),
+                None,
+                user.ethermint_key,
+            )
+            .await;
+    }
 
     let start_balance_coin = contact
         .get_balance(user.ethermint_address, registered_denom.clone())
@@ -245,8 +269,13 @@ pub async fn gasfree_send_coin_to_evm_test(
 
     // Iterate through each amount, submit a MsgSendCoinToEvm and check the balances change correctly
     for (send_amount, fee_amount) in amounts.iter().zip(fee_amounts.iter()) {
-        let start_balance = contact
+        let start_balance_coin = contact
             .get_balance(user.ethermint_address, registered_denom.clone())
+            .await
+            .unwrap()
+            .unwrap();
+        let start_balance_erc20 = contact
+            .get_balance(user.ethermint_address, erc20_denom.clone())
             .await
             .unwrap()
             .unwrap();
@@ -277,8 +306,16 @@ pub async fn gasfree_send_coin_to_evm_test(
                 None,
                 user.ethermint_key,
             )
-            .await
-            .expect("MsgSendCoinToEvm failed");
+            .await;
+        if !expect_failure {
+            res_coin.as_ref().expect("MsgSendCoinToEvm failed");
+        } else {
+            res_coin
+                .as_ref()
+                .expect_err("expected MsgSendCoinToEvm to fail");
+            return;
+        }
+        let res_coin = res_coin.unwrap();
         info!(
             "Executed gasfree MsgSendCoinToEvm tx gas_used={} hash={}",
             res_coin.gas_used(),
@@ -295,11 +332,11 @@ pub async fn gasfree_send_coin_to_evm_test(
             .await
             .expect("Could not query ERC20 balance after send");
 
-        let expected_bank_coin = start_balance.amount - *send_amount - *fee_amount;
+        let expected_bank_coin = start_balance_coin.amount - *send_amount - *fee_amount;
         assert_eq!(
             bank_balance_coin.amount, expected_bank_coin,
             "Cosmos balance not reduced by send amount + fee (start {} end {} expected {})",
-            start_balance.amount, bank_balance_coin.amount, expected_bank_coin
+            start_balance_coin.amount, bank_balance_coin.amount, expected_bank_coin
         );
         assert!(
             evm_balance_coin >= *send_amount,
@@ -319,8 +356,16 @@ pub async fn gasfree_send_coin_to_evm_test(
                 None,
                 user.ethermint_key,
             )
-            .await
-            .expect("MsgSendCoinToEvm failed");
+            .await;
+        if !expect_failure {
+            res_erc20.as_ref().expect("MsgSendCoinToEvm failed");
+        } else {
+            res_erc20
+                .as_ref()
+                .expect_err("expected MsgSendCoinToEvm to fail");
+            return;
+        }
+        let res_erc20 = res_erc20.unwrap();
         info!(
             "Executed gasfree MsgSendCoinToEvm tx gas_used={} hash={}",
             res_erc20.gas_used(),
@@ -337,11 +382,11 @@ pub async fn gasfree_send_coin_to_evm_test(
             .await
             .expect("Could not query ERC20 balance after send");
 
-        let expected_bank_erc20 = start_balance.amount - *send_amount - *fee_amount;
+        let expected_bank_erc20 = start_balance_erc20.amount - *send_amount - *fee_amount;
         assert_eq!(
             bank_balance_erc20.amount, expected_bank_erc20,
             "Cosmos balance not reduced by send amount + fee (start {} end {} expected {})",
-            start_balance.amount, bank_balance_erc20.amount, expected_bank_erc20
+            start_balance_coin.amount, bank_balance_erc20.amount, expected_bank_erc20
         );
         assert!(
             evm_balance_erc20 >= *send_amount,
@@ -395,6 +440,7 @@ async fn configure_gasfree_params_if_not_configured(
     denoms: &[String],
     fee_basis_points: u64,
     validator_keys: &[ValidatorKeys],
+    expect_failure: bool,
 ) {
     // Build JSON values expected by params module (strings encoded like existing tests)
     // gas_free_erc20_interop_tokens is a JSON array of strings
@@ -403,7 +449,12 @@ async fn configure_gasfree_params_if_not_configured(
     let fee_bps_value = format!("\"{}\"", fee_basis_points);
     // Add gas free message type list including the new message type (append or overwrite)
     // We include microtx existing default plus MsgSendCoinToEvm
-    let gas_free_message_types = vec![MSG_MICROTX_TYPE_URL, MSG_SEND_COIN_TO_EVM_TYPE_URL, MSG_SEND_ERC20_TO_COSMOS_TYPE_URL, MSG_SEND_ERC20_TO_COSMOS_AND_IBC_TRANSFER_TYPE_URL];
+    let gas_free_message_types = vec![
+        MSG_MICROTX_TYPE_URL,
+        MSG_SEND_COIN_TO_EVM_TYPE_URL,
+        MSG_SEND_ERC20_TO_COSMOS_TYPE_URL,
+        MSG_SEND_ERC20_TO_COSMOS_AND_IBC_TRANSFER_TYPE_URL,
+    ];
     let gas_free_message_types_value = serde_json::to_string(&gas_free_message_types).unwrap();
 
     let mut gasfree_qc = GasfreeQueryClient::connect(contact.get_url())
@@ -441,7 +492,7 @@ async fn configure_gasfree_params_if_not_configured(
     }
 
     if !continue_on {
-        info!("Gasfree params already configured for SendCoinToEvm test, skipping parameter change proposal");
+        info!("Gasfree params already configured for test, skipping parameter change proposal");
         return;
     }
     let proposal = ParameterChangeProposal {
@@ -485,8 +536,17 @@ async fn configure_gasfree_params_if_not_configured(
             validator_keys.first().unwrap().validator_key,
             Some(OPERATION_TIMEOUT),
         )
-        .await
-        .expect("parameter change proposal submission failed");
+        .await;
+
+    if !expect_failure {
+        res.as_ref()
+            .expect("parameter change proposal submission failed");
+    } else {
+        res.as_ref()
+            .expect_err("expected parameter change proposal submission to fail");
+        return;
+    }
+    let res = res.unwrap();
     info!(
         "Submitted gasfree param change proposal: {:?}",
         res.raw_log()
@@ -519,6 +579,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
     validator_keys: &[ValidatorKeys],
     evm_user_keys: &[EthermintUserKey],
     erc20_contracts: &[EthAddress],
+    expect_failure: bool,
 ) {
     info!("Starting gasfree MsgSendErc20ToCosmos test");
 
@@ -592,6 +653,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
+            expect_failure,
         )
         .await;
     } else {
@@ -599,40 +661,54 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
     }
 
     // Fund the user with enough of the cosmos coin to pay fees and send back to cosmos
-    contact
-        .send_coins(
-            Coin {
-                amount: send_total + fee_total,
+    let begin_bank_balance = contact
+        .get_balance(user.ethermint_address, registered_denom.clone())
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
+
+    if begin_bank_balance.amount < send_total + fee_total {
+        contact
+            .send_coins(
+                Coin {
+                    amount: send_total + fee_total,
+                    denom: registered_denom.clone(),
+                },
+                get_fee_option(None),
+                user.ethermint_address,
+                Some(OPERATION_TIMEOUT),
+                validator_keys.last().unwrap().validator_key,
+            )
+            .await
+            .expect("Unable to fund user with test coin");
+    }
+    let begin_evm_balance = web3
+        .get_erc20_balance(denom_erc20_address, user.eth_address)
+        .await
+        .unwrap_or_default();
+    if begin_evm_balance < send_total + fee_total {
+        let msg = MsgConvertCoin {
+            coin: Some(ProtoCoin {
+                amount: (send_total + fee_total).to_string(),
                 denom: registered_denom.clone(),
-            },
-            get_fee_option(None),
-            user.ethermint_address,
-            Some(OPERATION_TIMEOUT),
-            validator_keys.last().unwrap().validator_key,
-        )
-        .await
-        .expect("Unable to fund user with test coin");
-    let msg = MsgConvertCoin {
-        coin: Some(ProtoCoin {
-            amount: (send_total + fee_total).to_string(),
-            denom: registered_denom.clone(),
-        }),
-        sender: user.ethermint_address.to_string(),
-        receiver: user.eth_address.to_string(),
-    };
-    info!("Sending MsgConvertCoin: {:?}", msg);
-    let cosmos_msg = Msg::new(MSG_CONVERT_COIN_TYPE_URL, msg);
-    contact
-        .send_message(
-            &[cosmos_msg],
-            None,
-            &[get_fee(None)], // no fee coin intentionally
-            Some(OPERATION_TIMEOUT),
-            None,
-            user.ethermint_key,
-        )
-        .await
-        .expect("MsgSendCoinToEvm failed");
+            }),
+            sender: user.ethermint_address.to_string(),
+            receiver: user.eth_address.to_string(),
+        };
+        info!("Sending MsgConvertCoin: {:?}", msg);
+        let cosmos_msg = Msg::new(MSG_CONVERT_COIN_TYPE_URL, msg);
+        contact
+            .send_message(
+                &[cosmos_msg],
+                None,
+                &[get_fee(None)], // no fee coin intentionally
+                Some(OPERATION_TIMEOUT),
+                None,
+                user.ethermint_key,
+            )
+            .await
+            .expect("MsgSendCoinToEvm failed");
+    }
 
     // Fund the user with the erc20 token's cosmos representation to be sent
     let erc20_to_cosmos_msg = MsgConvertErc20 {
@@ -727,39 +803,49 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
                 None,
                 user.ethermint_key,
             )
-            .await
-            .expect("MsgSendErc20ToCosmos failed");
+            .await;
+        if !expect_failure {
+            res_coin.as_ref().expect("MsgSendErc20ToCosmos failed");
+        } else {
+            res_coin
+                .as_ref()
+                .expect_err("expected MsgSendErc20ToCosmos to fail");
+            return;
+        }
+        let res_coin = res_coin.unwrap();
         info!(
             "Executed gasfree MsgSendErc20ToCosmos tx gas_used={} hash={}",
             res_coin.gas_used(),
             res_coin.txhash()
         );
 
-        let bank_balance_coin = contact
-            .get_balance(user.ethermint_address, registered_denom.clone())
-            .await
-            .unwrap()
-            .unwrap_or_else(|| deep_space::Coin {
-                amount: Uint256::zero(),
-                denom: registered_denom.clone(),
-            });
-        let evm_balance_coin = web3
-            .get_erc20_balance(denom_erc20_address, user.eth_address)
-            .await
-            .expect("Could not query ERC20 balance after send");
+        if !expect_failure {
+            let bank_balance_coin = contact
+                .get_balance(user.ethermint_address, registered_denom.clone())
+                .await
+                .unwrap()
+                .unwrap_or_else(|| deep_space::Coin {
+                    amount: Uint256::zero(),
+                    denom: registered_denom.clone(),
+                });
+            let evm_balance_coin = web3
+                .get_erc20_balance(denom_erc20_address, user.eth_address)
+                .await
+                .expect("Could not query ERC20 balance after send");
 
-        let expected_evm_coin = start_evm_coin - *send_amount - *fee_amount;
-        let expected_bank_coin = start_bank_coin.amount + *send_amount;
-        assert_eq!(
-            evm_balance_coin, expected_evm_coin,
-            "EVM balance not reduced by send amount and fee (start {} end {} expected {})",
-            start_evm_coin, evm_balance_coin, expected_evm_coin
-        );
-        assert_eq!(
-            bank_balance_coin.amount, expected_bank_coin,
-            "Cosmos balance not increased by send amount (start {} end {} expected {})",
-            start_bank_coin.amount, bank_balance_coin.amount, expected_bank_coin
-        );
+            let expected_evm_coin = start_evm_coin - *send_amount - *fee_amount;
+            let expected_bank_coin = start_bank_coin.amount + *send_amount;
+            assert_eq!(
+                evm_balance_coin, expected_evm_coin,
+                "EVM balance not reduced by send amount and fee (start {} end {} expected {})",
+                start_evm_coin, evm_balance_coin, expected_evm_coin
+            );
+            assert_eq!(
+                bank_balance_coin.amount, expected_bank_coin,
+                "Cosmos balance not increased by send amount (start {} end {} expected {})",
+                start_bank_coin.amount, bank_balance_coin.amount, expected_bank_coin
+            );
+        }
 
         // -------------------------------
 
@@ -774,39 +860,50 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
                 None,
                 user.ethermint_key,
             )
-            .await
-            .expect("MsgSendErc20ToCosmos failed");
+            .await;
+        if !expect_failure {
+            res_erc20.as_ref().expect("MsgSendErc20ToCosmos failed");
+        } else {
+            res_erc20
+                .as_ref()
+                .expect_err("expected MsgSendErc20ToCosmos to fail");
+            return;
+        }
+        let res_erc20 = res_erc20.unwrap();
+
         info!(
             "Executed gasfree MsgSendErc20ToCosmos tx gas_used={} hash={}",
             res_erc20.gas_used(),
             res_erc20.txhash()
         );
 
-        let bank_balance_erc20 = contact
-            .get_balance(user.ethermint_address, erc20_denom.to_string())
-            .await
-            .unwrap()
-            .unwrap_or_else(|| deep_space::Coin {
-                amount: Uint256::zero(),
-                denom: erc20_denom.to_string(),
-            });
-        let evm_balance_erc20 = web3
-            .get_erc20_balance(*registered_erc20, user.eth_address)
-            .await
-            .expect("Could not query ERC20 balance after send");
+        if !expect_failure {
+            let bank_balance_erc20 = contact
+                .get_balance(user.ethermint_address, erc20_denom.to_string())
+                .await
+                .unwrap()
+                .unwrap_or_else(|| deep_space::Coin {
+                    amount: Uint256::zero(),
+                    denom: erc20_denom.to_string(),
+                });
+            let evm_balance_erc20 = web3
+                .get_erc20_balance(*registered_erc20, user.eth_address)
+                .await
+                .expect("Could not query ERC20 balance after send");
 
-        let expected_evm_erc20 = start_evm_erc20 - *send_amount - *fee_amount;
-        let expected_bank_erc20 = start_bank_erc20.amount + *send_amount;
-        assert_eq!(
-            evm_balance_erc20, expected_evm_erc20,
-            "EVM balance not reduced by send amount - fee (start {} end {} expected {})",
-            start_evm_erc20, evm_balance_erc20, expected_evm_erc20
-        );
-        assert_eq!(
-            bank_balance_erc20.amount, expected_bank_erc20,
-            "Cosmos balance not increased by send amount (start {} end {} expected {})",
-            start_bank_erc20.amount, bank_balance_erc20.amount, expected_bank_erc20
-        );
+            let expected_evm_erc20 = start_evm_erc20 - *send_amount - *fee_amount;
+            let expected_bank_erc20 = start_bank_erc20.amount + *send_amount;
+            assert_eq!(
+                evm_balance_erc20, expected_evm_erc20,
+                "EVM balance not reduced by send amount - fee (start {} end {} expected {})",
+                start_evm_erc20, evm_balance_erc20, expected_evm_erc20
+            );
+            assert_eq!(
+                bank_balance_erc20.amount, expected_bank_erc20,
+                "Cosmos balance not increased by send amount (start {} end {} expected {})",
+                start_bank_erc20.amount, bank_balance_erc20.amount, expected_bank_erc20
+            );
+        }
     }
 
     info!("Gasfree MsgSendErc20ToCosmos test successful");
@@ -821,6 +918,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
     validator_keys: &[ValidatorKeys],
     evm_user_keys: &[EthermintUserKey],
     erc20_contracts: &[EthAddress],
+    expect_failure: bool,
 ) {
     info!("Starting gasfree MsgSendERC20ToCosmosAndIBCTransfer test");
 
@@ -910,6 +1008,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
+            expect_failure,
         )
         .await;
     } else {
@@ -919,43 +1018,55 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
     let user = evm_user_keys.first().expect("No EVM users provided");
     let ibc_address = user.ethermint_key.to_address(&IBC_ADDRESS_PREFIX).unwrap();
 
-    // Fund the user with the cosmos coin to pay fees and send over IBC
-    althea_contact
-        .send_coins(
-            Coin {
-                amount: amount_total + fee_total,
+    let begin_bank_balance = althea_contact
+        .get_balance(user.ethermint_address, registered_denom.clone())
+        .await
+        .unwrap_or_default()
+        .unwrap_or_default();
+    if begin_bank_balance.amount < amount_total + fee_total {
+        // Fund the user with the cosmos coin to pay fees and send over IBC
+        althea_contact
+            .send_coins(
+                Coin {
+                    amount: amount_total + fee_total,
+                    denom: registered_denom.clone(),
+                },
+                get_fee_option(None),
+                user.ethermint_address,
+                Some(OPERATION_TIMEOUT),
+                validator_keys.last().unwrap().validator_key,
+            )
+            .await
+            .expect("Unable to fund user with test coin");
+    }
+    let begin_evm_balance = web3
+        .get_erc20_balance(denom_erc20_address, user.eth_address)
+        .await
+        .unwrap_or_default();
+    if begin_evm_balance < amount_total + fee_total {
+        let msg = MsgConvertCoin {
+            coin: Some(ProtoCoin {
+                amount: (amount_total + fee_total).to_string(),
                 denom: registered_denom.clone(),
-            },
-            get_fee_option(None),
-            user.ethermint_address,
-            Some(OPERATION_TIMEOUT),
-            validator_keys.last().unwrap().validator_key,
-        )
-        .await
-        .expect("Unable to fund user with test coin");
-    let msg = MsgConvertCoin {
-        coin: Some(ProtoCoin {
-            amount: (amount_total + fee_total).to_string(),
-            denom: registered_denom.clone(),
-        }),
-        sender: user.ethermint_address.to_string(),
-        receiver: user.eth_address.to_string(),
-    };
+            }),
+            sender: user.ethermint_address.to_string(),
+            receiver: user.eth_address.to_string(),
+        };
 
-    info!("Sending MsgConvertCoin: {:?}", msg);
-    let cosmos_msg = Msg::new(MSG_CONVERT_COIN_TYPE_URL, msg);
-    althea_contact
-        .send_message(
-            &[cosmos_msg],
-            None,
-            &[get_fee(None)],
-            Some(OPERATION_TIMEOUT),
-            None,
-            user.ethermint_key,
-        )
-        .await
-        .expect("MsgSendCoinToEvm failed");
-
+        info!("Sending MsgConvertCoin: {:?}", msg);
+        let cosmos_msg = Msg::new(MSG_CONVERT_COIN_TYPE_URL, msg);
+        althea_contact
+            .send_message(
+                &[cosmos_msg],
+                None,
+                &[get_fee(None)],
+                Some(OPERATION_TIMEOUT),
+                None,
+                user.ethermint_key,
+            )
+            .await
+            .expect("MsgSendCoinToEvm failed");
+    }
     let start_evm_balance_erc20 = web3
         .get_erc20_balance(*registered_erc20, user.eth_address)
         .await
@@ -1009,8 +1120,18 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
                 None,
                 user.ethermint_key,
             )
-            .await
-            .expect("MsgSendErc20ToCosmosAndIBCTransfer failed");
+            .await;
+        if !expect_failure {
+            res_erc20
+                .as_ref()
+                .expect("MsgSendErc20ToCosmosAndIBCTransfer failed");
+        } else {
+            res_erc20
+                .as_ref()
+                .expect_err("expected MsgSendErc20ToCosmosAndIBCTransfer to fail");
+            return;
+        }
+        let res_erc20 = res_erc20.unwrap();
         info!(
             "Executed gasfree MsgSendErc20ToCosmosAndIBCTransfer tx gas_used={} hash={}",
             res_erc20.gas_used(),
@@ -1035,8 +1156,18 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
                 None,
                 user.ethermint_key,
             )
-            .await
-            .expect("MsgSendErc20ToCosmosAndIBCTransfer failed");
+            .await;
+        if !expect_failure {
+            res_denom
+                .as_ref()
+                .expect("MsgSendErc20ToCosmosAndIBCTransfer failed");
+        } else {
+            res_denom
+                .as_ref()
+                .expect_err("expected MsgSendErc20ToCosmosAndIBCTransfer to fail");
+            return;
+        }
+        let res_denom = res_denom.unwrap();
         info!(
             "Executed gasfree MsgSendErc20ToCosmosAndIBCTransfer tx gas_used={} hash={}",
             res_denom.gas_used(),
@@ -1044,99 +1175,107 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
         );
     }
 
-    sleep(Duration::from_secs(60));
+    if !expect_failure {
+        sleep(Duration::from_secs(60));
 
-    let ibc_erc20 = get_hash_for_denom_trace(
-        erc20_denom.clone(),
-        "channel-0".to_string(),
-        None,
-        ibc_ibc_transfer_qc.clone(),
-    )
-    .await
-    .expect("Could not get erc20 coin denom on ibc chain");
-    let ibc_denom = get_hash_for_denom_trace(
-        registered_denom.clone(),
-        "channel-0".to_string(),
-        None,
-        ibc_ibc_transfer_qc.clone(),
-    )
-    .await
-    .expect("Could not get althea bank coin denom on ibc chain");
+        let ibc_erc20 = get_hash_for_denom_trace(
+            erc20_denom.clone(),
+            "channel-0".to_string(),
+            None,
+            ibc_ibc_transfer_qc.clone(),
+        )
+        .await
+        .expect("Could not get erc20 coin denom on ibc chain");
+        let ibc_denom = get_hash_for_denom_trace(
+            registered_denom.clone(),
+            "channel-0".to_string(),
+            None,
+            ibc_ibc_transfer_qc.clone(),
+        )
+        .await
+        .expect("Could not get althea bank coin denom on ibc chain");
 
-    let ibc_balance_erc20 = ibc_contact
-        .get_balance(ibc_address, ibc_erc20.clone())
-        .await
-        .expect("Could not get ibc erc20 balance")
-        .unwrap_or(Coin {
-            amount: 0u8.into(),
-            denom: ibc_erc20.clone(),
-        });
-    let end_evm_balance_erc20 = web3
-        .get_erc20_balance(*registered_erc20, user.eth_address)
-        .await
-        .expect("Could not query ERC20 balance before send");
-    let end_althea_balance_erc20 = althea_contact
-        .get_balance(user.ethermint_address, erc20_denom.clone())
-        .await
-        .unwrap()
-        .unwrap();
+        let ibc_balance_erc20 = ibc_contact
+            .get_balance(ibc_address, ibc_erc20.clone())
+            .await
+            .expect("Could not get ibc erc20 balance")
+            .unwrap_or(Coin {
+                amount: 0u8.into(),
+                denom: ibc_erc20.clone(),
+            });
+        let end_evm_balance_erc20 = web3
+            .get_erc20_balance(*registered_erc20, user.eth_address)
+            .await
+            .expect("Could not query ERC20 balance before send");
+        let end_althea_balance_erc20 = althea_contact
+            .get_balance(user.ethermint_address, erc20_denom.clone())
+            .await
+            .unwrap()
+            .unwrap();
 
-    // Aggregate checks
-    let expected_evm_erc20 = start_evm_balance_erc20 - amount_total - fee_total;
-    let expected_althea_erc20 = start_althea_balance_erc20.amount;
-    assert_eq!(
-        end_evm_balance_erc20, expected_evm_erc20,
-        "EVM balance not reduced by total sent - total fees (start {} end {} expected {})",
-        start_evm_balance_erc20, end_evm_balance_erc20, expected_evm_erc20
-    );
-    assert_eq!(
-        end_althea_balance_erc20.amount, expected_althea_erc20,
-        "Cosmos balance should have been unchanged (start {} end {} expected {})",
-        start_althea_balance_erc20.amount, end_althea_balance_erc20.amount, expected_althea_erc20
-    );
-    assert_eq!(
-        ibc_balance_erc20.amount, amount_total,
-        "IBC balance not increased by total sent (expected {})",
-        amount_total
-    );
+        // Aggregate checks
+        let expected_evm_erc20 = start_evm_balance_erc20 - amount_total - fee_total;
+        let expected_althea_erc20 = start_althea_balance_erc20.amount;
+        assert_eq!(
+            end_evm_balance_erc20, expected_evm_erc20,
+            "EVM balance not reduced by total sent - total fees (start {} end {} expected {})",
+            start_evm_balance_erc20, end_evm_balance_erc20, expected_evm_erc20
+        );
+        assert_eq!(
+            end_althea_balance_erc20.amount,
+            expected_althea_erc20,
+            "Cosmos balance should have been unchanged (start {} end {} expected {})",
+            start_althea_balance_erc20.amount,
+            end_althea_balance_erc20.amount,
+            expected_althea_erc20
+        );
+        assert_eq!(
+            ibc_balance_erc20.amount, amount_total,
+            "IBC balance not increased by total sent (expected {})",
+            amount_total
+        );
 
-    // -------------------------------
-    let ibc_balance_denom = ibc_contact
-        .get_balance(ibc_address, ibc_denom.clone())
-        .await
-        .expect("Could not get ibc denom balance")
-        .unwrap_or(Coin {
-            amount: 0u8.into(),
-            denom: ibc_denom.clone(),
-        });
-    let end_evm_balance_denom = web3
-        .get_erc20_balance(denom_erc20_address, user.eth_address)
-        .await
-        .expect("Could not query ERC20 balance before send");
-    let end_althea_balance_denom = althea_contact
-        .get_balance(user.ethermint_address, registered_denom.clone())
-        .await
-        .unwrap()
-        .unwrap();
+        // -------------------------------
+        let ibc_balance_denom = ibc_contact
+            .get_balance(ibc_address, ibc_denom.clone())
+            .await
+            .expect("Could not get ibc denom balance")
+            .unwrap_or(Coin {
+                amount: 0u8.into(),
+                denom: ibc_denom.clone(),
+            });
+        let end_evm_balance_denom = web3
+            .get_erc20_balance(denom_erc20_address, user.eth_address)
+            .await
+            .expect("Could not query ERC20 balance before send");
+        let end_althea_balance_denom = althea_contact
+            .get_balance(user.ethermint_address, registered_denom.clone())
+            .await
+            .unwrap()
+            .unwrap();
 
-    // Aggregate checks
-    let expected_evm_denom = start_evm_balance_denom - amount_total - fee_total;
-    let expected_althea_denom = start_althea_balance_denom.amount;
-    assert_eq!(
-        end_evm_balance_denom, expected_evm_denom,
-        "EVM balance not reduced by total sent and total fees (start {} end {} expected {})",
-        start_evm_balance_denom, end_evm_balance_denom, expected_evm_denom
-    );
-    assert_eq!(
-        end_althea_balance_denom.amount, expected_althea_denom,
-        "Cosmos balance should have been unchanged (start {} end {} expected {})",
-        start_althea_balance_denom.amount, end_althea_balance_denom.amount, expected_althea_denom
-    );
-    assert_eq!(
-        ibc_balance_denom.amount, amount_total,
-        "IBC balance not increased by total sent (expected {})",
-        amount_total
-    );
+        // Aggregate checks
+        let expected_evm_denom = start_evm_balance_denom - amount_total - fee_total;
+        let expected_althea_denom = start_althea_balance_denom.amount;
+        assert_eq!(
+            end_evm_balance_denom, expected_evm_denom,
+            "EVM balance not reduced by total sent and total fees (start {} end {} expected {})",
+            start_evm_balance_denom, end_evm_balance_denom, expected_evm_denom
+        );
+        assert_eq!(
+            end_althea_balance_denom.amount,
+            expected_althea_denom,
+            "Cosmos balance should have been unchanged (start {} end {} expected {})",
+            start_althea_balance_denom.amount,
+            end_althea_balance_denom.amount,
+            expected_althea_denom
+        );
+        assert_eq!(
+            ibc_balance_denom.amount, amount_total,
+            "IBC balance not increased by total sent (expected {})",
+            amount_total
+        );
+    }
 
     info!("Gasfree MsgSendErc20ToCosmos test successful");
 }
@@ -1148,6 +1287,7 @@ pub async fn gasfree_send_coin_to_evm_insufficient_balance_test(
     validator_keys: &[ValidatorKeys],
     evm_user_keys: &[EthermintUserKey],
     erc20_contracts: &[EthAddress],
+    expect_failure: bool,
 ) {
     info!("Starting gasfree MsgSendCoinToEvm insufficient balance test");
 
@@ -1215,6 +1355,7 @@ pub async fn gasfree_send_coin_to_evm_insufficient_balance_test(
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
+            expect_failure,
         )
         .await;
     } else {
@@ -1251,21 +1392,25 @@ pub async fn gasfree_send_coin_to_evm_insufficient_balance_test(
         )
         .await;
 
-    assert!(
-        res.is_err(),
-        "MsgSendCoinToEvm should fail due to insufficient balance"
-    );
+    if !expect_failure {
+        assert!(
+            res.is_err(),
+            "MsgSendCoinToEvm should fail due to insufficient balance"
+        );
 
-    let end_balance = contact
-        .get_balance(user.ethermint_address, registered_denom.clone())
-        .await
-        .unwrap()
-        .unwrap();
+        let end_balance = contact
+            .get_balance(user.ethermint_address, registered_denom.clone())
+            .await
+            .unwrap()
+            .unwrap();
 
-    assert!(
-        end_balance.amount.eq(&start_balance.amount),
-        "User balance should be unchanged after failed MsgSendCoinToEvm"
-    );
+        assert!(
+            end_balance.amount.eq(&start_balance.amount),
+            "User balance should be unchanged after failed MsgSendCoinToEvm"
+        );
+    } else {
+        res.expect_err("expected MsgSendCoinToEvm to fail");
+    }
 
     info!("Gasfree MsgSendCoinToEvm insufficient balance test successful");
 }
@@ -1277,6 +1422,7 @@ pub async fn gasfree_send_erc20_to_cosmos_insufficient_balance_test(
     validator_keys: &[ValidatorKeys],
     evm_user_keys: &[EthermintUserKey],
     erc20_contracts: &[EthAddress],
+    expect_failure: bool,
 ) {
     info!("Starting gasfree MsgSendErc20ToCosmos insufficient balance test");
 
@@ -1354,6 +1500,7 @@ pub async fn gasfree_send_erc20_to_cosmos_insufficient_balance_test(
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
+            expect_failure,
         )
         .await;
     } else {
@@ -1428,22 +1575,25 @@ pub async fn gasfree_send_erc20_to_cosmos_insufficient_balance_test(
             user.ethermint_key,
         )
         .await;
+    if !expect_failure {
+        assert!(
+            res.is_err(),
+            "MsgSendErc20ToCosmos should fail due to insufficient balance"
+        );
 
-    assert!(
-        res.is_err(),
-        "MsgSendErc20ToCosmos should fail due to insufficient balance"
-    );
+        let end_balance = contact
+            .get_balance(user.ethermint_address, erc20_denom.clone())
+            .await
+            .unwrap()
+            .unwrap();
 
-    let end_balance = contact
-        .get_balance(user.ethermint_address, erc20_denom.clone())
-        .await
-        .unwrap()
-        .unwrap();
-
-    assert!(
-        end_balance.amount.eq(&start_balance.amount),
-        "User ERC20 balance should be unchanged after failed MsgSendErc20ToCosmos"
-    );
+        assert!(
+            end_balance.amount.eq(&start_balance.amount),
+            "User ERC20 balance should be unchanged after failed MsgSendErc20ToCosmos"
+        );
+    } else {
+        res.expect_err("expected MsgSendErc20ToCosmos to fail");
+    }
 
     info!("Gasfree MsgSendErc20ToCosmos insufficient balance test successful");
 }
@@ -1455,6 +1605,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_insufficient_balance_
     validator_keys: &[ValidatorKeys],
     evm_user_keys: &[EthermintUserKey],
     erc20_contracts: &[EthAddress],
+    expect_failure: bool,
 ) {
     info!("Starting gasfree MsgSendErc20ToCosmos insufficient balance test");
 
@@ -1533,6 +1684,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_insufficient_balance_
             &[registered_denom.clone(), registered_erc20.to_string()],
             fee_basis_points,
             validator_keys,
+            expect_failure,
         )
         .await;
     } else {
@@ -1583,21 +1735,25 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_insufficient_balance_
         )
         .await;
 
-    assert!(
-        res.is_err(),
-        "MsgSendErc20ToCosmosAndIBCTransfer should fail due to insufficient balance"
-    );
+    if !expect_failure {
+        assert!(
+            res.is_err(),
+            "MsgSendErc20ToCosmosAndIBCTransfer should fail due to insufficient balance"
+        );
 
-    let end_balance = contact
-        .get_balance(user.ethermint_address, erc20_denom.clone())
-        .await
-        .unwrap()
-        .unwrap();
+        let end_balance = contact
+            .get_balance(user.ethermint_address, erc20_denom.clone())
+            .await
+            .unwrap()
+            .unwrap();
 
-    assert!(
+        assert!(
         end_balance.amount.eq(&start_balance.amount),
         "User ERC20 balance should be unchanged after failed MsgSendErc20ToCosmosAndIBCTransfer"
     );
+    } else {
+        res.expect_err("expected MsgSendErc20ToCosmosAndIBCTransfer to fail");
+    }
 
     info!("Gasfree MsgSendErc20ToCosmosAndIBCTransfer insufficient balance test successful");
 }

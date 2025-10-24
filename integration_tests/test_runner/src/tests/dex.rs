@@ -17,7 +17,9 @@ use crate::type_urls::{
     TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL, UPGRADE_PROXY_PROPOSAL_TYPE_URL,
 };
 use crate::utils::{
-    EthermintUserKey, MINER_ETH_ADDRESS, MINER_PRIVATE_KEY, OPERATION_TIMEOUT, STAKING_TOKEN, ValidatorKeys, encode_any, get_fee, one_atom, one_eth, vote_yes_on_proposals, wait_for_proposals_to_execute
+    encode_any, get_fee, one_atom, one_eth, vote_yes_on_proposals, wait_for_proposals_to_execute,
+    EthermintUserKey, ValidatorKeys, MINER_ETH_ADDRESS, MINER_PRIVATE_KEY, OPERATION_TIMEOUT,
+    STAKING_TOKEN,
 };
 use althea_proto::althea::nativedex::v1::{
     CollectTreasuryMetadata, CollectTreasuryProposal, HotPathOpenMetadata, HotPathOpenProposal,
