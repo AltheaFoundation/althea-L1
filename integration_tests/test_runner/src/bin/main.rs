@@ -318,7 +318,7 @@ pub async fn main() {
         }
 
         // this checks that the chain is continuing at the end of each test (but not for upgrade part 1, which should halt)
-        if test_type != "UPGRADE_PART_1" {
+        if !(test_type == "UPGRADE_PART_1" || test_type == "UPGRADE_ONLY") {
             contact
                 .wait_for_next_block(TOTAL_TIMEOUT)
                 .await
