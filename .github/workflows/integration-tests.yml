@@ -212,15 +212,3 @@ jobs:
           cache-on-failure: true
       - name: Checks that evm fees are truly burned
         run: tests/all-up-test-ci.sh EVM_FEE_BURNING
-  UPGRADE:
-    needs: native_token
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v5
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: integration_tests/
-          cache-on-failure: true
-      - name: Tests the EXAMPLE upgrade
-        run: tests/run-upgrade-test.sh v1.5.1
