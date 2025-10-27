@@ -6,6 +6,7 @@ extern crate log;
 
 use deep_space::Contact;
 use deep_space::PrivateKey;
+use test_runner::tests::upgrade::upgrade_only;
 use std::env;
 use test_runner::bootstrapping::deploy_dex;
 use test_runner::bootstrapping::deploy_multicall;
@@ -319,12 +320,18 @@ pub async fn main() {
                 erc20_addresses,
             )
             .await;
+        } else if test_type == "UPGRADE_ONLY" {
+            upgrade_only(
+                &contact,
+                keys,
+            )
+            .await;
         } else {
             panic!("Unknown test type: {:?}", test_type);
         }
 
         // this checks that the chain is continuing at the end of each test (but not for upgrade part 1, which should halt)
-        if test_type != "UPGRADE_PART_1" {
+        if !(test_type == "UPGRADE_PART_1" || test_type == "UPGRADE_ONLY") {
             contact
                 .wait_for_next_block(TOTAL_TIMEOUT)
                 .await
