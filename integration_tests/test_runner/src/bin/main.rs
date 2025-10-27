@@ -6,6 +6,7 @@ extern crate log;
 
 use deep_space::Contact;
 use deep_space::PrivateKey;
+use test_runner::tests::upgrade::upgrade_only;
 use std::env;
 use test_runner::bootstrapping::deploy_dex;
 use test_runner::bootstrapping::deploy_multicall;
@@ -304,6 +305,12 @@ pub async fn main() {
                 keys,
                 ibc_keys,
                 erc20_addresses,
+            )
+            .await;
+        } else if test_type == "UPGRADE_ONLY" {
+            upgrade_only(
+                &contact,
+                keys,
             )
             .await;
         } else {
