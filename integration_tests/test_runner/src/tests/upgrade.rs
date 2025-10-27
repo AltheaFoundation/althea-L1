@@ -1,3 +1,5 @@
+use crate::tests::evm_fee_burning::evm_fee_burning_test;
+use crate::tests::gasfree_erc20::gasfree_erc20_interop_test;
 use crate::utils::{
     execute_upgrade_proposal, wait_for_block, UpgradeProposalParams, ValidatorKeys, EVM_USER_KEYS,
 };
@@ -44,7 +46,8 @@ pub async fn upgrade_part_1(
     let upgrade_height = run_upgrade(althea_contact, keys, UPGRADE_NAME.to_string(), false).await;
 
     info!(
-        "Ready to run the new binary, waiting for chain panic at upgrade height of {upgrade_height}!"
+        "Ready to run the new binary, waiting for chain panic at upgrade height of {}!",
+        upgrade_height
     );
     // Wait for the block before the upgrade height, we won't get a response from the chain
     let res = wait_for_block(althea_contact, (upgrade_height - 1) as u64).await;
@@ -54,7 +57,10 @@ pub async fn upgrade_part_1(
 
     delay_for(Duration::from_secs(10)).await; // wait for the new block to halt the chain
     let status = althea_contact.get_chain_status().await;
-    info!("Done waiting, chain should be halted, status response: {status:?}");
+    info!(
+        "Done waiting, chain should be halted, status response: {:?}",
+        status
+    );
 }
 
 /// Perform a series of integration tests after an upgrade has executed
@@ -141,7 +147,8 @@ pub async fn run_upgrade(
 
     if wait_for_upgrade {
         info!(
-            "Ready to run the new binary, waiting for chain panic at upgrade height of {upgrade_height}!"
+            "Ready to run the new binary, waiting for chain panic at upgrade height of {}!",
+            upgrade_height
         );
         // Wait for the block before the upgrade height, we won't get a response from the chain
         let res = wait_for_block(contact, (upgrade_height - 1) as u64).await;
@@ -151,7 +158,10 @@ pub async fn run_upgrade(
 
         delay_for(Duration::from_secs(10)).await; // wait for the new block to halt the chain
         let status = contact.get_chain_status().await;
-        info!("Done waiting, chain should be halted, status response: {status:?}");
+        info!(
+            "Done waiting, chain should be halted, status response: {:?}",
+            status
+        );
     }
     upgrade_height
 }
@@ -169,21 +179,24 @@ pub async fn run_all_recoverable_tests(
         web30,
         keys.clone(),
         EVM_USER_KEYS.clone(),
-        erc20_addresses,
+        erc20_addresses.clone(),
     )
     .await;
     microtx_fees_test(contact, keys.clone()).await;
+    evm_fee_burning_test(contact, web30, keys.clone(), EVM_USER_KEYS.clone(), erc20_addresses.clone()).await;
 }
 
 // These tests should fail in upgrade_part_1() but pass in upgrade_part_2()
 #[allow(clippy::too_many_arguments)]
 pub async fn run_upgrade_specific_tests(
-    _web30: &Web3,
-    _althea_contact: &Contact,
-    _ibc_contact: &Contact,
-    _keys: Vec<ValidatorKeys>,
+    web30: &Web3,
+    althea_contact: &Contact,
+    ibc_contact: &Contact,
+    validator_keys: Vec<ValidatorKeys>,
     _ibc_keys: Vec<CosmosPrivateKey>,
-    _erc20_addresses: Vec<EthAddress>,
-    _post_upgrade: bool,
+    erc20_contracts: Vec<EthAddress>,
+    post_upgrade: bool,
 ) {
+    gasfree_erc20_interop_test(althea_contact, ibc_contact, web30, validator_keys, EVM_USER_KEYS.clone(), erc20_contracts).await;
 }
+
