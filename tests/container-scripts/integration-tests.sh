@@ -9,5 +9,9 @@ do
     sleep 1
 done
 
-pushd /althea/integration_tests/test_runner
+# Get the directory of this script and navigate to integration_tests/test_runner
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+pushd "$PROJECT_ROOT/integration_tests/test_runner"
 RUST_BACKTRACE=full TEST_TYPE=$TEST_TYPE RUST_LOG=INFO PATH=$PATH:$HOME/.cargo/bin cargo run --release --bin test-runner
