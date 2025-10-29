@@ -1365,6 +1365,12 @@ func (app *AltheaApp) NewAnteHandlerOptions(appOpts servertypes.AppOptions) ante
 			//nolint: exhaustruct
 			sdk.MsgTypeURL((&vestingtypes.MsgCreateVestingAccount{})),
 		},
+		DisabledGroupMsgs: []string{
+			//nolint: exhaustruct
+			sdk.MsgTypeURL((&evmtypes.MsgEthereumTx{})),
+			//nolint: exhaustruct
+			sdk.MsgTypeURL((&authz.MsgExec{})),
+		},
 		Cdc:           app.AppCodec(),
 		GasfreeKeeper: app.GasfreeKeeper,
 		MicrotxKeeper: app.MicrotxKeeper,

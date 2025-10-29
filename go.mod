@@ -19,7 +19,7 @@ replace (
 	github.com/cosmos/cosmos-sdk => github.com/althea-net/cosmos-sdk v0.46.17
 	github.com/cosmos/ibc-go/v6 => github.com/cosmos/ibc-go/v6 v6.3.1
 
-	github.com/evmos/ethermint => github.com/AltheaFoundation/ethermint v0.22.3
+	github.com/evmos/ethermint => github.com/AltheaFoundation/ethermint v0.22.4-althea
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 

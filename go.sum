@@ -201,6 +201,8 @@ github.com/99designs/keyring v1.2.1 h1:tYLp1ULvO7i3fI5vE21ReQuj99QFSs7lGm0xWyJo8
 github.com/99designs/keyring v1.2.1/go.mod h1:fc+wB5KTk9wQ9sDx0kFXB3A0MaeGHM9AwRStKOQ5vOA=
 github.com/AltheaFoundation/ethermint v0.22.3 h1:NlGZmFveXsFtiOFiTXiEwyA5qTbatJtleWL2yx5h/Ow=
 github.com/AltheaFoundation/ethermint v0.22.3/go.mod h1:Pu0VyapSeMO2o7LlvHVn2ir+P9RuUxhIiIv6VYaFivw=
+github.com/AltheaFoundation/ethermint v0.22.4-althea h1:nI7AJ56TOhO+jyKbIeut7k+Hs4kabJ6WRa9UY5KB5Hc=
+github.com/AltheaFoundation/ethermint v0.22.4-althea/go.mod h1:Pu0VyapSeMO2o7LlvHVn2ir+P9RuUxhIiIv6VYaFivw=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1/go.mod h1:fBF9PQNqB8scdgpZ3ufzaLntG0AG7C1WjPMsiFOmfHM=
 github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3/go.mod h1:KLF4gFr6DcKFZwSuH8w8yEK6DpFl3LP5rhdvAb7Yz5I=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0/go.mod h1:tPaiy8S5bQ+S5sOiDlINkp7+Ef339+Nz5L5XO+cnOHo=

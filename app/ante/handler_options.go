@@ -36,6 +36,7 @@ type HandlerOptions struct {
 	ExtensionOptionChecker ante.ExtensionOptionChecker
 	TxFeeChecker           ante.TxFeeChecker
 	DisabledAuthzMsgs      []string
+	DisabledGroupMsgs      []string
 	Cdc                    codec.BinaryCodec
 	GasfreeKeeper          *gasfreekeeper.Keeper
 	MicrotxKeeper          *microtxkeeper.Keeper

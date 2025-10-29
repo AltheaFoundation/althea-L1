@@ -1,6 +1,7 @@
 package ante
 
 import (
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -16,4 +17,5 @@ type AccountKeeper interface {
 	GetModuleAddress(moduleName string) sdk.AccAddress
 	GetSequence(sdk.Context, sdk.AccAddress) (uint64, error)
 	RemoveAccount(ctx sdk.Context, account authtypes.AccountI)
+	GetPubKey(ctx sdk.Context, addr sdk.AccAddress) (cryptotypes.PubKey, error)
 }
