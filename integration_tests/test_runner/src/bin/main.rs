@@ -24,6 +24,7 @@ use test_runner::tests::dex::dex_swap_many;
 use test_runner::tests::dex::dex_upgrade_test;
 use test_runner::tests::erc20_conversion::erc20_conversion_test;
 use test_runner::tests::evm_fee_burning::evm_fee_burning_test;
+use test_runner::tests::execute_contract_proposal::execute_contract_proposal_test;
 use test_runner::tests::gasfree_erc20::gasfree_erc20_interop_test;
 use test_runner::tests::ica_host::ica_host_happy_path;
 use test_runner::tests::liquid_accounts::liquid_accounts_test;
@@ -327,6 +328,8 @@ pub async fn main() {
                 keys,
             )
             .await;
+        } else if test_type == "EXECUTE_CONTRACT_PROPOSAL" {
+            execute_contract_proposal_test(&contact, &web30, keys, erc20_addresses).await;
         } else {
             panic!("Unknown test type: {:?}", test_type);
         }
