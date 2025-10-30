@@ -227,3 +227,29 @@ message OpsMetadata {
   bytes cmd_args = 2; // The ABI encoded bytes to pass to the opsResolution() call
 }
 
+// ExecuteContractProposal will execute an arbitrary contract call from the nativedex module account.
+// This allows governance to manage contracts owned by the nativedex module, but is restricted
+// to whitelisted contract addresses to prevent abuse.
+// If passes, calls the specified contract with the provided data from the nativedex module account.
+//
+// BE VERY CAREFUL EXECUTING THIS PROPOSAL, AS IT CAN MODIFY CONTRACTS OWNED BY THE NATIVEDEX MODULE
+message ExecuteContractProposal {
+  option (gogoproto.equal) = false;
+  option (cosmos_proto.implements_interface) =
+      "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1.Content";
+
+  string title = 1;
+
+  string description = 2;
+
+  ExecuteContractMetadata metadata = 3 [ (gogoproto.nullable) = false ];
+}
+
+message ExecuteContractMetadata {
+  option (gogoproto.equal) = false;
+
+  string contract_address = 1; // The contract address to call (must be whitelisted in module params)
+
+  string data = 2; // Hex-encoded calldata to send to the contract
+}
+

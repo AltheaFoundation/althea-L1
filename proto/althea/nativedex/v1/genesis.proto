@@ -14,5 +14,6 @@ message GenesisState {
 message Params {
   string verified_native_dex_address = 1;
   string verified_croc_policy_address = 2;
+  repeated string whitelisted_contract_addresses = 3; // Addresses that can be called via ExecuteContractProposal
 }
 
