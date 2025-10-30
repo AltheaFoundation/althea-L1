@@ -50,6 +50,7 @@ func GetTxCmd(storeKey string) *cobra.Command {
 		NewOpsResyncTakeRateCmd(),
 		NewOpsSetNewPoolLiqCmd(),
 		NewOpsPegPriceImproveCmd(),
+		NewExecuteContractProposalCmd(),
 	}...)
 
 	return nativedexTxCmd
@@ -921,4 +922,60 @@ func isHexAddress(s string) bool {
 		}
 	}
 	return true
+}
+
+// NewExecuteContractProposalCmd implements the command to submit an ExecuteContractProposal
+func NewExecuteContractProposalCmd() *cobra.Command {
+	// nolint: exhaustruct
+	cmd := &cobra.Command{
+		Use:   "execute-contract [initial-deposit] [title] [description] [contract-address] [hex-data]",
+		Args:  cobra.ExactArgs(5),
+		Short: "Submit an ExecuteContract proposal",
+		Long: `Submit a proposal to execute an arbitrary contract call from the nativedex module account.
+The contract address must be whitelisted in the module params.
+The hex-data should be the encoded function call data (starting with 0x).`,
+		Example: fmt.Sprintf(`$ %s tx nativedex execute-contract 1000000aalthea "Call contract" "Execute contract call" 0x1234... 0xa9059cbb... --from=<key_or_address> --chain-id=<chain-id>`,
+			version.AppName,
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			initialDeposit, err := sdk.ParseCoinsNormalized(args[0])
+			if err != nil {
+				return err
+			}
+			title := args[1]
+			description := args[2]
+			contractAddress := args[3]
+			hexData := args[4]
+
+			if len(initialDeposit) != 1 {
+				return errorsmod.Wrap(errorsmod.Error{}, "initial deposit must be a single coin")
+			}
+
+			if !isHexAddress(contractAddress) {
+				return errorsmod.Wrap(errorsmod.Error{}, "invalid contract address format")
+			}
+
+			if len(hexData) < 2 || hexData[0:2] != "0x" {
+				return errorsmod.Wrap(errorsmod.Error{}, "hex data must be a hex string starting with 0x")
+			}
+
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			cosmosAddr := clientCtx.GetFromAddress()
+
+			propMetaData := types.ExecuteContractMetadata{
+				ContractAddress: contractAddress,
+				Data:            hexData,
+			}
+
+			content := types.NewExecuteContractProposal(title, description, propMetaData)
+
+			return GenericProposalCmdBroadcast(cmd, clientCtx, content, initialDeposit, cosmosAddr)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
 }

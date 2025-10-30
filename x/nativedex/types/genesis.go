@@ -21,8 +21,9 @@ var (
 	// nolint: exhaustruct
 	_ paramtypes.ParamSet = &Params{}
 
-	ParamsStoreKeyVerifiedNativeDexAddress  = "VerifiedNativeDexAddress"
-	ParamsStoreKeyVerifiedCrocPolicyAddress = "VerifiedCrocPolicyAddress"
+	ParamsStoreKeyVerifiedNativeDexAddress     = "VerifiedNativeDexAddress"
+	ParamsStoreKeyVerifiedCrocPolicyAddress    = "VerifiedCrocPolicyAddress"
+	ParamsStoreKeyWhitelistedContractAddresses = "WhitelistedContractAddresses"
 )
 
 // ValidateBasic validates genesis state by looping through the params and
@@ -44,8 +45,9 @@ func DefaultGenesis() *GenesisState {
 // DefaultParams returns a copy of the default params
 func DefaultParams() *Params {
 	return &Params{
-		VerifiedNativeDexAddress:  common.BytesToAddress([]byte{0x0}).String(),
-		VerifiedCrocPolicyAddress: common.BytesToAddress([]byte{0x0}).String(),
+		VerifiedNativeDexAddress:     common.BytesToAddress([]byte{0x0}).String(),
+		VerifiedCrocPolicyAddress:    common.BytesToAddress([]byte{0x0}).String(),
+		WhitelistedContractAddresses: []string{},
 	}
 }
 
@@ -56,6 +58,9 @@ func (p Params) ValidateBasic() error {
 	}
 	if err := validateVerifiedCrocPolicyAddress(p.VerifiedCrocPolicyAddress); err != nil {
 		return errorsmod.Wrap(err, "VerifiedCrocPolicyAddress")
+	}
+	if err := validateWhitelistedContractAddresses(p.WhitelistedContractAddresses); err != nil {
+		return errorsmod.Wrap(err, "WhitelistedContractAddresses")
 	}
 	return nil
 }
@@ -71,6 +76,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair([]byte(ParamsStoreKeyVerifiedNativeDexAddress), &p.VerifiedNativeDexAddress, validateVerifiedNativeDexAddress),
 		paramtypes.NewParamSetPair([]byte(ParamsStoreKeyVerifiedCrocPolicyAddress), &p.VerifiedCrocPolicyAddress, validateVerifiedCrocPolicyAddress),
+		paramtypes.NewParamSetPair([]byte(ParamsStoreKeyWhitelistedContractAddresses), &p.WhitelistedContractAddresses, validateWhitelistedContractAddresses),
 	}
 }
 
@@ -102,6 +108,22 @@ func validateVerifiedCrocPolicyAddress(i interface{}) error {
 
 	if !common.IsHexAddress(v) {
 		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid address")
+	}
+
+	return nil
+}
+
+func validateWhitelistedContractAddresses(i interface{}) error {
+	v, ok := i.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	// Empty list is valid (no contracts whitelisted)
+	for _, addr := range v {
+		if !common.IsHexAddress(addr) {
+			return errorsmod.Wrapf(ErrInvalidEvmAddress, "invalid whitelisted address: %s", addr)
+		}
 	}
 
 	return nil

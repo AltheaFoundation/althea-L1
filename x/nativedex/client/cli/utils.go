@@ -231,3 +231,19 @@ func ParseOpsMetadata(cdc codec.JSONCodec, metadataFile string) (types.OpsMetada
 
 	return propMetaData, nil
 }
+
+func ParseExecuteContractMetadata(cdc codec.JSONCodec, metadataFile string) (types.ExecuteContractMetadata, error) {
+	// nolint: exhaustruct
+	propMetaData := types.ExecuteContractMetadata{}
+
+	contents, err := os.ReadFile(filepath.Clean(metadataFile))
+	if err != nil {
+		return propMetaData, err
+	}
+
+	if err = json.Unmarshal(contents, &propMetaData); err != nil {
+		return propMetaData, err
+	}
+
+	return propMetaData, nil
+}

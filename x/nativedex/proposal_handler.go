@@ -47,6 +47,8 @@ func NewNativeDexProposalHandler(k *keeper.Keeper) govv1beta1.Handler {
 			return handleTransferGovernanceProposal(ctx, k, c)
 		case *types.OpsProposal:
 			return handleOpsProposal(ctx, k, c)
+		case *types.ExecuteContractProposal:
+			return handleExecuteContractProposal(ctx, k, c)
 
 		default:
 			return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s proposal content type: %T", types.ModuleName, c)
@@ -254,5 +256,44 @@ func handleOpsProposal(ctx sdk.Context, k *keeper.Keeper, p *types.OpsProposal) 
 		ctx.Logger().Error("Unable to call CrocPolicy.opsResolution() for OpsProposal", "err", err)
 		return err
 	}
+	return nil
+}
+
+// handleExecuteContractProposal executes an arbitrary contract call from the nativedex module account
+// The contract address must be whitelisted in the module params
+func handleExecuteContractProposal(ctx sdk.Context, k *keeper.Keeper, p *types.ExecuteContractProposal) error {
+	err := p.ValidateBasic()
+	if err != nil {
+		return err
+	}
+
+	md := p.GetMetadata()
+	contractAddress := common.HexToAddress(md.ContractAddress)
+
+	// Check if the contract address is whitelisted
+	whitelistedAddresses := k.GetWhitelistedContractAddresses(ctx)
+	isWhitelisted := false
+	for _, addr := range whitelistedAddresses {
+		if addr == md.ContractAddress {
+			isWhitelisted = true
+			break
+		}
+	}
+
+	if !isWhitelisted {
+		return errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "contract address %s is not whitelisted", md.ContractAddress)
+	}
+
+	// Decode the hex data
+	data := common.FromHex(md.Data)
+
+	// Execute the contract call from the nativedex module account
+	_, err = k.EVMKeeper.CallEVMWithData(ctx, types.ModuleEVMAddress, &contractAddress, data, true)
+	if err != nil {
+		ctx.Logger().Error("Unable to execute contract call for ExecuteContractProposal", "err", err, "contract", md.ContractAddress)
+		return err
+	}
+
+	ctx.Logger().Info("Successfully executed ExecuteContractProposal", "contract", md.ContractAddress)
 	return nil
 }

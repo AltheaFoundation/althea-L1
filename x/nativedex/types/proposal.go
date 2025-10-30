@@ -18,6 +18,7 @@ const (
 	ProposalTypeSetSafeMode        string = "SetSafeMode"
 	ProposalTypeTransferGovernance string = "TransferGovernance"
 	ProposalTypeOps                string = "Ops"
+	ProposalTypeExecuteContract    string = "ExecuteContract"
 	MaxDescriptionLength           int    = 1000
 	MaxTitleLength                 int    = 140
 )
@@ -33,6 +34,7 @@ var (
 	_ govv1beta1.Content = &HotPathOpenProposal{}
 	_ govv1beta1.Content = &SetSafeModeProposal{}
 	_ govv1beta1.Content = &TransferGovernanceProposal{}
+	_ govv1beta1.Content = &ExecuteContractProposal{}
 )
 
 // Register Compound Proposal type as a valid proposal type in goveranance module
@@ -46,6 +48,7 @@ func init() {
 	govv1beta1.RegisterProposalType(ProposalTypeSetSafeMode)
 	govv1beta1.RegisterProposalType(ProposalTypeTransferGovernance)
 	govv1beta1.RegisterProposalType(ProposalTypeOps)
+	govv1beta1.RegisterProposalType(ProposalTypeExecuteContract)
 }
 
 func NewUpgradeProxyProposal(title, description string, md UpgradeProxyMetadata) govv1beta1.Content {
@@ -274,6 +277,43 @@ func (p *OpsProposal) ValidateBasic() error {
 
 	if len(md.CmdArgs) == 0 {
 		return errorsmod.Wrap(govtypes.ErrInvalidProposalContent, "cmd args has zero length")
+	}
+
+	return nil
+}
+
+func NewExecuteContractProposal(title, description string, md ExecuteContractMetadata) govv1beta1.Content {
+	return &ExecuteContractProposal{
+		Title:       title,
+		Description: description,
+		Metadata:    md,
+	}
+}
+
+func (*ExecuteContractProposal) ProposalRoute() string { return RouterKey }
+
+func (*ExecuteContractProposal) ProposalType() string {
+	return ProposalTypeExecuteContract
+}
+
+func (p *ExecuteContractProposal) ValidateBasic() error {
+	if err := govv1beta1.ValidateAbstract(p); err != nil {
+		return err
+	}
+
+	md := p.GetMetadata()
+
+	if !common.IsHexAddress(md.ContractAddress) {
+		return errorsmod.Wrap(ErrInvalidEvmAddress, "invalid contract address")
+	}
+
+	if len(md.Data) == 0 {
+		return errorsmod.Wrap(govtypes.ErrInvalidProposalContent, "data has zero length")
+	}
+
+	// Validate that data is a valid hex string
+	if len(md.Data) < 2 || md.Data[0:2] != "0x" {
+		return errorsmod.Wrap(govtypes.ErrInvalidProposalContent, "data must be a hex string starting with 0x")
 	}
 
 	return nil

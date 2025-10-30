@@ -22,6 +22,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&SetSafeModeProposal{},
 		&TransferGovernanceProposal{},
 		&OpsProposal{},
+		&ExecuteContractProposal{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

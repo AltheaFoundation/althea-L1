@@ -69,3 +69,7 @@ func (k Keeper) GetNativeDexAddress(ctx sdk.Context) common.Address {
 func (k Keeper) GetVerifiedCrocPolicyAddress(ctx sdk.Context) common.Address {
 	return common.HexToAddress(k.GetParams(ctx).VerifiedCrocPolicyAddress)
 }
+
+func (k Keeper) GetWhitelistedContractAddresses(ctx sdk.Context) []string {
+	return k.GetParams(ctx).WhitelistedContractAddresses
+}

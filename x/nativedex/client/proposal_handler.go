@@ -22,4 +22,5 @@ var (
 	OpsResyncTakeRateHandler  = govclient.NewProposalHandler(cli.NewOpsResyncTakeRateCmd)
 	OpsSetNewPoolLiqHandler   = govclient.NewProposalHandler(cli.NewOpsSetNewPoolLiqCmd)
 	OpsPegPriceImproveHandler = govclient.NewProposalHandler(cli.NewOpsPegPriceImproveCmd)
+	ExecuteContractHandler    = govclient.NewProposalHandler(cli.NewExecuteContractProposalCmd)
 )
