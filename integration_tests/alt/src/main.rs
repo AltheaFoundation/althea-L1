@@ -46,7 +46,9 @@ async fn main() {
 
     // control flow for the command structure
     match &args.subcmd {
-        SubCommand::Cosmos(cosmos_args) => handle_cosmos_subcommand(&contact, &args, cosmos_args).await,
+        SubCommand::Cosmos(cosmos_args) => {
+            handle_cosmos_subcommand(&contact, &args, cosmos_args).await
+        }
         SubCommand::Erc20(erc20_args) => handle_erc20_subcommand(&web30, &args, erc20_args).await,
         SubCommand::Erc721(erc721_args) => {
             handle_erc721_subcommand(&web30, &args, erc721_args).await

@@ -6,7 +6,6 @@ extern crate log;
 
 use deep_space::Contact;
 use deep_space::PrivateKey;
-use test_runner::tests::upgrade::upgrade_only;
 use std::env;
 use test_runner::bootstrapping::deploy_dex;
 use test_runner::bootstrapping::deploy_multicall;
@@ -35,6 +34,7 @@ use test_runner::tests::onboarding::onboarding_default_params;
 use test_runner::tests::onboarding::onboarding_delist_after;
 use test_runner::tests::onboarding::onboarding_disable_after;
 use test_runner::tests::onboarding::onboarding_disabled_whitelisted;
+use test_runner::tests::upgrade::upgrade_only;
 use test_runner::tests::upgrade::upgrade_part_1;
 use test_runner::tests::upgrade::upgrade_part_2;
 use test_runner::utils::one_eth;
@@ -323,11 +323,7 @@ pub async fn main() {
             )
             .await;
         } else if test_type == "UPGRADE_ONLY" {
-            upgrade_only(
-                &contact,
-                keys,
-            )
-            .await;
+            upgrade_only(&contact, keys).await;
         } else if test_type == "EXECUTE_CONTRACT_PROPOSAL" {
             execute_contract_proposal_test(&contact, &web30, keys, erc20_addresses).await;
         } else {

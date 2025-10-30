@@ -23,6 +23,7 @@ type GroupLimiterTestSuite struct {
 }
 
 func TestGroupLimiterTestSuite(t *testing.T) {
+	// nolint: exhaustruct
 	suite.Run(t, &GroupLimiterTestSuite{})
 }
 
@@ -32,11 +33,13 @@ func (suite *GroupLimiterTestSuite) TestGroupLimiterDecorator() {
 
 	decorator := ante.NewGroupLimiterDecorator(
 		[]string{
+			// nolint: exhaustruct
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 		},
 	)
 
 	testMsgSend := createMsgSend(testAddresses)
+	// nolint: exhaustruct
 	testMsgEthereumTx := &evmtypes.MsgEthereumTx{}
 
 	// Create a group with members

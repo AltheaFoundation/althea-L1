@@ -90,16 +90,29 @@ pub async fn evm_fee_burning_test(
     // info!("Results: {:?}", results);
     sleep(Duration::from_secs(10)).await;
     let post_balances = snapshot_validator_rewards(contact, &validator_keys).await;
-    let althea_pre: Vec<Option<&DecCoin>> = pre_balances.iter().map(|v| v.iter().find(|d| &d.denom == &*STAKING_TOKEN)).collect();
-    let althea_post: Vec<Option<&DecCoin>> = post_balances.iter().map(|v| v.iter().find(|d| &d.denom == &*STAKING_TOKEN)).collect();
+    let althea_pre: Vec<Option<&DecCoin>> = pre_balances
+        .iter()
+        .map(|v| v.iter().find(|d| d.denom == *STAKING_TOKEN))
+        .collect();
+    let althea_post: Vec<Option<&DecCoin>> = post_balances
+        .iter()
+        .map(|v| v.iter().find(|d| d.denom == *STAKING_TOKEN))
+        .collect();
     info!("Pre: {althea_pre:?}, Post: {althea_post:?}");
     for (pre, post) in althea_pre.iter().zip(althea_post.iter()) {
         match (pre, post) {
             (Some(althea_rewards_pre), Some(althea_rewards_post)) => {
-                let rewards_pre: Uint256 = althea_rewards_pre.amount.parse().expect("Invalid integer?");
-                let rewards_post: Uint256 = althea_rewards_post.amount.parse().expect("Invalid integer?");
-                assert!(rewards_pre < rewards_post, "Validator staking token rewards did not increase");
-            },
+                let rewards_pre: Uint256 =
+                    althea_rewards_pre.amount.parse().expect("Invalid integer?");
+                let rewards_post: Uint256 = althea_rewards_post
+                    .amount
+                    .parse()
+                    .expect("Invalid integer?");
+                assert!(
+                    rewards_pre < rewards_post,
+                    "Validator staking token rewards did not increase"
+                );
+            }
             _ => panic!("Validator missing staking token rewards"),
         }
     }

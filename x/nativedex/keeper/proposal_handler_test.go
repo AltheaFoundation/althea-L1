@@ -199,7 +199,6 @@ func (suite *ProposalHandlerTestSuite) TestExecuteContractProposal_NotWhiteliste
 	moduleBalance = suite.GetERC20Balance(contractAddr, types.ModuleEVMAddress)
 	suite.T().Logf("Module balance (%s) must remain at %s after the proposal failure\n", moduleBalance.String(), transferAmount.String())
 	suite.Require().Equal(transferAmount.String(), moduleBalance.String(), "Module should still have the tokens")
-	panic("Hi there")
 }
 
 func (suite *ProposalHandlerTestSuite) DeployERC20(name, symbol string, decimals uint8) common.Address {

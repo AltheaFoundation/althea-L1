@@ -4,10 +4,10 @@ use crate::{
     args::{
         Args, DEXAuthorityArgs, DEXBurnKnockoutArgs, DEXInitPoolArgs, DEXInstallCallpathArgs,
         DEXMintAmbientArgs, DEXMintAmbientQtyArgs, DEXMintConcentratedArgs,
-        DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryNonceArgs, DEXQueryPoolArgs,
-        DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXQueryTemplateArgs, DEXRecoverKnockoutArgs,
-        DEXSafeModeArgs, DEXSetPoolTemplateArgs, DEXSubcommand, DEXSwapArgs,
-        DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs, DEXQueryLevelArgs,
+        DEXMintConcentratedQtyArgs, DEXMintKnockoutArgs, DEXQueryLevelArgs, DEXQueryNonceArgs,
+        DEXQueryPoolArgs, DEXQueryPositionArgs, DEXQueryRewardsArgs, DEXQueryTemplateArgs,
+        DEXRecoverKnockoutArgs, DEXSafeModeArgs, DEXSetPoolTemplateArgs, DEXSubcommand,
+        DEXSwapArgs, DEXTransferCrocPolicyArgs, DEXTransferDEXAuthorityArgs, DexArgs,
     },
     utils::approve_erc20s,
 };
@@ -20,12 +20,12 @@ use num256::{Int256, Uint256};
 use num_traits::ToPrimitive;
 use test_runner::dex_utils::{
     croc_policy_transfer_governance, croc_query_ambient_position, croc_query_conc_rewards,
-    croc_query_curve, croc_query_curve_tick, croc_query_knockout_tokens, croc_query_liquidity,
-    croc_query_nonce, croc_query_pool_params, croc_query_pool_template, croc_query_price,
-    croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd,
+    croc_query_curve, croc_query_curve_tick, croc_query_knockout_tokens, croc_query_level,
+    croc_query_liquidity, croc_query_nonce, croc_query_pool_params, croc_query_pool_template,
+    croc_query_price, croc_query_range_position, dex_authority_transfer, dex_direct_protocol_cmd,
     dex_query_authority, dex_query_safe_mode, dex_swap, dex_user_cmd, ProtocolCmdArgs, SwapArgs,
     UserCmdArgs, BOOT_PATH, COLD_PATH, HOT_PROXY, KNOCKOUT_LIQ_PATH, MAX_PRICE, MIN_PRICE,
-    WARM_PATH, croc_query_level,
+    WARM_PATH,
 };
 use web30::client::Web3;
 
@@ -296,7 +296,6 @@ pub async fn query_level(web30: &Web3, _args: &Args, cmd_args: &DEXQueryLevelArg
     .expect("Failed to query level");
     println!("{:?}", level_res);
 }
-
 
 pub async fn init_pool(web30: &Web3, args: &Args, cmd_args: &DEXInitPoolArgs) {
     let pool_index: Uint256 = cmd_args.pool_index.parse().expect("Invalid pool index");

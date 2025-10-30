@@ -93,10 +93,7 @@ pub async fn upgrade_part_2(
 
 /// Submit and pass a chain upgrade proposal immediately
 #[allow(clippy::too_many_arguments)]
-pub async fn upgrade_only(
-    althea_contact: &Contact,
-    keys: Vec<ValidatorKeys>,
-) {
+pub async fn upgrade_only(althea_contact: &Contact, keys: Vec<ValidatorKeys>) {
     info!("Initiating {UPGRADE_NAME} upgrade");
 
     let upgrade_height = run_upgrade(althea_contact, keys, UPGRADE_NAME.to_string(), false).await;
@@ -206,6 +203,14 @@ pub async fn run_upgrade_specific_tests(
     post_upgrade: bool,
 ) {
     start_ibc_relayer(althea_contact, ibc_contact, &validator_keys, &ibc_keys).await;
-    gasfree_erc20_interop_test(althea_contact, ibc_contact, web30, validator_keys, EVM_USER_KEYS.clone(), erc20_contracts, !post_upgrade).await;
+    gasfree_erc20_interop_test(
+        althea_contact,
+        ibc_contact,
+        web30,
+        validator_keys,
+        EVM_USER_KEYS.clone(),
+        erc20_contracts,
+        !post_upgrade,
+    )
+    .await;
 }
-

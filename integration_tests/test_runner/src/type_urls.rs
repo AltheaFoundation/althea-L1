@@ -21,8 +21,7 @@ pub const SET_SAFE_MODE_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.SetSafeM
 pub const TRANSFER_GOVERNANCE_PROPOSAL_TYPE_URL: &str =
     "/althea.nativedex.v1.TransferGovernanceProposal";
 pub const OPS_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.OpsProposal";
-pub const EXECUTE_CONTRACT_PROPOSAL_TYPE_URL: &str =
-    "/althea.nativedex.v1.ExecuteContractProposal";
+pub const EXECUTE_CONTRACT_PROPOSAL_TYPE_URL: &str = "/althea.nativedex.v1.ExecuteContractProposal";
 
 // bank msgs
 pub const MSG_SEND_TYPE_URL: &str = "/cosmos.bank.v1beta1.MsgSend";

@@ -1,6 +1,8 @@
 use crate::type_urls::EXECUTE_CONTRACT_PROPOSAL_TYPE_URL;
 use crate::utils::{
-    ADDRESS_PREFIX, EVM_USER_KEYS, MINER_PRIVATE_KEY, OPERATION_TIMEOUT, STAKING_TOKEN, ValidatorKeys, encode_any, get_fee, one_atom, one_eth, vote_yes_on_proposals, wait_for_proposals_to_execute
+    encode_any, get_fee, one_atom, one_eth, vote_yes_on_proposals, wait_for_proposals_to_execute,
+    ValidatorKeys, ADDRESS_PREFIX, EVM_USER_KEYS, MINER_PRIVATE_KEY, OPERATION_TIMEOUT,
+    STAKING_TOKEN,
 };
 use althea_proto::althea::nativedex::v1::{ExecuteContractMetadata, ExecuteContractProposal};
 use clarity::Address as EthAddress;
@@ -19,7 +21,10 @@ pub async fn execute_contract_proposal_test(
     // Get an ERC20 contract address to use
     let erc20_contract = erc20_addresses[0];
     info!("Using ERC20 contract: {}", erc20_contract);
-    let querier = EVM_USER_KEYS.first().expect("No EVM user keys available").eth_address;
+    let querier = EVM_USER_KEYS
+        .first()
+        .expect("No EVM user keys available")
+        .eth_address;
 
     // Get the nativedex module account address
     let nativedex_module_acc =
@@ -36,10 +41,7 @@ pub async fn execute_contract_proposal_test(
     let address_bytes = nativedex_module_acc.get_bytes();
     let nativedex_evm_address = EthAddress::from_slice(address_bytes)
         .expect("Failed to convert module account to EVM address");
-    info!(
-        "Nativedex module account (EVM): {}",
-        nativedex_evm_address
-    );
+    info!("Nativedex module account (EVM): {}", nativedex_evm_address);
 
     // Create a receiver address for the transfer
     let receiver_address =
@@ -50,7 +52,10 @@ pub async fn execute_contract_proposal_test(
     let transfer_amount = one_eth() * 1000u32.into();
 
     // Transfer some ERC20 tokens to the nativedex module account
-    info!("Transferring {} tokens to nativedex module", transfer_amount);
+    info!(
+        "Transferring {} tokens to nativedex module",
+        transfer_amount
+    );
 
     web30
         .erc20_send(
