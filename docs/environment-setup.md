@@ -212,7 +212,7 @@ After performing any setup, hitting Enter in the original terminal window will p
 
 If you check out the tools/manual-upgrade-tester branch, some changes to the app/app.go file will be applied. These changes make it possible to run the upgrade early on a full node which is synced to the current chain state, simulating the upgrade you have prepared (but not running any blocks after the upgrade, unfortunately).
 
-It is recommended to perform a full backup of the node before running any such tests, by running `cp --reflink=always <Node home folder> <backup folder name>`.
+It is recommended to perform a full backup of the node before running any such tests, by running `cp -r --reflink=always <Node home folder> <backup folder name>`.
 
 On the `tools/manual-upgrade-tester` branch you will need to change the upgrade name (look for the lines with ^v^v^v for help), then run `make test`. If you run the binary which is produced using the node's home folder and provide the ALTHEA_UPGRADE_HEIGHT env var as the last block height + 1, you should see any upgrade logic logs ocurring shortly after startup (it may take 1-5 minutes to start up, so have a little patience).
 
