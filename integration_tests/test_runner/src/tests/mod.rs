@@ -3,6 +3,7 @@ pub mod erc20_conversion;
 pub mod evm_fee_burning;
 pub mod execute_contract_proposal;
 pub mod gasfree_erc20;
+pub mod gov_spend_test;
 pub mod ica_host;
 pub mod liquid_accounts;
 pub mod lockup;

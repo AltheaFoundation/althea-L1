@@ -305,6 +305,7 @@ pub struct BootstrapContractAddresses {
     pub erc721_addresses: Vec<EthAddress>,
     pub walthea_address: EthAddress,
     pub uniswap_liquidity_address: Option<EthAddress>,
+    pub gov_spend_test: EthAddress,
 }
 
 pub const ERC20_CONTRACTS_FILE: &str = "/tmp/contracts";
@@ -320,6 +321,7 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
     let mut erc721_addresses = Vec::new();
     let mut walthea_address = EthAddress::default();
     let mut uniswap_liquidity = None;
+    let mut gov_spend_test = EthAddress::default();
     for line in output.lines() {
         if line.contains("ERC20 deployed at Address -") {
             let address_string = line.split('-').next_back().unwrap();
@@ -336,6 +338,9 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
         } else if line.contains("Uniswap Liquidity test deployed at Address - ") {
             let address_string = line.split('-').next_back().unwrap();
             uniswap_liquidity = Some(address_string.trim().parse().unwrap());
+        } else if line.contains("GovSpendTest deployed at Address - ") {
+            let address_string = line.split('-').next_back().unwrap();
+            gov_spend_test = address_string.trim().parse().unwrap();
         }
     }
     BootstrapContractAddresses {
@@ -343,6 +348,7 @@ pub fn parse_contract_addresses() -> BootstrapContractAddresses {
         erc721_addresses,
         walthea_address,
         uniswap_liquidity_address: uniswap_liquidity,
+        gov_spend_test,
     }
 }
 
