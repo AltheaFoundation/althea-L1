@@ -27,6 +27,7 @@ lint:
     - cosmos_proto
     - google
     - third_party
+    - canto
     - ethermint
 breaking:
   use:
