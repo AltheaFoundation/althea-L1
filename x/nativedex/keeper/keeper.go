@@ -58,6 +58,24 @@ func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 	return params
 }
 
+// GetParamsIfSet will return the current params, but will return an error if the
+// chain is still initializing. By error checking this function is safe to use in
+// handling genesis transactions and upgrade handlers.
+func (k Keeper) GetParamsIfSet(ctx sdk.Context) (params types.Params, err error) {
+	// Use a temporary params instance to get the param set pairs
+	// We can't call methods on the zero-valued return params yet
+	tempParams := types.Params{}
+	for _, pair := range tempParams.ParamSetPairs() {
+		if !k.paramSpace.Has(ctx, pair.Key) {
+			return types.Params{}, fmt.Errorf("the param key %s has not been set", string(pair.Key))
+		}
+	}
+
+	// If all params are set, populate and return them
+	k.paramSpace.GetParamSet(ctx, &params)
+	return params, nil
+}
+
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramSpace.SetParamSet(ctx, &params)
 }
