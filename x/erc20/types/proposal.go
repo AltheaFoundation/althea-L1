@@ -73,16 +73,17 @@ func (rtbp *RegisterCoinProposal) ValidateBasic() error {
 		return err
 	}
 
-	if err := validateIBCVoucherMetadata(rtbp.Metadata); err != nil {
+	if err := ValidateIBCVoucherMetadata(rtbp.Metadata); err != nil {
 		return err
 	}
 
 	return govv1beta1.ValidateAbstract(rtbp)
 }
 
-// validateIBCVoucherMetadata checks that the coin metadata fields are consistent
-// with an IBC voucher denomination.
-func validateIBCVoucherMetadata(metadata banktypes.Metadata) error {
+// ValidateIBCVoucherMetadata checks that the coin metadata fields are consistent
+// with an IBC voucher denomination. This function is exported so it can be used
+// by legacy proposal types in the canto subpackage for backward compatibility.
+func ValidateIBCVoucherMetadata(metadata banktypes.Metadata) error {
 	// Check ibc/ denom
 	denomSplit := strings.SplitN(metadata.Base, "/", 2)
 
