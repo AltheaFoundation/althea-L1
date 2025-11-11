@@ -1,77 +1,154 @@
+name: Build and Release Binaries
+
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'v*'
 
-name: Automated release build
-
-env:
-  CARGO_TERM_COLOR: always
+permissions:
+  contents: write
 
 jobs:
-  build:
-    name: Build and upload release assets
+  build-linux:
+    name: Build Linux Binaries
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version info
+        run: |
+          echo "VERSION=$(git describe --abbrev=6 --dirty --always --tags)" >> $GITHUB_ENV
+          echo "COMMIT=$(git log -1 --format='%H')" >> $GITHUB_ENV
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Install musl-gcc for static builds
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Build static binary (default)
+        run: |
+          make static
+          mv build/althea althea-linux-amd64
+
+      - name: Build dynamic binary with ledger support
+        run: |
+          make install-core
+          cp $(go env GOPATH)/bin/althea althea-ledger-linux-amd64
+
+      - name: Verify binaries
+        run: |
+          ./althea-linux-amd64 version
+          ./althea-ledger-linux-amd64 version
+
+      - name: Generate checksums
+        run: |
+          sha256sum althea-linux-amd64 althea-ledger-linux-amd64 > checksums-linux.txt
+          cat checksums-linux.txt
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            althea-linux-amd64
+            althea-ledger-linux-amd64
+            checksums-linux.txt
+
+  build-windows:
+    name: Build Windows Binary
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version info
+        run: |
+          $VERSION = git describe --abbrev=6 --dirty --always --tags
+          $COMMIT = git log -1 --format='%H'
+          echo "VERSION=$VERSION" >> $env:GITHUB_ENV
+          echo "COMMIT=$COMMIT" >> $env:GITHUB_ENV
+        shell: powershell
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Build for Windows x64
+        run: make windows-build
+        shell: powershell
+
+      - name: Verify binary
+        run: ./build/althea-windows-amd64.exe version
+        shell: powershell
+
+      - name: Generate checksums
+        run: |
+          $hash = Get-FileHash -Path build/althea-windows-amd64.exe -Algorithm SHA256
+          "$($hash.Hash.ToLower())  althea-windows-amd64.exe" | Out-File -FilePath checksums-windows.txt -Encoding ASCII
+          Get-Content checksums-windows.txt
+        shell: powershell
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            build/althea-windows-amd64.exe
+            checksums-windows.txt
+
+  build-macos:
+    name: Build macOS Binaries
+    runs-on: macos-latest
     strategy:
       matrix:
-        node-version: [14.x]
+        target:
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
     steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.13
-        id: go
-
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Set ENV var for GOPATH
+      - name: Extract version info
         run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "VERSION=$(git describe --abbrev=6 --dirty --always --tags)" >> $GITHUB_ENV
+          echo "COMMIT=$(git log -1 --format='%H')" >> $GITHUB_ENV
 
-      # build the code before creating the release, GO and Solidity first for faster failures
-      - name: Build Althea Blockchain
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Build for macOS
+        run: make ${{ matrix.target }}
+
+      - name: Verify binary
+        run: ./build/althea-${{ matrix.target }} version
+
+      - name: Generate checksums
         run: |
-          make build-reproducible
+          sha256sum build/althea-${{ matrix.target }} > checksums-${{ matrix.target }}.txt
+          cat checksums-${{ matrix.target }}.txt
 
-      # now that the code has built create the release and start uploading
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Althea Blockchain Build Report
-        id: upload-althea-blockchain-build-report
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/build_report
-          asset_name: build_report
-          asset_content_type: text
- 
-      # the file names are hard to predict, so we rename them
-      - name: Rename build files
-        run: |
-          pushd ./artifacts/
-          cp *linux-amd64 althea-linux-amd64
-          popd
-
-      - name: Upload Althea blockchain Linux
-        id: upload-althea-linux
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/althea-linux-amd64
-          asset_name: althea-linux-amd64
-          asset_content_type: application/bin
+          files: |
+            build/althea-${{ matrix.target }}
+            checksums-${{ matrix.target }}.txt

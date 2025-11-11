@@ -49,7 +49,35 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=althea \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
 
-BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)' -gcflags="all=-N -l"
+BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
+
+# Shared security hardening flags for all builds
+SHARED_SECURITY_CGO := -D_FORTIFY_SOURCE=2 -fstack-protector-strong
+
+# Platform-specific linker flags
+# Linux uses ELF-specific hardening flags, macOS uses different flags
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	# macOS: clang linker doesn't support -z flags
+	SHARED_SECURITY_LD := -fstack-protector-strong
+else
+	# Linux: use full ELF hardening
+	SHARED_SECURITY_LD := -Wl,-z,relro,-z,now -Wl,-z,noexecstack -fstack-protector-strong
+endif
+
+# Security hardening flags for dynamic builds (adds PIE)
+SECURITY_FLAGS := GOFLAGS='-buildmode=pie' CGO_CPPFLAGS="$(SHARED_SECURITY_CGO)" CGO_LDFLAGS="$(SHARED_SECURITY_LD)"
+
+# Static build flags with maximum security hardening including PIE via static-pie
+# Using musl-gcc with -static-pie provides PIE protection for static binaries
+# -buildmode=pie is required to prevent -no-pie from being added by the linker
+# Note: Static builds are primarily for Linux (musl-gcc)
+ifeq ($(UNAME_S),Darwin)
+	STATIC_LDFLAGS := $(ldflags) -linkmode external -extldflags "-static $(SHARED_SECURITY_LD)"
+else
+	STATIC_LDFLAGS := $(ldflags) -linkmode external -extldflags "-static-pie $(SHARED_SECURITY_LD)"
+endif
+STATIC_BUILD_FLAGS := -buildmode=pie -tags "netgo osusergo static_build" -ldflags '$(STATIC_LDFLAGS)' -trimpath
 
 all: install
 
@@ -58,20 +86,48 @@ install: go.sum install-core
 
 # does not run go mod verify
 install-core:
-		export GOFLAGS='-buildmode=pie'
-		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
-		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
-		go install $(BUILD_FLAGS) ./cmd/althea
+		$(SECURITY_FLAGS) go install $(BUILD_FLAGS) ./cmd/althea
 
-# build static binary (ledger support disabled for static builds)
+# build static binary with maximum security hardening (ledger support disabled for static builds)
 static: go.sum
 		mkdir -p $(BUILDDIR)
-		CC=musl-gcc CGO_ENABLED=1 go build -a -tags "netgo" -ldflags '$(ldflags) -linkmode external -extldflags "-static"' -o $(BUILDDIR)/althea ./cmd/althea
+		CGO_ENABLED=1 CC=musl-gcc CGO_CPPFLAGS="$(SHARED_SECURITY_CGO)" CGO_LDFLAGS="$(SHARED_SECURITY_LD)" go build -a $(STATIC_BUILD_FLAGS) -o $(BUILDDIR)/althea ./cmd/althea
 
 # install static binary to GOPATH/bin
 static-install: static
 		mkdir -p $(shell go env GOPATH)/bin
 		cp $(BUILDDIR)/althea $(shell go env GOPATH)/bin/althea
+
+# macOS build targets for release binaries
+ifeq ($(UNAME_S),Darwin)
+MACOS_TARGETS := x86_64-apple-darwin aarch64-apple-darwin
+
+.PHONY: macos-build
+macos-build: $(MACOS_TARGETS)
+
+.PHONY: $(MACOS_TARGETS)
+$(MACOS_TARGETS): go.sum
+	@echo "Building for $@"
+	@mkdir -p $(BUILDDIR)
+	@if [ "$@" = "aarch64-apple-darwin" ]; then \
+		export GOARCH=arm64; \
+	else \
+		export GOARCH=amd64; \
+	fi; \
+	export GOOS=darwin; \
+	export CGO_ENABLED=1; \
+	export GOFLAGS='-buildmode=pie'; \
+	export CGO_CPPFLAGS="$(SHARED_SECURITY_CGO)"; \
+	export CGO_LDFLAGS="$(SHARED_SECURITY_LD)"; \
+	go build -tags "$(build_tags)" -ldflags '$(ldflags)' -o $(BUILDDIR)/althea-$@ ./cmd/althea
+endif
+
+# Windows build target for release binaries
+.PHONY: windows-build
+windows-build: go.sum
+	@echo "Building for Windows x64"
+	@mkdir -p $(BUILDDIR)
+	@CGO_ENABLED=1 go build -tags "$(build_tags)" -ldflags '$(ldflags)' -o $(BUILDDIR)/althea-windows-amd64.exe ./cmd/althea
 
 go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
@@ -205,21 +261,6 @@ buf-stamp:
 
 proto-tools-clean:
 	rm -f proto-tools-stamp buf-stamp
-
-# below are all for the reproducible builder
-
-build-reproducible: go.sum
-	$(DOCKER) rm latest-build || true
-	$(DOCKER) run --volume=$(CURDIR)/./:/sources:ro \
-        --env TARGET_PLATFORMS='linux/amd64' \
-        --env APP=althea \
-        --env VERSION=$(VERSION) \
-        --env COMMIT=$(COMMIT) \
-        --env LEDGER_ENABLED=$(LEDGER_ENABLED) \
-        --name latest-build altheanet/cosmos-rbuilder:latest
-	$(DOCKER) cp -a latest-build:/home/builder/artifacts/ $(CURDIR)/
-
-
 
 BUILD_TARGETS := build
 
