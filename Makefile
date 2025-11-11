@@ -63,6 +63,16 @@ install-core:
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
 		go install $(BUILD_FLAGS) ./cmd/althea
 
+# build static binary (ledger support disabled for static builds)
+static: go.sum
+		mkdir -p $(BUILDDIR)
+		CC=musl-gcc CGO_ENABLED=1 go build -a -tags "netgo" -ldflags '$(ldflags) -linkmode external -extldflags "-static"' -o $(BUILDDIR)/althea ./cmd/althea
+
+# install static binary to GOPATH/bin
+static-install: static
+		mkdir -p $(shell go env GOPATH)/bin
+		cp $(BUILDDIR)/althea $(shell go env GOPATH)/bin/althea
+
 go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
 		GO111MODULE=on go mod verify
