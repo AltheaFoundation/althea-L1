@@ -44,6 +44,9 @@ func GetCardinalUpgradeHandler(
 
 		initModuleAccount(ctx, accountKeeper)
 
+		// Ensure nativedex params are set before trying to use them
+		ensureNativedexParams(ctx, nativedexKeeper)
+
 		fixDexTemplate(ctx, nativedexKeeper)
 		usdc := common.HexToAddress("0x80b5a32E4F032B2a058b4F29EC95EEfEEB87aDcd")
 		sUsds := common.HexToAddress("0x5FD55A1B9FC24967C4dB09C513C3BA0DFa7FF687")
@@ -70,6 +73,55 @@ func initModuleAccount(ctx sdk.Context, accountKeeper authkeeper.AccountKeeper) 
 	if modAcc.GetName() != nativedextypes.ModuleName {
 		panic("Created account for nativedex module does not have the right module name!")
 	}
+}
+
+// ensureNativedexParams ensures the nativedex params are set before we try to use them.
+// During the upgrade, if params haven't been initialized yet (empty store), attempting to
+// GetParams will panic with "UnmarshalJSON cannot decode empty bytes".
+// We check if params exist and initialize them with validated defaults if not.
+// If params are initialized but the contract addresses are zero addresses, we set them
+// to the addresses from governance proposal #16 which adopted the iFi DEX.
+func ensureNativedexParams(ctx sdk.Context, nativedexKeeper nativedexkeeper.Keeper) {
+	params, err := nativedexKeeper.GetParamsIfSet(ctx)
+	if err != nil {
+		ctx.Logger().Info("Nativedex params not initialized, setting defaults", "error", err)
+		defaults := nativedextypes.DefaultParams()
+		if err := defaults.ValidateBasic(); err != nil {
+			panic("default nativedex params are invalid: " + err.Error())
+		}
+		nativedexKeeper.SetParams(ctx, *defaults)
+		ctx.Logger().Info("Nativedex params initialized with defaults")
+		params = *defaults
+	} else {
+		ctx.Logger().Info("Nativedex params already initialized", "params", params)
+	}
+
+	// Check if the critical contract addresses are set (not zero addresses)
+	// If they are zero, set them to the values from governance proposal #16
+	zeroAddr := common.Address{}
+	nativeDexAddr := common.HexToAddress(params.VerifiedNativeDexAddress)
+	crocPolicyAddr := common.HexToAddress(params.VerifiedCrocPolicyAddress)
+
+	needsUpdate := false
+	if nativeDexAddr == zeroAddr {
+		ctx.Logger().Info("VerifiedNativeDexAddress is zero, setting to iFi DEX address from proposal #16")
+		params.VerifiedNativeDexAddress = "0xd263DC98dEc57828e26F69bA8687281BA5D052E0"
+		needsUpdate = true
+	}
+	if crocPolicyAddr == zeroAddr {
+		ctx.Logger().Info("VerifiedCrocPolicyAddress is zero, setting to CrocPolicy address from proposal #16")
+		params.VerifiedCrocPolicyAddress = "0x14Ae279edb4D569BAFb98ff08299A0135Da6867a"
+		needsUpdate = true
+	}
+
+	if needsUpdate {
+		nativedexKeeper.SetParams(ctx, params)
+		ctx.Logger().Info("Updated nativedex params with iFi DEX addresses")
+	}
+
+	ctx.Logger().Info("Nativedex contract addresses verified",
+		"nativeDexAddr", params.VerifiedNativeDexAddress,
+		"crocPolicyAddr", params.VerifiedCrocPolicyAddress)
 }
 
 // fixDexTemplate updates the 36000 pool template (used for stablecoin pairs) to ensure
