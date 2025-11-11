@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
+	"github.com/AltheaFoundation/althea-L1/x/erc20/types/canto"
 )
 
 var (
@@ -51,6 +53,19 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&RegisterERC20Proposal{},
 		//nolint: exhaustruct
 		&ToggleTokenConversionProposal{},
+	)
+
+	// Register legacy Canto proposal types for backward compatibility with historical proposals
+	// These are generated from canto/erc20/v1 proto package to handle proposals stored with
+	// canto.erc20.v1 type URLs before the Cardinal upgrade
+	registry.RegisterImplementations(
+		(*govv1beta1.Content)(nil),
+		//nolint: exhaustruct
+		&canto.RegisterCoinProposal{},
+		//nolint: exhaustruct
+		&canto.RegisterERC20Proposal{},
+		//nolint: exhaustruct
+		&canto.ToggleTokenConversionProposal{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

@@ -3,33 +3,10 @@ package canto.erc20.v1;
 
 import "gogoproto/gogo.proto";
 import "cosmos/bank/v1beta1/bank.proto";
-// Modified to generate in althea-L1 for backward compatibility with historical proposals
+
+// This file generates Go types for legacy Canto proposals to enable
+// backward compatibility with historical on-chain proposals stored with canto.erc20.v1 type URLs.
 option go_package = "github.com/AltheaFoundation/althea-L1/x/erc20/types/canto";
-
-// Owner enumerates the ownership of a ERC20 contract.
-enum Owner {
-  option (gogoproto.goproto_enum_prefix) = false;
-  // OWNER_UNSPECIFIED defines an invalid/undefined owner.
-  OWNER_UNSPECIFIED = 0;
-  // OWNER_MODULE erc20 is owned by the erc20 module account.
-  OWNER_MODULE = 1;
-  // EXTERNAL erc20 is owned by an external account.
-  OWNER_EXTERNAL = 2;
-}
-
-// TokenPair defines an instance that records a pairing consisting of a native
-//  Cosmos Coin and an ERC20 token address.
-message TokenPair {
-  option (gogoproto.equal) = true;
-  // address of ERC20 contract token
-  string erc20_address = 1;
-  // cosmos base denomination to be mapped to
-  string denom = 2;
-  // shows token mapping enable status
-  bool enabled = 3;
-  // ERC20 owner address ENUM (0 invalid, 1 ModuleAccount, 2 external address)
-  Owner contract_owner = 4;
-}
 
 // RegisterCoinProposal is a gov Content type to register a token pair for a
 // native Cosmos coin.
@@ -47,7 +24,7 @@ message RegisterCoinProposal {
 // ERC20 token
 message RegisterERC20Proposal {
   option (gogoproto.equal) = false;
-  // title of the proposa  string title = 1;
+  // title of the proposal
   string title = 1;
   // proposal description
   string description = 2;
@@ -60,7 +37,7 @@ message RegisterERC20Proposal {
 message ToggleTokenConversionProposal {
   option (gogoproto.equal) = true;
   // title of the proposal
-  string Title = 1;
+  string title = 1;
   // proposal description
   string description = 2;
   // token identifier can be either the hex contract address of the ERC20 or the
