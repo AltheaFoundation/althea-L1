@@ -113,6 +113,7 @@ pub async fn gov_spend_test(
     let contract_balance_call = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(querier_addr, gov_spend_test_contract, get_balance_call),
+            vec![],
             None,
         )
         .await

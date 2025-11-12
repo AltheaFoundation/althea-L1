@@ -15,7 +15,7 @@ pub async fn approve_erc20s(
     let wallet_addr = wallet.to_address();
     if base != EthAddress::default() {
         let allowance = web30
-            .get_erc20_allowance(base, wallet_addr, dex_contract)
+            .get_erc20_allowance(base, wallet_addr, dex_contract, vec![])
             .await
             .expect("Failed to get base ERC20 allowance");
         if allowance < amount {
@@ -34,7 +34,7 @@ pub async fn approve_erc20s(
         }
     }
     let allowance = web30
-        .get_erc20_allowance(quote, wallet_addr, dex_contract)
+        .get_erc20_allowance(quote, wallet_addr, dex_contract, vec![])
         .await
         .expect("Failed to get quote ERC20 allowance");
     if allowance < amount {

@@ -72,7 +72,7 @@ pub async fn erc20_register_and_round_trip_test(
     let recvr = evm_user_keys.first().expect("No EVM users?");
     let transfer_recvr = evm_user_keys.get(1).expect("fewer than 2 evm users?");
     let start_evm_balance = web3
-        .get_erc20_balance(*registered_erc20, transfer_recvr.eth_address)
+        .get_erc20_balance(*registered_erc20, transfer_recvr.eth_address, vec![])
         .await;
 
     let erc20_params = RegisterErc20ProposalParams {
@@ -112,7 +112,7 @@ pub async fn erc20_register_and_round_trip_test(
 
     // First try to send far too many tokens to cosmos and expect error
     let bad_amount = web3
-        .get_erc20_balance(*registered_erc20, recvr.eth_address)
+        .get_erc20_balance(*registered_erc20, recvr.eth_address, vec![])
         .await
         .expect("Could not get erc20 balance")
         + one_eth() * 10u32.into();
@@ -264,7 +264,7 @@ pub async fn erc20_register_and_round_trip_test(
     res.expect("Expected success when sending ERC20 back to EVM");
 
     let end_evm_balance = web3
-        .get_erc20_balance(*registered_erc20, transfer_recvr.eth_address)
+        .get_erc20_balance(*registered_erc20, transfer_recvr.eth_address, vec![])
         .await;
     let evm_balance = match (start_evm_balance, end_evm_balance) {
         (Err(_), Ok(v)) => v,
@@ -398,7 +398,7 @@ pub async fn coin_register_and_round_trip_test(
 
     // Check that the balance changed
     let balance = web3
-        .get_erc20_balance(generated_erc20, recvr.eth_address)
+        .get_erc20_balance(generated_erc20, recvr.eth_address, vec![])
         .await;
     info!("Account balances after Coin conversion execution: {balance:?}");
 
@@ -426,7 +426,7 @@ pub async fn coin_register_and_round_trip_test(
     // Check that the balance changed
     info!("Successfully called erc20 transfer()");
     let balance = web3
-        .get_erc20_balance(generated_erc20, transfer_recvr.eth_address)
+        .get_erc20_balance(generated_erc20, transfer_recvr.eth_address, vec![])
         .await;
     info!("Account balance after erc20 transfer(): {balance:?}");
 

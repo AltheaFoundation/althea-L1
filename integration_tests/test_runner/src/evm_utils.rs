@@ -119,6 +119,7 @@ pub async fn get_thresholds(
     let thresholds_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, liquid_account_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -320,7 +321,7 @@ pub async fn get_erc20_allowance(
         &[owner.into(), approved.into()],
     )?;
     let allowance_res = web30
-        .simulate_transaction(TransactionRequest::quick_tx(caller, erc20, payload), None)
+        .simulate_transaction(TransactionRequest::quick_tx(caller, erc20, payload), vec![], None)
         .await?;
 
     Ok(Uint256::from_be_bytes(&allowance_res))
@@ -370,6 +371,7 @@ pub async fn get_erc721_owner(
     let owner_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, contract_address, payload),
+            vec![],
             None,
         )
         .await?;
