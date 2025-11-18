@@ -321,7 +321,11 @@ pub async fn get_erc20_allowance(
         &[owner.into(), approved.into()],
     )?;
     let allowance_res = web30
-        .simulate_transaction(TransactionRequest::quick_tx(caller, erc20, payload), vec![], None)
+        .simulate_transaction(
+            TransactionRequest::quick_tx(caller, erc20, payload),
+            vec![],
+            None,
+        )
         .await?;
 
     Ok(Uint256::from_be_bytes(&allowance_res))
