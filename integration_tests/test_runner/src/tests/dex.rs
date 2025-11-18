@@ -103,7 +103,7 @@ pub async fn populate_pool_basic(
 ) {
     if base != EthAddress::default()
         && web3
-            .get_erc20_allowance(base, evm_user.eth_address, dex_contracts.dex)
+            .get_erc20_allowance(base, evm_user.eth_address, dex_contracts.dex, vec![])
             .await
             .expect("Unable to check erc20 approval")
             < Uint256::max_value() / 2u8.into()
@@ -120,7 +120,7 @@ pub async fn populate_pool_basic(
         .expect("Unable to approve erc20");
     }
     if web3
-        .get_erc20_allowance(quote, evm_user.eth_address, dex_contracts.dex)
+        .get_erc20_allowance(quote, evm_user.eth_address, dex_contracts.dex, vec![])
         .await
         .expect("Unable to check erc20 approval")
         < Uint256::max_value() / 2u8.into()
@@ -177,21 +177,21 @@ pub async fn populate_pool_basic(
     } else {
         let qty: Uint256 = one_eth() * 1024u32.into(); // 1024 eth
         let bb = web3
-            .get_erc20_balance(base, evm_user.eth_address)
+            .get_erc20_balance(base, evm_user.eth_address, vec![])
             .await
             .unwrap();
         let qb = web3
-            .get_erc20_balance(quote, evm_user.eth_address)
+            .get_erc20_balance(quote, evm_user.eth_address, vec![])
             .await
             .unwrap();
         #[allow(deprecated)]
         let ba = web3
-            .check_erc20_approved(base, evm_user.eth_address, dex_contracts.dex)
+            .check_erc20_approved(base, evm_user.eth_address, dex_contracts.dex, vec![])
             .await
             .unwrap();
         #[allow(deprecated)]
         let qa = web3
-            .check_erc20_approved(quote, evm_user.eth_address, dex_contracts.dex)
+            .check_erc20_approved(quote, evm_user.eth_address, dex_contracts.dex, vec![])
             .await
             .unwrap();
         let one_eth_f = one_eth().to_f64().unwrap();
@@ -789,11 +789,11 @@ async fn swap_many(
         }
         let qty = Uint256::from(1000000000000000u128) * qty_multi.into(); // .001 eth * qty_multi
         let pre_swap_base = web3
-            .get_erc20_balance(pool_base, evm_user.eth_address)
+            .get_erc20_balance(pool_base, evm_user.eth_address, vec![])
             .await
             .expect("Unable to get erc20 balance");
         let pre_swap_quote = web3
-            .get_erc20_balance(pool_quote, evm_user.eth_address)
+            .get_erc20_balance(pool_quote, evm_user.eth_address, vec![])
             .await
             .expect("Unable to get erc20 balance");
         // Swap quote for base, expecting one atom of base out
@@ -842,11 +842,11 @@ async fn swap_many(
         .expect("Unable to query price");
         info!("Price: {price}");
         let post_swap_base = web3
-            .get_erc20_balance(pool_base, evm_user.eth_address)
+            .get_erc20_balance(pool_base, evm_user.eth_address, vec![])
             .await
             .expect("Unable to get erc20 balance");
         let post_swap_quote = web3
-            .get_erc20_balance(pool_quote, evm_user.eth_address)
+            .get_erc20_balance(pool_quote, evm_user.eth_address, vec![])
             .await
             .expect("Unable to get erc20 balance");
 
@@ -997,7 +997,7 @@ pub async fn basic_dex_setup(
         web3.eth_get_balance(evm_user.eth_address).await.unwrap()
     );
     if web3
-        .get_erc20_balance(walthea, evm_user.eth_address)
+        .get_erc20_balance(walthea, evm_user.eth_address, vec![])
         .await
         .unwrap()
         < one_eth() * 1_000_000u32.into()

@@ -15,6 +15,7 @@ use test_runner::bootstrapping::parse_ibc_validator_keys;
 use test_runner::bootstrapping::send_erc20s_to_evm_users;
 use test_runner::bootstrapping::start_ibc_relayer;
 use test_runner::bootstrapping::{deploy_erc20_contracts, get_keys};
+use test_runner::tests::deprecated_proposals::deprecated_proposals_test;
 use test_runner::tests::dex::advanced_dex_test;
 use test_runner::tests::dex::basic_dex_test;
 use test_runner::tests::dex::dex_ops_proposal_test;
@@ -329,6 +330,8 @@ pub async fn main() {
             execute_contract_proposal_test(&contact, &web30, keys, erc20_addresses).await;
         } else if test_type == "GOV_SPEND" {
             gov_spend_test(&contact, &web30, keys, contracts.gov_spend_test).await;
+        } else if test_type == "DEPRECATED_PROPOSALS" {
+            deprecated_proposals_test(&contact, keys, erc20_addresses).await;
         } else {
             panic!("Unknown test type: {:?}", test_type);
         }

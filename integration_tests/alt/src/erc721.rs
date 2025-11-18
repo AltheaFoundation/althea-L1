@@ -26,7 +26,7 @@ pub async fn erc721_owner_of(web30: &Web3, _args: &Args, cmd_args: &ERC721OwnerO
     let caller: EthAddress = cmd_args.caller.unwrap_or(erc721);
     let token_id: Uint256 = cmd_args.token_id.parse().expect("Invalid token_id");
     let owner_of = web30
-        .get_erc721_owner_of(erc721, caller, token_id)
+        .get_erc721_owner_of(erc721, caller, token_id, vec![])
         .await
         .expect("Failed to get ERC721 owner of");
     println!("{owner_of}");
@@ -37,7 +37,7 @@ pub async fn erc721_approved(web30: &Web3, _args: &Args, cmd_args: &ERC721Approv
     let owner: EthAddress = cmd_args.owner;
     let token_id: Uint256 = cmd_args.token_id.parse().expect("Invalid token_id");
     let approved = web30
-        .check_erc721_approved(erc721, owner, token_id)
+        .check_erc721_approved(erc721, owner, token_id, vec![])
         .await
         .expect("Failed to get ERC721 approval status");
     println!(
@@ -50,7 +50,7 @@ pub async fn erc721_supply(web30: &Web3, _args: &Args, cmd_args: &ERC721SupplyAr
     let erc721: EthAddress = cmd_args.erc721;
     let caller: EthAddress = cmd_args.caller.unwrap_or(erc721);
     let supply = web30
-        .get_erc721_supply(erc721, caller)
+        .get_erc721_supply(erc721, caller, vec![])
         .await
         .expect("Failed to get ERC721 supply");
     println!("{supply}");

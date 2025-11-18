@@ -1,3 +1,4 @@
+pub mod deprecated_proposals;
 pub mod dex;
 pub mod erc20_conversion;
 pub mod evm_fee_burning;

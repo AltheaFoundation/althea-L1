@@ -236,4 +236,15 @@ jobs:
           cache-on-failure: true
       - name: Checks that a CommunityPoolSpendProposal can send ALTHEA to a contract
         run: tests/all-up-test-ci.sh GOV_SPEND
-
+  DEPRECATED_PROPOSALS:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v5
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: integration_tests/
+          cache-on-failure: true
+      - name: Checks that the old canto erc20 governance proposals are not submittable
+        run: tests/all-up-test-ci.sh DEPRECATED_PROPOSALS
