@@ -26,16 +26,16 @@ replace (
 	// Fix node query errors like "failed to load state at height 5; version does not exist (latest height: 5)"
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
-	// v0.34.35 resolves multiple CVEs
-	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.35
+	// v0.34.36 local cometbft with tachyon changes
+	github.com/tendermint/tendermint => github.com/AltheaFoundation/cometbft v0.34.36-tachyon
 
 	// Canto forked github.com/evmos/evmos, which was originally github.com/tharsis/evmos
 	github.com/tharsis/evmos => github.com/Canto-Network/Canto/v6 v6.0.1
 
+	github.com/zondax/ledger-go => github.com/zondax/ledger-go v1.0.0
+
 	// Fix error "github.com/cosmos/gogoproto@v1.4.7/proto/merge.go:123:28: in call to slices.SortFunc, type func(x *descriptorpb.FileDescriptorProto, y *descriptorpb.FileDescriptorProto) bool of func(x, y *descriptorpb.FileDescriptor Proto) bool {…} does not match inferred type func(a *descriptorpb.FileDescriptorProto, b *descriptorpb.FileDescriptorProto) int for func(a E, b E) int"
 	golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
-
-	github.com/zondax/ledger-go => github.com/zondax/ledger-go v1.0.0
 )
 
 require (
