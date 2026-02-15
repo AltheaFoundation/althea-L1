@@ -54,6 +54,7 @@ pub async fn croc_query_dex(
     let dex_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -100,6 +101,7 @@ pub async fn croc_query_curve(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -161,6 +163,7 @@ pub async fn croc_query_pool_params(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -208,6 +211,7 @@ pub async fn croc_query_pool_template(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -238,6 +242,7 @@ pub async fn croc_query_curve_tick(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -269,6 +274,7 @@ pub async fn croc_query_liquidity(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -300,6 +306,7 @@ pub async fn croc_query_price(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -354,6 +361,7 @@ pub async fn croc_query_range_position(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -424,6 +432,7 @@ pub async fn croc_query_range_tokens(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -482,6 +491,7 @@ pub async fn croc_query_knockout_pivot(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -544,6 +554,7 @@ pub async fn croc_query_knockout_tokens(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -600,6 +611,7 @@ pub async fn croc_query_ambient_position(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -643,6 +655,7 @@ pub async fn croc_query_ambient_tokens(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -703,6 +716,7 @@ pub async fn croc_query_conc_rewards(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -746,6 +760,7 @@ pub async fn croc_query_nonce(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -793,6 +808,7 @@ pub async fn croc_query_level(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, croc_query_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -985,6 +1001,7 @@ pub async fn dex_query_safe_mode(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, dex_contract, payload),
+            vec![],
             None,
         )
         .await?;
@@ -1004,6 +1021,7 @@ pub async fn dex_query_authority(
     let query_res = web30
         .simulate_transaction(
             TransactionRequest::quick_tx(caller, dex_contract, payload),
+            vec![],
             None,
         )
         .await?;

@@ -71,7 +71,7 @@ pub async fn execute_contract_proposal_test(
 
     // Verify the module received the tokens
     let module_balance = web30
-        .get_erc20_balance_as_address(Some(querier), erc20_contract, nativedex_evm_address)
+        .get_erc20_balance_as_address(Some(querier), erc20_contract, nativedex_evm_address, vec![])
         .await
         .expect("Failed to get module balance");
     info!("Module balance after transfer: {}", module_balance);
@@ -157,7 +157,7 @@ pub async fn execute_contract_proposal_test(
     info!("Verifying token transfer");
 
     let receiver_balance = web30
-        .get_erc20_balance_as_address(Some(querier), erc20_contract, receiver_address)
+        .get_erc20_balance_as_address(Some(querier), erc20_contract, receiver_address, vec![])
         .await
         .expect("Failed to get receiver balance");
     info!("Receiver balance after proposal: {}", receiver_balance);
@@ -168,7 +168,7 @@ pub async fn execute_contract_proposal_test(
     );
 
     let module_balance_after = web30
-        .get_erc20_balance_as_address(Some(querier), erc20_contract, nativedex_evm_address)
+        .get_erc20_balance_as_address(Some(querier), erc20_contract, nativedex_evm_address, vec![])
         .await
         .expect("Failed to get module balance");
     info!("Module balance after proposal: {}", module_balance_after);

@@ -956,7 +956,7 @@ pub async fn get_erc20_balance_safe(
     // and cause any individual request to fail.
     let mut new_balance = Err(Web3Error::BadInput("Intentional Error".to_string()));
     while new_balance.is_err() && Instant::now() - start < TOTAL_TIMEOUT {
-        new_balance = web3.get_erc20_balance(erc20, address).await;
+        new_balance = web3.get_erc20_balance(erc20, address, vec![]).await;
         // only keep trying if our error is gas related
         if let Err(ref e) = new_balance {
             if !e.to_string().contains("maxFeePerGas") {

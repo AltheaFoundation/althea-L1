@@ -263,6 +263,7 @@ pub async fn send_erc20s_to_evm_users(
             .get_erc20_balance(
                 *erc20_contracts.first().unwrap(),
                 *destinations.first().unwrap(),
+                vec![],
             )
             .await
         {

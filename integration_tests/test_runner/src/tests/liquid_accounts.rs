@@ -532,7 +532,7 @@ async fn expect_cosmos_evm_balances(
     );
 
     let evm_actual = web3
-        .get_erc20_balance_as_address(Some(querier), erc20_address, nft_address)
+        .get_erc20_balance_as_address(Some(querier), erc20_address, nft_address, vec![])
         .await
         .expect("failed to query erc20 balance of nft contract");
     assert_eq!(evm_actual, erc20_amount);
@@ -547,7 +547,7 @@ async fn assert_erc20_balances(
     let querier = querier.unwrap_or(wallet);
     for (erc20, expected_amt) in erc20s {
         let balance = web3
-            .get_erc20_balance_as_address(Some(querier), erc20, wallet)
+            .get_erc20_balance_as_address(Some(querier), erc20, wallet, vec![])
             .await
             .expect("Could not get erc20 balance");
         assert_eq!(expected_amt, balance);
