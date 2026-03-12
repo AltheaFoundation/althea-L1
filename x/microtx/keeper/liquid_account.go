@@ -321,6 +321,10 @@ func (k Keeper) RedirectLiquidAccountExcessBalance(ctx sdk.Context, account sdk.
 
 	var redirectedAmount sdk.Coin
 	threshold := types.FindThresholdForERC20(thresholds, changedErc20)
+	if threshold == nil {
+		logger.Debug("No threshold found for modified balance, skipping redirect", "changedBalance", changedErc20)
+		return nil
+	}
 	logger.Debug("Found threshold for modified balance", "threshold", threshold, "changedBalance", changedErc20)
 
 	pair, found := k.erc20Keeper.GetTokenPair(ctx, k.erc20Keeper.GetTokenPairID(ctx, threshold.Token.Hex()))
