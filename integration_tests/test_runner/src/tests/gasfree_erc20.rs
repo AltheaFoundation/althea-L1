@@ -221,7 +221,7 @@ pub async fn gasfree_send_coin_to_evm_test(
             .expect("Unable to fund user with test coin");
     }
     let begin_evm_balance = web3
-        .get_erc20_balance(denom_erc20_address, user.eth_address)
+        .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
         .await
         .expect("Could not query starting ERC20 balance");
     if begin_evm_balance < send_total + fee_total {
@@ -328,7 +328,7 @@ pub async fn gasfree_send_coin_to_evm_test(
             .unwrap()
             .unwrap();
         let evm_balance_coin = web3
-            .get_erc20_balance(denom_erc20_address, user.eth_address)
+            .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
             .await
             .expect("Could not query ERC20 balance after send");
 
@@ -378,7 +378,7 @@ pub async fn gasfree_send_coin_to_evm_test(
             .unwrap()
             .unwrap();
         let evm_balance_erc20 = web3
-            .get_erc20_balance(denom_erc20_address, user.eth_address)
+            .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
             .await
             .expect("Could not query ERC20 balance after send");
 
@@ -683,7 +683,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
             .expect("Unable to fund user with test coin");
     }
     let begin_evm_balance = web3
-        .get_erc20_balance(denom_erc20_address, user.eth_address)
+        .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
         .await
         .unwrap_or_default();
     if begin_evm_balance < send_total + fee_total {
@@ -732,11 +732,11 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
         .await;
 
     let start_evm_balance_coin = web3
-        .get_erc20_balance(denom_erc20_address, user.eth_address)
+        .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
         .await
         .expect("Could not query ERC20 balance before send");
     let start_evm_balance_erc20 = web3
-        .get_erc20_balance(*registered_erc20, user.eth_address)
+        .get_erc20_balance(*registered_erc20, user.eth_address, vec![])
         .await
         .expect("Could not query ERC20 balance before send");
 
@@ -764,7 +764,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
                 denom: registered_denom.clone(),
             });
         let start_evm_coin = web3
-            .get_erc20_balance(denom_erc20_address, user.eth_address)
+            .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
             .await
             .expect("Could not query ERC20 balance before send");
         let start_bank_erc20 = contact
@@ -776,7 +776,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
                 denom: erc20_denom.clone(),
             });
         let start_evm_erc20 = web3
-            .get_erc20_balance(*registered_erc20, user.eth_address)
+            .get_erc20_balance(*registered_erc20, user.eth_address, vec![])
             .await
             .expect("Could not query ERC20 balance before send");
 
@@ -829,7 +829,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
                     denom: registered_denom.clone(),
                 });
             let evm_balance_coin = web3
-                .get_erc20_balance(denom_erc20_address, user.eth_address)
+                .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
                 .await
                 .expect("Could not query ERC20 balance after send");
 
@@ -887,7 +887,7 @@ pub async fn gasfree_send_erc20_to_cosmos_test(
                     denom: erc20_denom.to_string(),
                 });
             let evm_balance_erc20 = web3
-                .get_erc20_balance(*registered_erc20, user.eth_address)
+                .get_erc20_balance(*registered_erc20, user.eth_address, vec![])
                 .await
                 .expect("Could not query ERC20 balance after send");
 
@@ -1040,7 +1040,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
             .expect("Unable to fund user with test coin");
     }
     let begin_evm_balance = web3
-        .get_erc20_balance(denom_erc20_address, user.eth_address)
+        .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
         .await
         .unwrap_or_default();
     if begin_evm_balance < amount_total + fee_total {
@@ -1068,7 +1068,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
             .expect("MsgSendCoinToEvm failed");
     }
     let start_evm_balance_erc20 = web3
-        .get_erc20_balance(*registered_erc20, user.eth_address)
+        .get_erc20_balance(*registered_erc20, user.eth_address, vec![])
         .await
         .expect("Could not query ERC20 balance before send");
     let start_althea_balance_erc20 = althea_contact
@@ -1077,7 +1077,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
         .unwrap()
         .unwrap();
     let start_evm_balance_denom = web3
-        .get_erc20_balance(denom_erc20_address, user.eth_address)
+        .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
         .await
         .expect("Could not query ERC20 balance before send");
     let start_althea_balance_denom = althea_contact
@@ -1204,7 +1204,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
                 denom: ibc_erc20.clone(),
             });
         let end_evm_balance_erc20 = web3
-            .get_erc20_balance(*registered_erc20, user.eth_address)
+            .get_erc20_balance(*registered_erc20, user.eth_address, vec![])
             .await
             .expect("Could not query ERC20 balance before send");
         let end_althea_balance_erc20 = althea_contact
@@ -1245,7 +1245,7 @@ pub async fn gasfree_send_erc20_to_cosmos_and_ibc_transfer_test(
                 denom: ibc_denom.clone(),
             });
         let end_evm_balance_denom = web3
-            .get_erc20_balance(denom_erc20_address, user.eth_address)
+            .get_erc20_balance(denom_erc20_address, user.eth_address, vec![])
             .await
             .expect("Could not query ERC20 balance before send");
         let end_althea_balance_denom = althea_contact

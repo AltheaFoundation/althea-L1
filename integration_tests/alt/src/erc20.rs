@@ -27,17 +27,17 @@ pub async fn erc20_balance(web30: &Web3, args: &ERC20BalanceArgs) {
     let address: EthAddress = args.address;
     let caller: EthAddress = args.caller.unwrap_or(address);
     let decimals = web30
-        .get_erc20_decimals(erc20, caller)
+        .get_erc20_decimals(erc20, caller, vec![])
         .await
         .expect("Failed to get ERC20 decimals")
         .to_usize()
         .expect("Invalid decimals");
     let symbol = web30
-        .get_erc20_symbol(erc20, caller)
+        .get_erc20_symbol(erc20, caller, vec![])
         .await
         .expect("Failed to get ERC20 symbol");
     let balance = web30
-        .get_erc20_balance_as_address(Some(caller), erc20, address)
+        .get_erc20_balance_as_address(Some(caller), erc20, address, vec![])
         .await
         .expect("Failed to get ERC20 balance");
     println!("{}{}", format_balance(balance, decimals), symbol);
@@ -48,7 +48,7 @@ pub async fn erc20_decimals(web30: &Web3, args: &ERC20BasicArgs) {
     let caller: EthAddress = args.caller;
     debug!("Querying decimals as {caller}");
     let decimals = web30
-        .get_erc20_decimals(erc20, caller)
+        .get_erc20_decimals(erc20, caller, vec![])
         .await
         .expect("Failed to get ERC20 decimals")
         .to_usize()
@@ -61,13 +61,13 @@ pub async fn erc20_allowance(web30: &Web3, args: &ERC20AllowanceArgs) {
     let owner: EthAddress = args.owner;
     let spender: EthAddress = args.spender;
     let decimals = web30
-        .get_erc20_decimals(erc20, owner)
+        .get_erc20_decimals(erc20, owner, vec![])
         .await
         .expect("Failed to get ERC20 decimals")
         .to_usize()
         .expect("Invalid decimals");
     let symbol = web30
-        .get_erc20_symbol(erc20, owner)
+        .get_erc20_symbol(erc20, owner, vec![])
         .await
         .expect("Failed to get ERC20 symbol");
 
@@ -82,13 +82,13 @@ pub async fn erc20_supply(web30: &Web3, args: &ERC20BasicArgs) {
     let caller: EthAddress = args.caller;
     debug!("Querying supply as {caller}");
     let decimals = web30
-        .get_erc20_decimals(erc20, caller)
+        .get_erc20_decimals(erc20, caller, vec![])
         .await
         .expect("Failed to get ERC20 decimals")
         .to_usize()
         .expect("Invalid decimals");
     let balance = web30
-        .get_erc20_supply(erc20, caller)
+        .get_erc20_supply(erc20, caller, vec![])
         .await
         .expect("Failed to get ERC20 balance");
     println!("{}", format_balance(balance, decimals));

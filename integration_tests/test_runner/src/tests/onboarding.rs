@@ -848,6 +848,7 @@ pub async fn get_balance_snapshot(
         .get_erc20_balance(
             erc20_token_pair.erc20_address.parse().unwrap(),
             erc20_holder_on_evm,
+            vec![],
         )
         .await
         .map_err(|e| CosmosGrpcError::BadResponse(e.to_string()))?;
@@ -855,6 +856,7 @@ pub async fn get_balance_snapshot(
         .get_erc20_balance(
             ibc_token_pair.erc20_address.parse().unwrap(),
             erc20_holder_on_evm,
+            vec![],
         )
         .await
         .map_err(|e| CosmosGrpcError::BadResponse(e.to_string()))?;
