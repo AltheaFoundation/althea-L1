@@ -13,7 +13,7 @@ import (
 // This file checks the SelectiveBypassDecorator by wrapping the test BypassIndicatorDecorator with it,
 // the BypassIndicatorDecorator's AnteHandlerRuns value should only increment on non-gasfree messages
 
-// NewSelectiveBypassDecorator makes a test antehandler which indicates how many times it has been run
+// NewBypassIndicatorDecorator makes a test antehandler which indicates how many times it has been run
 func NewBypassIndicatorDecorator() BypassIndicatorDecorator {
 	var runs int = 0
 	return BypassIndicatorDecorator{&runs}
